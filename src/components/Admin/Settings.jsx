@@ -1,40 +1,82 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { COLOR_PALETTE, DEFAULT_TIER_SEQUENCE } from "../../utils/tierColors.js";
-import { getAllCountries } from "../../utils/flags.js";
-import { useTranslation } from "../../utils/TranslationContext.jsx";
+import {
+  COLOR_PALETTE,
+  DEFAULT_TIER_COLOR_MAP,
+  DEFAULT_TIER_SEQUENCE,
+  compareTierLabels,
+  tierChipClass,
+  tierSwatchClass
+} from "../../utils/tierColors.js";
+import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
 
-const CURRENCY_OPTIONS = [
-  { code: "MYR", name: "Malaysian Ringgit", symbol: "RM", locale: "ms-MY" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "$", locale: "en-SG" },
-  { code: "USD", name: "US Dollar", symbol: "$", locale: "en-US" },
-  { code: "GBP", name: "British Pound", symbol: "£", locale: "en-GB" },
-  { code: "JPY", name: "Japanese Yen", symbol: "¥", locale: "ja-JP" },
-  { code: "AUD", name: "Australian Dollar", symbol: "$", locale: "en-AU" },
-  { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp", locale: "id-ID" },
-  { code: "PHP", name: "Philippine Peso", symbol: "₱", locale: "en-PH" },
-  { code: "THB", name: "Thai Baht", symbol: "฿", locale: "th-TH" },
-  { code: "VND", name: "Vietnamese Dong", symbol: "₫", locale: "vi-VN" }
+const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
+
+const WEIGHT_MODES = [
+  {
+    id: "basic",
+    label: "Basic (weight only)",
+    description: "Each prize uses its weight value once. Quantity only gates availability."
+  },
+  {
+    id: "advanced",
+    label: "Advanced (weight � quantity)",
+    description: "Weights are multiplied by remaining quantity so probabilities always sum to 100%."
+  }
 ];
 
+const COUNTRY_OPTIONS = [
+  { name: "Malaysia", currency: "MYR", locale: "ms-MY", code: "MY" },
+  { name: "Singapore", currency: "SGD", locale: "en-SG", code: "SG" },
+  { name: "United States", currency: "USD", locale: "en-US", code: "US" },
+  { name: "United Kingdom", currency: "GBP", locale: "en-GB", code: "GB" },
+  { name: "Japan", currency: "JPY", locale: "ja-JP", code: "JP" },
+  { name: "Australia", currency: "AUD", locale: "en-AU", code: "AU" },
+  { name: "Indonesia", currency: "IDR", locale: "id-ID", code: "ID" },
+  { name: "Philippines", currency: "PHP", locale: "en-PH", code: "PH" },
+  { name: "Thailand", currency: "THB", locale: "th-TH", code: "TH" },
+  { name: "Vietnam", currency: "VND", locale: "vi-VN", code: "VN" }
+];
+
+const formatSample = (locale, code) =>
+  new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: code,
+    maximumFractionDigits: 0
+  }).format(1234);
+
+const normalizeTierKey = (value) => value.trim().toUpperCase().slice(0, 6);
+
 export default function Settings() {
-  const { getSettings, setSettings, resetAll, getHistory, getPrizes, getPricing } = useLocalStorageDAO();
-  const { t } = useTranslation();
-  const [settings, updateSettings] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [status, setStatus] = useState(null);
-  const [showExportPrompt, setShowExportPrompt] = useState(false);
-  const [exportData, setExportData] = useState(null);
-  const [countries, setCountries] = useState([]);
+  const { getSettings, setSettings, resetAll } = useLocalStorageDAO();
+  const [settings, setLocalSettings] = useState({
+    sessionStatus: "INACTIVE",
+    lastReset: null,
+    country: "Malaysia",
+    countryCode: "MY",
+    countryEmoji: flagFromCountryCode("MY"),
+    currency: "MYR",
+    locale: "ms-MY",
+    tierColors: DEFAULT_TIER_COLOR_MAP,
+    nextSessionNumber: 1,
+    weightMode: "basic"
+  });
+  const [statusMessage, setStatusMessage] = useState(null);
+  const [countryQuery, setCountryQuery] = useState("Malaysia");
+  const [customCurrency, setCustomCurrency] = useState("");
+  const [newTierKey, setNewTierKey] = useState("");
+  const [activeTier, setActiveTier] = useState("S");
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const storedSettings = await getSettings();
+      const data = await getSettings();
       if (mounted) {
-        updateSettings(storedSettings);
-        setCountries(getAllCountries());
-        setIsLoading(false);
+        setLocalSettings(data);
+        setCountryQuery(data.country ?? "");
+        const tiers = data.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...data.tierColors }) : Object.keys(DEFAULT_TIER_COLOR_MAP);
+        const sortedTiers = tiers.sort(compareTierLabels);
+        setActiveTier(sortedTiers[0] ?? "S");
       }
     })();
     return () => {
@@ -42,263 +84,337 @@ export default function Settings() {
     };
   }, [getSettings]);
 
-  const handleChange = (key, value) => {
-    updateSettings((prev) => ({
-      ...prev,
-      [key]: value
-    }));
+  const tierColors = settings.tierColors ?? DEFAULT_TIER_COLOR_MAP;
+
+  const tierList = useMemo(() => {
+    const keys = new Set(DEFAULT_TIER_SEQUENCE);
+    Object.keys(tierColors).forEach((key) => keys.add(key));
+    return Array.from(keys).sort(compareTierLabels);
+  }, [tierColors]);
+
+  useEffect(() => {
+    if (!tierList.includes(activeTier) && tierList.length) {
+      setActiveTier(tierList[0]);
+    }
+  }, [tierList, activeTier]);
+
+  const updateSettings = async (next) => {
+    const nextTierColors = next.tierColors
+      ? { ...DEFAULT_TIER_COLOR_MAP, ...tierColors, ...next.tierColors }
+      : tierColors;
+
+    const countryCode = normalizeCountryCode(next.countryCode ?? settings.countryCode ?? "");
+    const countryEmoji = next.countryEmoji || (countryCode ? flagFromCountryCode(countryCode) : settings.countryEmoji);
+
+    const merged = {
+      ...settings,
+      ...next,
+      tierColors: nextTierColors,
+      countryCode: countryCode || settings.countryCode,
+      countryEmoji: countryEmoji || settings.countryEmoji
+    };
+
+    setLocalSettings(merged);
+    await setSettings(merged);
+    setStatusMessage("Settings saved.");
   };
 
-  const handleSave = async () => {
-    try {
-      await setSettings(settings);
-      setStatus({ type: "success", message: `${t("app.success")}: ${t("settings.saved")}` });
-    } catch (error) {
-      setStatus({ type: "error", message: `${t("app.error")}: ${error.message}` });
+  const performReset = async () => {
+    await resetAll();
+    const fresh = await getSettings();
+    setLocalSettings(fresh);
+    setCountryQuery(fresh.country ?? "");
+    const tiers = fresh.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...fresh.tierColors }) : DEFAULT_TIER_SEQUENCE;
+    const sortedTiers = tiers.sort(compareTierLabels);
+    setActiveTier(sortedTiers[0] ?? "S");
+    setStatusMessage("All data reset.");
+  };
+
+  const handleResetClick = async () => {
+    if (!window.confirm("Export prizes, pricing, and history before resetting. Continue with session reset?")) {
+      return;
+    }
+    await performReset();
+  };
+
+  const handleResetCounter = async () => {
+    if (!window.confirm("Export your data before resetting the session counter. Reset counter now?")) {
+      return;
+    }
+    await updateSettings({ nextSessionNumber: 1 });
+  };
+
+  const matchedCountry = useMemo(() => {
+    const query = (countryQuery || "").trim().toLowerCase();
+    return COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === query);
+  }, [countryQuery]);
+
+  const handleCountryInput = (value) => {
+    setCountryQuery(value);
+    const match = COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === value.trim().toLowerCase());
+    if (match) {
+      updateSettings({
+        country: match.name,
+        countryCode: match.code,
+        currency: match.currency,
+        locale: match.locale,
+        countryEmoji: flagFromCountryCode(match.code)
+      });
     }
   };
 
-  const handleReset = async () => {
-    // Get all data before resetting
-    const [history, prizes, pricing] = await Promise.all([
-      getHistory(),
-      getPrizes(),
-      getPricing()
-    ]);
-    
-    // Prepare export data
-    setExportData({
-      history,
-      prizes,
-      pricing,
-      settings
-    });
-    
-    // Show export prompt
-    setShowExportPrompt(true);
-  };
-  
-  const handleConfirmReset = async () => {
-    try {
-      await resetAll();
-      const freshSettings = await getSettings();
-      updateSettings(freshSettings);
-      setStatus({ type: "success", message: t("settings.resetSuccess") });
-      setShowExportPrompt(false);
-    } catch (error) {
-      setStatus({ type: "error", message: `${t("app.error")}: ${error.message}` });
+  const applyCountrySelection = () => {
+    const trimmed = countryQuery.trim();
+    if (!trimmed) return;
+    const match = COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === trimmed.toLowerCase());
+    if (match) {
+      updateSettings({
+        country: match.name,
+        countryCode: match.code,
+        currency: match.currency,
+        locale: match.locale,
+        countryEmoji: flagFromCountryCode(match.code)
+      });
+    } else {
+      updateSettings({ country: trimmed });
     }
   };
-  
-  const handleExportAllData = () => {
-    if (!exportData) return;
-    
-    const jsonData = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonData], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `caris-kuji-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-  
-  const handleCancelReset = () => {
-    setShowExportPrompt(false);
-    setExportData(null);
+
+  const handleCustomCurrency = async (event) => {
+    event.preventDefault();
+    const value = customCurrency.trim().toUpperCase();
+    if (!value) return;
+    await updateSettings({ currency: value });
+    setCustomCurrency("");
   };
 
-  const handleTierColorChange = (tier, colorId) => {
-    updateSettings((prev) => ({
-      ...prev,
-      tierColors: {
-        ...(prev.tierColors || {}),
-        [tier]: colorId
-      }
-    }));
+  const handleTierSelection = (tier) => {
+    setActiveTier(tier);
   };
 
-  const handleCountryChange = (e) => {
-    const selectedCountry = countries.find(c => c.code === e.target.value) || {};
-    updateSettings((prev) => ({
-      ...prev,
-      country: selectedCountry.name || "",
-      countryCode: selectedCountry.code || "",
-      countryEmoji: selectedCountry.emoji || ""
-    }));
+  const handleAddTier = () => {
+    const tier = normalizeTierKey(newTierKey);
+    if (!tier) return;
+    const updatedColors = { ...tierColors };
+    if (!updatedColors[tier]) {
+      const nextPalette = COLOR_PALETTE[Object.keys(updatedColors).length % COLOR_PALETTE.length]?.id ?? COLOR_PALETTE[0].id;
+      updatedColors[tier] = nextPalette;
+    }
+    updateSettings({ tierColors: updatedColors });
+    setActiveTier(tier);
+    setNewTierKey("");
   };
 
-  if (isLoading) {
-    return <p className="text-sm text-slate-400">{t("app.loading")}</p>;
-  }
+  const handleTierColorChange = (colorId) => {
+    if (!activeTier) return;
+    const updatedColors = { ...tierColors, [activeTier]: colorId };
+    updateSettings({ tierColors: updatedColors });
+  };
+
+  const handleWeightModeChange = (mode) => {
+    updateSettings({ weightMode: mode === "advanced" ? "advanced" : "basic" });
+  };
+
+  const activeCountryEmoji = settings.countryEmoji || flagFromCountryCode(settings.countryCode || "");
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-        <h3 className="text-lg font-semibold text-white">{t("settings.title")}</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400">
-              {t("settings.currency")}
-            </label>
-            <select
-              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
-              value={settings.currency || "MYR"}
-              onChange={(e) => {
-                const selected = CURRENCY_OPTIONS.find((c) => c.code === e.target.value);
-                if (selected) {
-                  handleChange("currency", selected.code);
-                  handleChange("locale", selected.locale);
-                }
-              }}
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Session Controls</h3>
+        <div className="flex flex-wrap gap-2">
+          {SESSION_STATUSES.map((status) => (
+            <button
+              key={status}
+              type="button"
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase ${
+                settings.sessionStatus === status
+                  ? "bg-caris-primary text-white"
+                  : "bg-slate-800 text-slate-300"
+              }`}
+              onClick={() => updateSettings({ sessionStatus: status })}
             >
-              {CURRENCY_OPTIONS.map((currency) => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.name} ({currency.symbol})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400">
-              {t("settings.nextSessionNumber")}
-            </label>
-            <input
-              type="number"
-              min="1"
-              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
-              value={settings.nextSessionNumber || 1}
-              onChange={(e) => handleChange("nextSessionNumber", Math.max(1, parseInt(e.target.value, 10) || 1))}
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400">
-              {t("settings.country")}
-            </label>
-            <div className="mt-1 flex items-center gap-2">
-              <select
-                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
-                value={settings.countryCode || ""}
-                onChange={handleCountryChange}
-              >
-                <option value="">-- {t("settings.selectCountry")} --</option>
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.emoji} {country.name}
-                  </option>
-                ))}
-              </select>
-              <span className="text-xl">{settings.countryEmoji}</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400">
-              {t("settings.weightMode")}
-            </label>
-            <select
-              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
-              value={settings.weightMode || "basic"}
-              onChange={(e) => handleChange("weightMode", e.target.value)}
-            >
-              <option value="basic">{t("settings.basic")}</option>
-              <option value="advanced">{t("settings.advanced")}</option>
-            </select>
-            <p className="mt-1 text-xs text-slate-400">
-              {settings.weightMode === "advanced" 
-                ? t("settings.advancedDesc")
-                : t("settings.basicDesc")}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-        <h3 className="text-lg font-semibold text-white">{t("settings.tierColors")}</h3>
-        <p className="text-sm text-slate-400">
-          {t("settings.tierColorsDesc")}
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {DEFAULT_TIER_SEQUENCE.slice(0, 12).map((tier) => (
-            <div key={tier} className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-xs font-bold">
-                  {tier}
-                </span>
-                {t("draw.tier")} {tier}
-              </label>
-              <select
-                className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
-                value={settings.tierColors?.[tier] || ""}
-                onChange={(e) => handleTierColorChange(tier, e.target.value)}
-              >
-                {COLOR_PALETTE.map((color) => (
-                  <option key={color.id} value={color.id}>
-                    {color.label}
-                  </option>
-                ))}
-              </select>
-              <div
-                className={`h-2 w-full rounded-full ${COLOR_PALETTE.find((c) => c.id === (settings.tierColors?.[tier] || ""))?.swatchClass || "bg-slate-400"}`}
-              />
-            </div>
+              {status}
+            </button>
           ))}
         </div>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={handleSave}>
-          {t("app.save")}
-        </button>
-        <button
-          type="button"
-          className="bg-red-800 text-red-100"
-          onClick={handleReset}
-        >
-          {t("settings.resetAll")}
-        </button>
-        {status && (
-          <span
-            className={`text-sm font-medium ${
-              status.type === "error" ? "text-red-400" : "text-emerald-400"
-            }`}
-          >
-            {status.message}
-          </span>
-        )}
       </div>
-
-      {showExportPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-white">{t("settings.resetWarning")}</h3>
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                type="button"
-                className="bg-emerald-800 text-emerald-100"
-                onClick={handleExportAllData}
-              >
-                {t("settings.exportFirst")}
-              </button>
-              <button
-                type="button"
-                className="bg-red-800 text-red-100"
-                onClick={handleConfirmReset}
-              >
-                {t("settings.resetConfirm")}
-              </button>
-              <button
-                type="button"
-                className="bg-slate-800 text-slate-200"
-                onClick={handleCancelReset}
-              >
-                {t("settings.resetCancel")}
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Region & Currency</h3>
+        <p className="text-sm text-slate-400">
+          Select a country to automatically load the matching currency and locale. All pricing is stored in whole dollars.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="country-search">
+              Country search
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="country-search"
+                list="country-options"
+                className="w-56 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                value={countryQuery}
+                onChange={(event) => handleCountryInput(event.target.value)}
+                placeholder="Malaysia"
+              />
+              <button type="button" className="bg-slate-800 text-slate-200" onClick={applyCountrySelection}>
+                Apply
               </button>
             </div>
+            <datalist id="country-options">
+              {COUNTRY_OPTIONS.map((option) => {
+                const emoji = flagFromCountryCode(option.code);
+                return <option key={option.name} value={option.name} label={`${emoji} ${option.name}`} />;
+              })}
+            </datalist>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="currency-code">
+              Custom currency code
+            </label>
+            <form className="flex gap-2" onSubmit={handleCustomCurrency}>
+              <input
+                id="currency-code"
+                maxLength={5}
+                className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                value={customCurrency}
+                onChange={(event) => setCustomCurrency(event.target.value)}
+                placeholder="MYR"
+              />
+              <button type="submit">
+                Save
+              </button>
+            </form>
           </div>
         </div>
-      )}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs text-slate-400">
+          <p>
+            Active configuration: {activeCountryEmoji ? `${activeCountryEmoji} ` : ""}
+            {settings.country || "Unknown country"} | {settings.currency || "Currency"} | {settings.locale || "Locale"}
+          </p>
+          <p className="mt-2">Sample formatting:</p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+            {COUNTRY_OPTIONS.map((option) => {
+              const emoji = flagFromCountryCode(option.code);
+              return (
+                <li key={option.name} className="flex flex-col text-slate-300">
+                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                    {emoji} {option.name}
+                  </span>
+                  <span className="font-semibold">
+                    {option.currency} | {formatSample(option.locale, option.currency)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          {matchedCountry ? (
+            <p className="mt-2 text-emerald-400">
+              Matched {flagFromCountryCode(matchedCountry.code)} {matchedCountry.name} | Currency {matchedCountry.currency}
+            </p>
+          ) : (
+            <p className="mt-2 text-slate-500">Type a country name to auto-detect currency.</p>
+          )}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Weight Engine</h3>
+        <p className="text-sm text-slate-400">
+          Decide how draw weights behave. Advanced mode multiplies weights by remaining quantity so the pool always reflects 100% probability.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {WEIGHT_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => handleWeightModeChange(mode.id)}
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+                settings.weightMode === mode.id
+                  ? "border-caris-primary bg-caris-primary/20 text-white"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-caris-primary/60"
+              }`}
+            >
+              <div className="font-semibold">{mode.label}</div>
+              <div className="mt-1 text-xs text-slate-400">{mode.description}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Tier Color Palette</h3>
+        <p className="text-sm text-slate-400">
+          Assign colors to each tier to keep the draw table readable. Tier S is the top tier by default, and additional tiers follow the custom CARIS order.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {tierList.map((tier) => (
+            <button
+              key={tier}
+              type="button"
+              onClick={() => handleTierSelection(tier)}
+              className={`${tierChipClass(tier, tierColors)} ${
+                activeTier === tier ? "ring-2 ring-offset-2 ring-offset-slate-900" : ""
+              }`}
+            >
+              Tier {tier}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="new-tier">
+              Add tier label
+            </label>
+            <input
+              id="new-tier"
+              className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+              value={newTierKey}
+              onChange={(event) => setNewTierKey(event.target.value)}
+              placeholder="E"
+            />
+          </div>
+          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleAddTier}>
+            Add tier
+          </button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {COLOR_PALETTE.map((palette) => (
+            <button
+              key={palette.id}
+              type="button"
+              onClick={() => handleTierColorChange(palette.id)}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                tierColors[activeTier] === palette.id
+                  ? "border-caris-primary bg-caris-primary/20 text-white"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-caris-primary/60"
+              }`}
+            >
+              <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)}`} />
+              <span>{palette.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Maintenance</h3>
+        <p className="text-sm text-slate-400">
+          Before clearing data or counters, export prizes, pricing, and history so you can recover session records later.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" className="bg-red-600/80" onClick={handleResetClick}>
+            Reset Session Data
+          </button>
+          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleResetCounter}>
+            Reset Session Counter
+          </button>
+        </div>
+        <p className="text-xs text-slate-500">Next session number: {settings.nextSessionNumber ?? 1}</p>
+        {settings.lastReset && (
+          <p className="text-xs text-slate-500">
+            Last reset: {new Date(settings.lastReset).toLocaleString()}
+          </p>
+        )}
+      </div>
+      {statusMessage && <p className="text-sm text-emerald-400">{statusMessage}</p>}
     </div>
   );
 }

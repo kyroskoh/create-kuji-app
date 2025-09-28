@@ -36,7 +36,13 @@ export default function DrawScreen() {
   const { getPrizes, setPrizes, getPricing, saveHistory, getHistory, getSettings, setSettings } = useLocalStorageDAO();
   const [prizes, setPrizePool] = useState([]);
   const [presets, setPresets] = useState([]);
-  const [sessionSettings, setSessionSettings] = useState({ currency: "MYR", locale: "ms-MY", tierColors: {}, nextSessionNumber: 1 });
+  const [sessionSettings, setSessionSettings] = useState({
+    currency: "MYR",
+    locale: "ms-MY",
+    tierColors: {},
+    nextSessionNumber: 1,
+    weightMode: "basic"
+  });
   const [drawCount, setDrawCount] = useState(1);
   const [drawLabel, setDrawLabel] = useState("Custom");
   const [results, setResults] = useState([]);
@@ -126,9 +132,7 @@ export default function DrawScreen() {
 
     await new Promise((resolve) => setTimeout(resolve, 350));
 
-    // Use the weight mode from settings
-    const weightMode = sessionSettings.weightMode || "basic";
-    const { results: pulled, remaining } = executeDraw(prizes, drawCount, weightMode);
+    const { results: pulled, remaining } = executeDraw(prizes, drawCount, sessionSettings.weightMode);
     if (!pulled.length) {
       setError("All prize stock is exhausted.");
       setIsDrawing(false);
@@ -227,6 +231,7 @@ export default function DrawScreen() {
 
   return (
     <div className="space-y-6">
+      {/* Region and tier chips displayed later */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -330,7 +335,7 @@ export default function DrawScreen() {
           <div className="text-sm text-slate-300">
             {lastDrawInfo ? (
               <span>
-                Session #{lastDrawInfo.sessionNumber} â€¢ {lastDrawInfo.fanName}
+                Session #{lastDrawInfo.sessionNumber} • {lastDrawInfo.fanName}
                 {lastDrawInfo.queueNumber ? ` (Queue ${lastDrawInfo.queueNumber})` : ""} | {new Date(lastDrawInfo.timestamp).toLocaleString()}
               </span>
             ) : (
@@ -403,11 +408,7 @@ export default function DrawScreen() {
       </section>
 
       {isHistoryOpen && (
-        <HistoryPanel 
-          history={history} 
-          tierColors={tierColors} 
-          onClose={closeHistory} 
-        />
+        <HistoryPanel history={history} tierColors={tierColors} onClose={closeHistory} />
       )}
     </div>
   );

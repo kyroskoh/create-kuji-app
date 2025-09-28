@@ -2,29 +2,27 @@
 
 > **Created by [Kyros Koh](https://github.com/kyroskoh)**
 
-A multilingual gacha prize drawing application for Carol x Iris (Caris) merchandise, built with React, Vite, and Tailwind CSS.
+A multilingual gacha prize drawing application for Carol x Iris (CARIS) merchandise, built with React, Vite, and Tailwind CSS.
 
 ## Features
 
-- **Prize Drawing System**: Weighted random drawing system with configurable prize tiers
-- **Multilingual Support**: Full support for English, Simplified Chinese, and Traditional Chinese
-- **Advanced Weight Calculation**: Choose between basic and advanced probability calculation modes
-- **Customizable Tier Colors**: Personalize the color scheme for each prize tier
-- **History Tracking**: Search and filter through draw history with detailed records
-- **Country Flag Support**: Display country flags using emoji
-- **Data Export/Import**: Export and import data for backup and migration
-- **Responsive Design**: Works on desktop and mobile devices
+- **Prize Drawing System**: Weighted random engine with configurable tiers (Tier S and beyond) plus fan/session metadata.
+- **Advanced Weight Modes**: Switch between basic (weight only) and advanced (weight multiplied by quantity) probability calculations.
+- **Customizable Tier Palette**: Choose from 30 curated color swatches per tier, reflected across chips, badges, and tables.
+- **Country & Currency Presets**: Region-aware settings with emoji flags, locale formatting, and custom currency overrides.
+- **History Tracking**: Search, filter, and review draw sessions with fan names, queue numbers, and per-tier tallies.
+- **Sample Data Import**: Built-in CSV samples for prizes and pricing to bootstrap offline events quickly.
+- **Data Export/Import**: Export CSV backups before resetting sessions, and re-import to restore state.
+- **Responsive UI**: Tailwind-powered layout tuned for tablets, laptops, and widescreen kiosks.
 
 ## Technology Stack
 
-- **Frontend**: React 18 with React Router
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **State Management**: React Hooks and Context API
-- **Storage**: LocalForage for persistent local storage
+- **Frontend**: React 18 + React Router 7
+- **Build Tool**: Vite 5
+- **Styling**: Tailwind CSS 3
+- **State & Storage**: React hooks with LocalForage persistence
 - **Animation**: Framer Motion
-- **CSV Handling**: Papa Parse
-- **Internationalization**: Custom i18n implementation
+- **CSV Handling**: PapaParse
 
 ## Getting Started
 
@@ -37,20 +35,17 @@ A multilingual gacha prize drawing application for Carol x Iris (Caris) merchand
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/caris-kuji-app.git
+   git clone https://github.com/kyroskoh/caris-kuji-app.git
    cd caris-kuji-app
    ```
-
 2. Install dependencies:
    ```bash
    npm install
    ```
-
 3. Start the development server:
    ```bash
    npm run dev
    ```
-
 4. Open your browser and navigate to `http://localhost:5173`
 
 ### Building for Production
@@ -59,48 +54,55 @@ A multilingual gacha prize drawing application for Carol x Iris (Caris) merchand
 npm run build
 ```
 
-The build artifacts will be stored in the `dist/` directory.
+The optimized bundle will be emitted to the `dist/` directory.
 
-## Usage
+## Using the App
+
+### Settings Overview
+
+The Settings page is grouped into four cards:
+
+1. **Region & Currency** - Search for a country (emoji flag included), auto-fill locale and currency, or override with a custom 3-5 letter code.
+2. **Weight Engine** - Toggle between basic and advanced probability engines depending on whether quantities should influence odds.
+3. **Tier Color Palette** - Select Tier S through Tier D (and beyond), assign one of 30 swatches, or add custom tier codes.
+4. **Maintenance** - Reset session data or counters after exporting CSV backups (confirmation dialogs remind you to export first).
 
 ### Prize Pool Management
 
-1. Navigate to the Admin page
-2. Select the "Prize Pool" tab
-3. Import a CSV file or add prizes manually
-4. Configure prize tiers, quantities, and weights
+1. Navigate to **Admin > Prize Pool**.
+2. Import the sample CSV or add entries manually; SKUs are optional.
+3. Adjust tier, quantity, and weight (advanced mode treats quantity as part of the probability).
+4. Save to persist in local storage.
 
-### Drawing Prizes
+### Pricing Presets
 
-1. Navigate to the Draw page
-2. Enter fan name and optional queue number
-3. Select the number of draws
-4. Click "Start Draw" to reveal prizes
+1. Go to **Admin > Pricing & Bonus**.
+2. Load the sample CSV or configure draw bundles in whole dollars.
+3. The currency label auto-adapts to the region set in Settings.
 
-### Viewing History
+### Running Draws
 
-1. Click the "History" button on the Draw page
-2. Use the search and filter options to find specific draws
-3. Click the "Open in New Tab" button for a detailed view
+1. Open the **Draw** page.
+2. Enter the fan name (required) and optional queue number.
+3. Choose a preset or custom draw count and start the session.
+4. Results animate in, with tier chips reflecting your palette and draw metadata pinned at the top.
 
-## Configuration
+### History & Exports
 
-### Weight Calculation Modes
+1. Click **History** to open the overlay and search by fan, tier, prize, or queue.
+2. Review fan/session details and per-tier counts; use **Open** to view a printable log in a new tab.
+3. Export data from the Admin tabs before resetting sessions.
 
-- **Basic Mode**: Each prize's weight is used directly without considering quantity
-- **Advanced Mode**: Total probability is calculated as weight × quantity for each prize
+## Configuration Notes
 
-### Tier Colors
-
-Customize the color scheme for each prize tier in the Settings page.
+- **CSV Format** - Pricing uses whole-dollar amounts (column `price`). Legacy `price_minor` columns are still parsed and converted.
+- **Tier Ordering** - Tier S is preconfigured as the top tier; additional tiers follow the custom ordering helper.
+- **Emoji Flags** - Flags are derived from ISO country codes to avoid mojibake (for example, MY -> ????, SG -> ????).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see `LICENSE` for details.
 
 ## Acknowledgments
 
-- Built for Caris (Carol × Iris) merchandise events
-- Special thanks to all contributors and supporters
-
-Made with ❤️ by [Kyros Koh](https://github.com/kyroskoh)
+Built with care for the Carol x Iris community.
