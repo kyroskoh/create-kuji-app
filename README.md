@@ -74,7 +74,7 @@ When advanced weighting is enabled, the **Prize Pool** tab displays probability 
 
 ### Pricing Presets
 
-1. Go to **Admin > Pricing & Bonus**.
+1. Go to **Admin > Pricing & Bonus (+)**.
 2. Load the sample CSV or configure draw bundles in whole dollars.
 3. The currency label auto-adapts to the region set in Settings.
 
