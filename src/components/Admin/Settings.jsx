@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass } from "../../utils/tierColors.js";
 import { COLOR_PALETTE } from "../../utils/colorPalette.js";
@@ -42,7 +42,7 @@ const formatSample = (locale, code) =>
 const normalizeTierKey = (value) => value.trim().toUpperCase().slice(0, 6);
 
 export default function Settings() {
-  const { getPrizes, getPricing, getHistory, getSettings, setSettings, resetAll } = useLocalStorageDAO();
+  const { getPrizes, setPrizes, getPricing, setPricing, getHistory, saveHistory, getSettings, setSettings, resetAll } = useLocalStorageDAO();
   const [settings, setLocalSettings] = useState({
     sessionStatus: "INACTIVE",
     lastReset: null,
@@ -60,6 +60,7 @@ export default function Settings() {
   const [customCurrency, setCustomCurrency] = useState("");
   const [newTierKey, setNewTierKey] = useState("");
   const [activeTier, setActiveTier] = useState("S");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -138,6 +139,43 @@ export default function Settings() {
     await updateSettings({ nextSessionNumber: 1 });
   };
 
+  const handleImportAllClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportAll = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const fileContents = await file.text();
+      const payload = JSON.parse(fileContents);
+      const prizes = Array.isArray(payload.prizes) ? payload.prizes : [];
+      const pricing = Array.isArray(payload.pricing) ? payload.pricing : [];
+      const history = Array.isArray(payload.history) ? payload.history : [];
+      const incomingSettings = payload.settings ?? {};
+
+      await Promise.all([setPrizes(prizes), setPricing(pricing), saveHistory(history)]);
+      await setSettings(incomingSettings);
+
+      const mergedSettings = await getSettings();
+      setLocalSettings(mergedSettings);
+      setCountryQuery(mergedSettings.country ?? "");
+      const tiers = mergedSettings.tierColors
+        ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...mergedSettings.tierColors })
+        : DEFAULT_TIER_SEQUENCE;
+      const sortedTiers = tiers.sort(compareTierLabels);
+      setActiveTier(sortedTiers[0] ?? "S");
+
+      setStatusMessage("Data import complete.");
+    } catch (error) {
+      console.error("Import failed:", error);
+      setStatusMessage("Failed to import data. Please verify the file.");
+    } finally {
+      event.target.value = "";
+    }
+  };
   const handleExportAll = async () => {
     const [prizeData, pricingData, historyData, currentSettings] = await Promise.all([
       getPrizes(),
@@ -425,7 +463,10 @@ export default function Settings() {
           Export your data regularly so you can restore sessions after resets.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleExportAll}>
+          <button type="button" className="bg-emerald-600/80 text-white" onClick={handleImportAllClick}>
+            Import All Data
+          </button>
+          <button type="button" className="bg-caris-primary/80 text-white" onClick={handleExportAll}>
             Export All Data
           </button>
           <button type="button" className="bg-red-600/80" onClick={handleResetClick}>
@@ -435,6 +476,13 @@ export default function Settings() {
             Reset Session Counter
           </button>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={handleImportAll}
+        />
         <p className="text-xs text-slate-500">Next session number: {settings.nextSessionNumber ?? 1}</p>
         {settings.lastReset && (
           <p className="text-xs text-slate-500">
