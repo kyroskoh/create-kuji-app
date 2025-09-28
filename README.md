@@ -7,7 +7,7 @@ A multilingual gacha prize drawing application for Carol x Iris (CARIS) merchand
 ## Features
 
 - **Prize Drawing System**: Weighted random engine with configurable tiers (Tier S and beyond) plus fan/session metadata.
-- **Advanced Weight Modes**: Switch between basic (weight only) and advanced (weight multiplied by quantity) probability calculations.
+- **Advanced Weight Modes**: Switch between basic (weight-only) and advanced (weight × quantity) probability calculations.
 - **Customizable Tier Palette**: Choose from 30 curated color swatches per tier, reflected across chips, badges, and tables.
 - **Country & Currency Presets**: Region-aware settings with emoji flags, locale formatting, and custom currency overrides.
 - **History Tracking**: Search, filter, and review draw sessions with fan names, queue numbers, and per-tier tallies.
@@ -34,27 +34,27 @@ A multilingual gacha prize drawing application for Carol x Iris (CARIS) merchand
 ### Installation
 
 1. Clone the repository:
-   ```bash
+   `ash
    git clone https://github.com/kyroskoh/caris-kuji-app.git
    cd caris-kuji-app
-   ```
+   `
 2. Install dependencies:
-   ```bash
+   `ash
    npm install
-   ```
+   `
 3. Start the development server:
-   ```bash
+   `ash
    npm run dev
-   ```
-4. Open your browser and navigate to `http://localhost:5173`
+   `
+4. Open your browser and navigate to http://localhost:5173
 
 ### Building for Production
 
-```bash
+`ash
 npm run build
-```
+`
 
-The optimized bundle will be emitted to the `dist/` directory.
+The optimized bundle will be emitted to the dist/ directory.
 
 ## Using the App
 
@@ -63,15 +63,17 @@ The optimized bundle will be emitted to the `dist/` directory.
 The Settings page is grouped into four cards:
 
 1. **Region & Currency** - Search for a country (emoji flag included), auto-fill locale and currency, or override with a custom 3-5 letter code.
-2. **Weight Engine** - Toggle between basic and advanced probability engines depending on whether quantities should influence odds.
+2. **Weight Engine** - Toggle between basic (weight-only) and advanced (weight × quantity × tier priority) probability engines; the active mode is shown in the Admin panels.
 3. **Tier Color Palette** - Select Tier S through Tier D (and beyond), assign one of 30 swatches, or add custom tier codes.
-4. **Maintenance** - Reset session data or counters after exporting CSV backups (confirmation dialogs remind you to export first).
+4. **Maintenance** - Export everything, reset session data, or reset the counter—confirmation dialogs remind you to back up first.
+
+When advanced weighting is enabled, the **Prize Pool** tab shows probability guidance that compares current odds vs. stock ratios.
 
 ### Prize Pool Management
 
 1. Navigate to **Admin > Prize Pool**.
-2. Import the sample CSV or add entries manually; SKUs are optional.
-3. Adjust tier, quantity, and weight (advanced mode treats quantity as part of the probability).
+2. Import the new sample CSV (tiers S through L) or add entries manually; SKUs are optional.
+3. Adjust tier, quantity, and weight—advanced mode factors tier priority and remaining quantity automatically.
 4. Save to persist in local storage.
 
 ### Pricing Presets
@@ -95,13 +97,13 @@ The Settings page is grouped into four cards:
 
 ## Configuration Notes
 
-- **CSV Format** - Pricing uses whole-dollar amounts (column `price`). Legacy `price_minor` columns are still parsed and converted.
+- **CSV Format** - Pricing uses whole-dollar amounts (price column). Legacy price_minor columns are still parsed and converted.
 - **Tier Ordering** - Tier S is preconfigured as the top tier; additional tiers follow the custom ordering helper.
-- **Emoji Flags** - Flags are derived from ISO country codes to avoid mojibake (for example, MY -> ????, SG -> ????).
+- **Emoji Flags** - Flags are derived from ISO country codes to avoid mojibake (for example, MY ? ????, SG ? ????).
 
 ## License
 
-MIT License - see `LICENSE` for details.
+MIT License - see LICENSE for details.
 
 ## Acknowledgments
 

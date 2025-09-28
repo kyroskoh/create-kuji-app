@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
-import { tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
+import { compareTierLabels, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -49,7 +49,8 @@ export default function PrizePoolManager() {
       acc[tier] = (acc[tier] || 0) + (Number(prize.quantity) || 0);
       return acc;
     }, {});
-    return Object.entries(totals).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(totals)
+      .sort(([tierA], [tierB]) => compareTierLabels(tierA, tierB));
   }, [prizes]);
 
   const handleImport = async (event) => {

@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import {
-  COLOR_PALETTE,
-  DEFAULT_TIER_COLOR_MAP,
-  DEFAULT_TIER_SEQUENCE,
-  compareTierLabels,
-  tierChipClass,
-  tierSwatchClass
-} from "../../utils/tierColors.js";
+import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass } from "../../utils/tierColors.js";
+import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
@@ -16,12 +10,12 @@ const WEIGHT_MODES = [
   {
     id: "basic",
     label: "Basic (weight only)",
-    description: "Each prize uses its weight value once. Quantity only gates availability."
+    description: "Uses the raw weight value once per prize. Quantity only prevents exhausted prizes from being drawn."
   },
   {
     id: "advanced",
-    label: "Advanced (weight × quantity)",
-    description: "Weights are multiplied by remaining quantity so probabilities always sum to 100%."
+    label: "Advanced (weight x quantity)",
+    description: "Weights are multiplied by remaining quantity and tier priority to keep total probability near 100%."
   }
 ];
 
@@ -48,7 +42,7 @@ const formatSample = (locale, code) =>
 const normalizeTierKey = (value) => value.trim().toUpperCase().slice(0, 6);
 
 export default function Settings() {
-  const { getSettings, setSettings, resetAll } = useLocalStorageDAO();
+  const { getPrizes, getPricing, getHistory, getSettings, setSettings, resetAll } = useLocalStorageDAO();
   const [settings, setLocalSettings] = useState({
     sessionStatus: "INACTIVE",
     lastReset: null,
@@ -74,7 +68,7 @@ export default function Settings() {
       if (mounted) {
         setLocalSettings(data);
         setCountryQuery(data.country ?? "");
-        const tiers = data.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...data.tierColors }) : Object.keys(DEFAULT_TIER_COLOR_MAP);
+        const tiers = data.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...data.tierColors }) : DEFAULT_TIER_SEQUENCE;
         const sortedTiers = tiers.sort(compareTierLabels);
         setActiveTier(sortedTiers[0] ?? "S");
       }
@@ -142,6 +136,34 @@ export default function Settings() {
       return;
     }
     await updateSettings({ nextSessionNumber: 1 });
+  };
+
+  const handleExportAll = async () => {
+    const [prizeData, pricingData, historyData, currentSettings] = await Promise.all([
+      getPrizes(),
+      getPricing(),
+      getHistory(),
+      getSettings()
+    ]);
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      settings: currentSettings,
+      prizes: prizeData,
+      pricing: pricingData,
+      history: historyData
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `caris-kuji-export-${currentSettings.nextSessionNumber ?? 1}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setStatusMessage("Data export generated.");
   };
 
   const matchedCountry = useMemo(() => {
@@ -241,7 +263,7 @@ export default function Settings() {
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Region & Currency</h3>
         <p className="text-sm text-slate-400">
-          Select a country to automatically load the matching currency and locale. All pricing is stored in whole dollars.
+          Search for a country to auto-fill locale, currency, and flag. Override currency manually if needed.
         </p>
         <div className="flex flex-wrap gap-3">
           <div className="flex w-full flex-col gap-2 sm:w-auto">
@@ -320,7 +342,7 @@ export default function Settings() {
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Weight Engine</h3>
         <p className="text-sm text-slate-400">
-          Decide how draw weights behave. Advanced mode multiplies weights by remaining quantity so the pool always reflects 100% probability.
+          Advanced mode factors in remaining quantity and tier priority so probabilities stay near 100%.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {WEIGHT_MODES.map((mode) => (
@@ -343,7 +365,7 @@ export default function Settings() {
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Tier Color Palette</h3>
         <p className="text-sm text-slate-400">
-          Assign colors to each tier to keep the draw table readable. Tier S is the top tier by default, and additional tiers follow the custom CARIS order.
+          Tier S is the top tier by default. Assign swatches to keep prize lists scannable.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {tierList.map((tier) => (
@@ -397,9 +419,12 @@ export default function Settings() {
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Maintenance</h3>
         <p className="text-sm text-slate-400">
-          Before clearing data or counters, export prizes, pricing, and history so you can recover session records later.
+          Export your data regularly so you can restore sessions after resets.
         </p>
         <div className="flex flex-wrap items-center gap-3">
+          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleExportAll}>
+            Export All Data
+          </button>
           <button type="button" className="bg-red-600/80" onClick={handleResetClick}>
             Reset Session Data
           </button>

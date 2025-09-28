@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { executeDraw } from "../../utils/randomDraw.js";
+import { calculateProbabilities, executeDraw } from "../../utils/randomDraw.js";
 import { tierChipClass } from "../../utils/tierColors.js";
 import ResultCard from "./ResultCard.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
@@ -31,6 +31,8 @@ const normalisePresets = (list) =>
     const price = Math.max(0, Math.round(Number.parseFloat(priceSource ?? 0) || 0));
     return { ...preset, price };
   });
+
+const toPercent = (value) => `${(Math.round(value * 1000) / 10).toFixed(1)}%`;
 
 export default function DrawScreen() {
   const { getPrizes, setPrizes, getPricing, saveHistory, getHistory, getSettings, setSettings } = useLocalStorageDAO();
@@ -219,6 +221,34 @@ export default function DrawScreen() {
     return Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]));
   }, [processedResults]);
 
+  const advancedProbabilities = useMemo(() => {
+    if (sessionSettings.weightMode !== "advanced") {
+      return [];
+    }
+    return calculateProbabilities(prizes, "advanced");
+  }, [prizes, sessionSettings.weightMode]);
+
+  const quantityTotal = useMemo(
+    () => prizes.reduce((sum, prize) => sum + (Number(prize.quantity) || 0), 0),
+    [prizes]
+  );
+
+  const probabilityRecommendations = useMemo(() => {
+    if (sessionSettings.weightMode !== "advanced" || !advancedProbabilities.length) {
+      return [];
+    }
+    return advancedProbabilities.map(({ prize, probability }) => {
+      const quantityShare = quantityTotal > 0 ? (Number(prize.quantity) || 0) / quantityTotal : 0;
+      const variance = probability - quantityShare;
+      return {
+        prize,
+        probability,
+        quantityShare,
+        variance
+      };
+    });
+  }, [advancedProbabilities, quantityTotal, sessionSettings.weightMode]);
+
   const openHistory = () => {
     setHistoryOpen(true);
   };
@@ -231,7 +261,6 @@ export default function DrawScreen() {
 
   return (
     <div className="space-y-6">
-      {/* Region and tier chips displayed later */}
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -335,7 +364,7 @@ export default function DrawScreen() {
           <div className="text-sm text-slate-300">
             {lastDrawInfo ? (
               <span>
-                Session #{lastDrawInfo.sessionNumber} • {lastDrawInfo.fanName}
+                Session #{lastDrawInfo.sessionNumber} - {lastDrawInfo.fanName}
                 {lastDrawInfo.queueNumber ? ` (Queue ${lastDrawInfo.queueNumber})` : ""} | {new Date(lastDrawInfo.timestamp).toLocaleString()}
               </span>
             ) : (
@@ -343,6 +372,21 @@ export default function DrawScreen() {
             )}
           </div>
         </div>
+        {sessionSettings.weightMode === "advanced" && probabilityRecommendations.length ? (
+          <div className="mb-4 rounded-xl border border-caris-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
+            <h4 className="font-semibold text-white">Probability guidance (advanced)</h4>
+            <p className="mt-1 text-slate-400">
+              Current probability is compared to the share of total quantity. Targets help you tune weights closer to inventory ratios.
+            </p>
+            <ul className="mt-2 space-y-1">
+              {probabilityRecommendations.slice(0, 8).map(({ prize, probability, quantityShare, variance }) => (
+                <li key={`${prize.sku || prize.prize_name || prize.tier}`}>
+                  Tier {String(prize.tier || "?").toUpperCase()} - {prize.prize_name || "Unknown"}: actual {toPercent(probability)} vs quantity share {toPercent(quantityShare)} (diff {toPercent(variance)}).
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <label className="text-xs uppercase tracking-wide text-slate-400" htmlFor="result-search">

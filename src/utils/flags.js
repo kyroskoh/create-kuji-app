@@ -1,44 +1,18 @@
-// We'll use emoji-flags package for better emoji support
-import emojiFlags from 'emoji-flags';
-
 export function flagFromCountryCode(code = "") {
-  if (!code) return "";
-  
-  const normalized = normalizeCountryCode(code);
-  const flagData = emojiFlags.countryCode(normalized);
-  
-  return flagData ? flagData.emoji : "";
+  const upper = code.trim().toUpperCase();
+  if (upper.length !== 2) {
+    return "";
+  }
+  const base = 127397;
+  const first = upper.charCodeAt(0);
+  const second = upper.charCodeAt(1);
+  if (first < 65 || first > 90 || second < 65 || second > 90) {
+    return "";
+  }
+  return String.fromCodePoint(first + base, second + base);
 }
 
 export function normalizeCountryCode(input = "") {
-  if (!input) return "";
-  
-  // Convert to uppercase and trim
-  const normalized = input.trim().toUpperCase();
-  
-  // Validate that it's a 2-letter code
-  if (/^[A-Z]{2}$/.test(normalized)) {
-    return normalized;
-  }
-  
-  return "";
-}
-
-// Get country name from code
-export function countryNameFromCode(code = "") {
-  if (!code) return "";
-  
-  const normalized = normalizeCountryCode(code);
-  const flagData = emojiFlags.countryCode(normalized);
-  
-  return flagData ? flagData.name : "";
-}
-
-// Get all countries
-export function getAllCountries() {
-  return emojiFlags.data.map(country => ({
-    code: country.code,
-    name: country.name,
-    emoji: country.emoji
-  }));
+  const trimmed = input.trim().toUpperCase();
+  return trimmed.length === 2 ? trimmed : "";
 }

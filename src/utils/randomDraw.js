@@ -1,3 +1,5 @@
+import { DEFAULT_TIER_SEQUENCE } from "./tierColors.js";
+
 const toNumber = (value) => Number.parseFloat(value) || 0;
 
 const normalizePrize = (prize) => ({
@@ -8,6 +10,23 @@ const normalizePrize = (prize) => ({
 
 const clonePrizeList = (prizes) => prizes.map((prize) => ({ ...prize }));
 
+const tierInfluence = (tier) => {
+  const upper = String(tier || "").trim().toUpperCase();
+  const index = DEFAULT_TIER_SEQUENCE.indexOf(upper);
+  if (index === -1) {
+    return 1;
+  }
+  return 1 / (index + 2); // Tier S (index 0) gets 0.5, lower tiers trend toward zero
+};
+
+const weightContribution = (prize, mode) => {
+  const baseWeight = prize.weight;
+  if (mode !== "advanced") {
+    return baseWeight;
+  }
+  return baseWeight * Math.max(prize.quantity, 0) * tierInfluence(prize.tier);
+};
+
 export function calculateProbabilities(prizes, mode = "basic") {
   const entries = prizes
     .map(normalizePrize)
@@ -17,41 +36,28 @@ export function calculateProbabilities(prizes, mode = "basic") {
     return [];
   }
 
-  let totalWeight = 0;
-  if (mode === "advanced") {
-    // In advanced mode, multiply weight by quantity for each prize
-    totalWeight = entries.reduce((sum, prize) => sum + prize.weight * prize.quantity, 0);
-  } else {
-    // In basic mode, just sum the weights
-    totalWeight = entries.reduce((sum, prize) => sum + prize.weight, 0);
-  }
-
+  const totalWeight = entries.reduce((sum, prize) => sum + weightContribution(prize, mode), 0);
   if (totalWeight <= 0) {
     return entries.map((prize) => ({ prize, probability: 0 }));
   }
 
-  return entries.map((prize) => {
-    const weightContribution = mode === "advanced" ? prize.weight * prize.quantity : prize.weight;
-    return {
-      prize,
-      probability: weightContribution / totalWeight
-    };
-  });
+  return entries.map((prize) => ({
+    prize,
+    probability: weightContribution(prize, mode) / totalWeight
+  }));
 }
 
 export function drawPrize(prizes, mode = "basic") {
   const pool = clonePrizeList(prizes).map(normalizePrize);
-  const indexed = pool.map((prize, index) => ({ prize, index })).filter(({ prize }) => prize.quantity > 0 && prize.weight > 0);
+  const indexed = pool
+    .map((prize, index) => ({ prize, index }))
+    .filter(({ prize }) => prize.quantity > 0 && prize.weight > 0);
 
   if (!indexed.length) {
     return null;
   }
 
-  const totalWeight = indexed.reduce((sum, { prize }) => {
-    const weightContribution = mode === "advanced" ? prize.weight * prize.quantity : prize.weight;
-    return sum + weightContribution;
-  }, 0);
-
+  const totalWeight = indexed.reduce((sum, { prize }) => sum + weightContribution(prize, mode), 0);
   if (totalWeight <= 0) {
     return null;
   }
@@ -60,12 +66,12 @@ export function drawPrize(prizes, mode = "basic") {
   let selected = indexed[0];
 
   for (const entry of indexed) {
-    const weightContribution = mode === "advanced" ? entry.prize.weight * entry.prize.quantity : entry.prize.weight;
-    if (target < weightContribution) {
+    const contribution = weightContribution(entry.prize, mode);
+    if (target < contribution) {
       selected = entry;
       break;
     }
-    target -= weightContribution;
+    target -= contribution;
   }
 
   const chosenPrize = { ...selected.prize };

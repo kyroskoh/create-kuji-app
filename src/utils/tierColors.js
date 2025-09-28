@@ -1,9 +1,6 @@
 import { COLOR_PALETTE } from "./colorPalette.js";
 
-// Create a new file for the color palette to keep the code organized
-export { COLOR_PALETTE } from "./colorPalette.js";
 const LETTERS = Array.from({ length: 26 }, (_, index) => String.fromCharCode(65 + index));
-// Update the DEFAULT_TIER_SEQUENCE to put S at the top
 export const DEFAULT_TIER_SEQUENCE = ["S", ...LETTERS.filter((letter) => letter !== "S")];
 
 export const DEFAULT_TIER_COLOR_MAP = DEFAULT_TIER_SEQUENCE.reduce((acc, tier, index) => {
