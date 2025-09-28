@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
 import { compareTierLabels, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
+import { calculateProbabilities } from "../../utils/randomDraw.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -20,10 +21,13 @@ async function fetchSamplePrizes() {
   return response.text();
 }
 
+const toPercent = (value) => `${(Math.round(value * 1000) / 10).toFixed(1)}%`;
+
 export default function PrizePoolManager() {
   const { getPrizes, setPrizes, getSettings } = useLocalStorageDAO();
   const [prizes, setPrizeRows] = useState([]);
   const [tierColors, setTierColors] = useState({});
+  const [weightMode, setWeightMode] = useState("basic");
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
@@ -35,6 +39,7 @@ export default function PrizePoolManager() {
       if (mounted) {
         setPrizeRows(storedPrizes.length ? storedPrizes : []);
         setTierColors(storedSettings.tierColors ?? {});
+        setWeightMode(storedSettings.weightMode ?? "basic");
         setLoading(false);
       }
     })();
@@ -49,9 +54,26 @@ export default function PrizePoolManager() {
       acc[tier] = (acc[tier] || 0) + (Number(prize.quantity) || 0);
       return acc;
     }, {});
-    return Object.entries(totals)
-      .sort(([tierA], [tierB]) => compareTierLabels(tierA, tierB));
+    return Object.entries(totals).sort(([tierA], [tierB]) => compareTierLabels(tierA, tierB));
   }, [prizes]);
+
+  const advancedGuidance = useMemo(() => {
+    if (weightMode !== "advanced" || !prizes.length) {
+      return [];
+    }
+    const probabilities = calculateProbabilities(prizes, "advanced");
+    const quantityTotal = prizes.reduce((sum, prize) => sum + (Number(prize.quantity) || 0), 0);
+    return probabilities.map(({ prize, probability }) => {
+      const quantityShare = quantityTotal > 0 ? (Number(prize.quantity) || 0) / quantityTotal : 0;
+      const variance = probability - quantityShare;
+      return {
+        prize,
+        probability,
+        quantityShare,
+        variance
+      };
+    });
+  }, [prizes, weightMode]);
 
   const handleImport = async (event) => {
     const file = event.target.files?.[0];
@@ -161,6 +183,21 @@ export default function PrizePoolManager() {
           )}
         </div>
       </div>
+      {weightMode === "advanced" && advancedGuidance.length ? (
+        <div className="rounded-xl border border-caris-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
+          <h4 className="font-semibold text-white">Probability guidance (advanced)</h4>
+          <p className="mt-1 text-slate-400">
+            Actual probability is compared to the share of total quantity. Use the variance to tune weights toward inventory ratios.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {advancedGuidance.map(({ prize, probability, quantityShare, variance }) => (
+              <li key={`${prize.sku || prize.prize_name || prize.tier}`}>
+                Tier {String(prize.tier || "?").toUpperCase()} - {prize.prize_name || "Unknown"}: actual {toPercent(probability)} vs quantity share {toPercent(quantityShare)} (diff {toPercent(variance)}).
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-800 text-sm">
           <thead className="bg-slate-900/60 uppercase text-xs tracking-wide text-slate-400">
