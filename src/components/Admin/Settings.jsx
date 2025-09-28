@@ -158,7 +158,10 @@ export default function Settings() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `caris-kuji-export-${currentSettings.nextSessionNumber ?? 1}.json`;
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    link.download = `caris-kuji-export-settings-${timestamp}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -443,3 +446,4 @@ export default function Settings() {
     </div>
   );
 }
+

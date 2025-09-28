@@ -101,7 +101,11 @@ export default function DrawScreen() {
       return acc;
     }, {});
     return Object.entries(grouped)
-      .sort((a, b) => a[0].localeCompare(b[0]))
+      .sort(([tierA], [tierB]) => {
+        if (tierA === "S" && tierB !== "S") return -1;
+        if (tierB === "S" && tierA !== "S") return 1;
+        return tierA.localeCompare(tierB);
+      })
       .map(([tier, qty]) => `${tier}:${qty}`)
       .join(" | ");
   }, [prizes]);
@@ -109,7 +113,7 @@ export default function DrawScreen() {
   const handlePresetClick = (preset) => {
     const totalDraws = Number(preset.draw_count || 0) + Number(preset.bonus_draws || 0);
     setDrawCount(totalDraws || 1);
-    setDrawLabel(`${preset.label}${preset.bonus_draws ? ` +${preset.bonus_draws}` : ""}`);
+    setDrawLabel(`${preset.label}${preset.bonus_draws ? ` (+${preset.bonus_draws})` : ""}`);
   };
 
   const handleDraw = async () => {
@@ -216,7 +220,11 @@ export default function DrawScreen() {
       acc[tier] = (acc[tier] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(counts).sort(([tierA], [tierB]) => {
+      if (tierA === "S" && tierB !== "S") return -1;
+      if (tierB === "S" && tierA !== "S") return 1;
+      return tierA.localeCompare(tierB);
+    });
   }, [processedResults]);
 
   const openHistory = () => {
@@ -412,3 +420,4 @@ export default function DrawScreen() {
     </div>
   );
 }
+
