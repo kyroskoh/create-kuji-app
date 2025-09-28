@@ -2,11 +2,12 @@ tier,prize_name,quantity,weight,sku,notes
 S,Crystal Figurine - "Starlight",1,1,S-001,Signature top prize
 A,Ultimate Photobook Set - Carol,1,1,A-010,Numbered edition
 A,Ultimate Photobook Set - Iris,1,1,A-011,Numbered edition
-B,Acrylic Standee - Carol,3,2,B-010,Event exclusive
-B,Acrylic Standee - Iris,3,2,B-011,Event exclusive
-C,Premium Keychain - CARIS Logo,5,3,C-101,Metal finish
-C,Premium Keychain - Duo Portrait,5,3,C-102,Metal finish
-D,Sticker Pack (10 pcs),10,4,D-201,Gloss finish
+B,Photobook - Carol,2,2,B-010,Event exclusive
+B,Photobook - Iris,2,2,B-011,Event exclusive
+C,Fan Tee - Carol,3,2,C-010,Event exclusive
+D,Premium Keychain - CARIS Logo,5,3,D-101,Metal finish
+D,Premium Keychain - Duo Portrait,5,3,D-102,Metal finish
+E,Sticker Pack (10 pcs),10,4,D-201,Gloss finish
 E,Postcard Set (6 designs),40,4,E-301,Collector series
 F,Badge Set (3 pcs),50,5,F-401,Soft enamel
 G,Lanyard - Cosmic Duet,55,5,G-501,Event branding

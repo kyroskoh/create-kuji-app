@@ -1,5 +1,5 @@
 preset_id,label,draw_count,price,bonus_draws,active
-p1,1 Draw,1,2,0,true
-p5,5 Draws Bundle,5,9,0,true
-p10,10 Draws + Bonus,10,18,1,true
-p20,20 Draws Mega,20,36,3,true
+p1,1 Draw,1,40,0,true
+p5,5 Draws Bundle,5,150,0,true
+p10,10 Draws + Bonus,10,300,1,true
+p20,20 Draws Mega,20,600,3,true
