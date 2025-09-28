@@ -10,14 +10,14 @@ const normalizePrize = (prize) => ({
 
 const clonePrizeList = (prizes) => prizes.map((prize) => ({ ...prize }));
 
-const tierInfluence = (tier) => {
+export function tierInfluence(tier) {
   const upper = String(tier || "").trim().toUpperCase();
   const index = DEFAULT_TIER_SEQUENCE.indexOf(upper);
   if (index === -1) {
     return 1;
   }
-  return 1 / (index + 2); // Tier S (index 0) gets 0.5, lower tiers trend toward zero
-};
+  return 1 / (index + 2);
+}
 
 const weightContribution = (prize, mode) => {
   const baseWeight = prize.weight;

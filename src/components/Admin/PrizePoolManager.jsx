@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
 import { compareTierLabels, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
-import { calculateProbabilities } from "../../utils/randomDraw.js";
+import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -22,6 +22,11 @@ async function fetchSamplePrizes() {
 }
 
 const toPercent = (value) => `${(Math.round(value * 1000) / 10).toFixed(1)}%`;
+
+const WEIGHT_MODE_LABEL = {
+  basic: "Basic weight system (weight only)",
+  advanced: "Advanced weight system (weight × quantity × tier priority)"
+};
 
 export default function PrizePoolManager() {
   const { getPrizes, setPrizes, getSettings } = useLocalStorageDAO();
@@ -143,12 +148,32 @@ export default function PrizePoolManager() {
     setStatus({ type: "success", message: "Prize pool saved to storage." });
   };
 
+  const applySuggestedWeights = () => {
+    if (weightMode !== "advanced") {
+      setStatus({ type: "error", message: "Suggestions only available in advanced weight mode." });
+      return;
+    }
+    const next = prizes.map((prize) => {
+      const influence = tierInfluence(prize.tier);
+      const suggested = influence > 0 ? Math.max(1, Math.round(1 / influence)) : 1;
+      return {
+        ...prize,
+        weight: suggested
+      };
+    });
+    setPrizeRows(next);
+    setStatus({ type: "success", message: "Suggested weights applied for advanced mode." });
+  };
+
   if (loading) {
     return <p className="text-sm text-slate-400">Loading prize pool...</p>;
   }
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs text-slate-300">
+        <span className="font-semibold text-white">Weight system:</span> {WEIGHT_MODE_LABEL[weightMode]}
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={() => fileInputRef.current?.click()}>
           Import Prizes CSV
@@ -183,21 +208,36 @@ export default function PrizePoolManager() {
           )}
         </div>
       </div>
-      {weightMode === "advanced" && advancedGuidance.length ? (
-        <div className="rounded-xl border border-caris-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
-          <h4 className="font-semibold text-white">Probability guidance (advanced)</h4>
-          <p className="mt-1 text-slate-400">
-            Actual probability is compared to the share of total quantity. Use the variance to tune weights toward inventory ratios.
-          </p>
-          <ul className="mt-2 space-y-1">
-            {advancedGuidance.map(({ prize, probability, quantityShare, variance }) => (
-              <li key={`${prize.sku || prize.prize_name || prize.tier}`}>
-                Tier {String(prize.tier || "?").toUpperCase()} - {prize.prize_name || "Unknown"}: actual {toPercent(probability)} vs quantity share {toPercent(quantityShare)} (diff {toPercent(variance)}).
-              </li>
-            ))}
-          </ul>
+      {weightMode === "advanced" && (
+        <div className="flex flex-col gap-3 rounded-xl border border-caris-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="font-semibold text-white">Probability guidance (advanced)</h4>
+              <p className="mt-1 text-slate-400">
+                Actual probability is compared to the share of total quantity. Use the variance to tune weights toward inventory ratios.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded-md bg-caris-primary px-3 py-2 text-xs font-semibold text-white hover:bg-caris-primary/80"
+              onClick={applySuggestedWeights}
+            >
+              Apply Suggested Weights
+            </button>
+          </div>
+          {advancedGuidance.length ? (
+            <ul className="space-y-1">
+              {advancedGuidance.map(({ prize, probability, quantityShare, variance }) => (
+                <li key={`${prize.sku || prize.prize_name || prize.tier}`}>
+                  Tier {String(prize.tier || "?").toUpperCase()} - {prize.prize_name || "Unknown"}: actual {toPercent(probability)} vs quantity share {toPercent(quantityShare)} (diff {toPercent(variance)}).
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-slate-500">Adjust weights or quantities to generate guidance.</p>
+          )}
         </div>
-      ) : null}
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-800 text-sm">
           <thead className="bg-slate-900/60 uppercase text-xs tracking-wide text-slate-400">
@@ -237,7 +277,7 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="0"
-                      className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
                       value={row.quantity}
                       onChange={(event) => handleCellChange(index, "quantity", event.target.value)}
                     />
@@ -246,14 +286,14 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="1"
-                      className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
                       value={row.weight}
                       onChange={(event) => handleCellChange(index, "weight", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
                       value={row.sku}
                       placeholder="Optional"
                       onChange={(event) => handleCellChange(index, "sku", event.target.value)}
@@ -261,7 +301,7 @@ export default function PrizePoolManager() {
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
                       value={row.notes}
                       onChange={(event) => handleCellChange(index, "notes", event.target.value)}
                     />
