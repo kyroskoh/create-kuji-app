@@ -1,7 +1,7 @@
 tier,prize_name,quantity,weight,sku,notes
 S,Crystal Figurine - "Starlight",3,1,S-001,Signature top prize
-A,Limited Art Print - Carol,6,1,A-010,Numbered edition
-A,Limited Art Print - Iris,6,1,A-011,Numbered edition
+A,Ultimate Photobook Set - Carol,6,1,A-010,Numbered edition
+A,Ultimate Photobook Set - Iris,6,1,A-011,Numbered edition
 B,Acrylic Standee - Carol,12,2,B-010,Event exclusive
 B,Acrylic Standee - Iris,12,2,B-011,Event exclusive
 C,Premium Keychain - CARIS Logo,20,3,C-101,Metal finish
@@ -10,8 +10,9 @@ D,Sticker Pack (10 pcs),35,4,D-201,Gloss finish
 E,Postcard Set (6 designs),40,4,E-301,Collector series
 F,Badge Set (3 pcs),50,5,F-401,Soft enamel
 G,Lanyard - Cosmic Duet,55,5,G-501,Event branding
-H,Mini Poster - Carol,65,6,H-601,Gloss print
-I,Mini Poster - Iris,65,6,I-701,Gloss print
-J,Phone Charm - CARIS Emblem,80,7,J-801,Satin ribbon
-K,Thank You Card (unsigned),100,8,K-901,General run
-L,Sticker Pair (2 pcs),120,9,L-1001,Giveaway item
+H,A3 Poster - Carol,65,6,H-601,Large format print
+I,A3 Poster - Iris,65,6,I-701,Large format print
+J,A4 Poster - Carol,75,6,J-801,Limited run
+K,A4 Poster - Iris,75,6,K-901,Limited run
+L,Phone Charm - CARIS Emblem,80,7,L-1001,Satin ribbon
+M,Thank You Card (signed),100,8,M-1101,General run
