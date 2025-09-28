@@ -60,7 +60,7 @@ The Settings page is grouped into four cards:
 1. **Region & Currency** – Search for a country (emoji flag included), auto-fill locale and currency, or override with a custom 3–5 letter code.
 2. **Weight Engine** – Toggle between basic (weight only) and advanced (weight × quantity × tier priority). The active mode is displayed across the admin tabs.
 3. **Tier Color Palette** – Select Tier S through Tier D (and beyond), assign one of 30 swatches, or add custom tier codes.
-4. **Maintenance** – Export everything, reset session data, or reset the counter—confirmation dialogs remind you to back up first.
+4. **Maintenance** – Import & Export everything, reset session data, or reset the counter—confirmation dialogs remind you to back up first.
 
 When advanced weighting is enabled, the **Prize Pool** tab displays probability guidance and offers one-click weight recommendations.
 
