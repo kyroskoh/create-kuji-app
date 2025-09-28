@@ -34,20 +34,20 @@ A multilingual gacha prize drawing application for Carol × Iris (CARIS) merchan
 
 ### Installation
 
-`ash
+```bash
 git clone https://github.com/kyroskoh/caris-kuji-app.git
 cd caris-kuji-app
 npm install
 npm run dev
-`
+```
 
 Then open http://localhost:5173 in your browser.
 
 ### Production Build
 
-`ash
+```bash
 npm run build
-`
+```
 
 Artifacts land in the dist/ directory.
 
@@ -103,4 +103,4 @@ MIT License – see LICENSE for details.
 
 ## Acknowledgments
 
-Built with care for the Carol × Iris community.
+Built with ❤️ for the Carol × Iris community.
