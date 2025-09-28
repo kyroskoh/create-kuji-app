@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-900 text-slate-100 font-sans;
+}
+
+a {
+  @apply text-caris-accent hover:underline;
+}
+
+button {
+  @apply rounded-md bg-caris-primary px-4 py-2 font-semibold text-white transition hover:bg-caris-secondary;
+}
