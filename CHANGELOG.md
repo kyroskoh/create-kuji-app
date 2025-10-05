@@ -134,7 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 None. All changes are backward compatible with existing data and functionality.
 
-## [2.0.0] - 2025-01-05
+## [2.0.0] - 2025-10-01
 
 ### Added
 
@@ -253,7 +253,7 @@ None. All changes are backward compatible with existing data and functionality.
 - Development-friendly error handling
 - Hot reload support for both frontend and backend
 
-## [1.0.0] - Previous Release
+## [1.0.0] - Previous Release (2025-09-29)
 
 ### Initial Release
 - Basic kuji drawing functionality
