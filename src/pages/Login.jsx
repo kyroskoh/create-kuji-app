@@ -20,7 +20,7 @@ export default function Login() {
   // Redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectTo = from || (user.isSuperAdmin ? '/admin/users' : '/account');
+      const redirectTo = from || (user.isSuperAdmin ? `/${user.username}/admin/users` : `/${user.username}/manage`);
       navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, user, from, navigate]);
@@ -41,7 +41,9 @@ export default function Login() {
       
       // If no specific redirect destination, choose based on user role
       if (!redirectTo) {
-        redirectTo = result.user.isSuperAdmin ? '/admin/users' : '/account';
+        redirectTo = result.user.isSuperAdmin 
+          ? `/${result.user.username}/admin/users` 
+          : `/${result.user.username}/manage`;
       }
       
       navigate(redirectTo, { replace: true });

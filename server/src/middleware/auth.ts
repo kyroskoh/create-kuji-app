@@ -50,60 +50,9 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
 
 /**
  * Middleware to require authentication
- * In development mode, this check is bypassed for easier testing
+ * Proper JWT token authentication - no dev mode bypass
  */
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  // Bypass auth check in development environment
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🚀 Dev mode: Bypassing auth check');
-    
-    // Find the actual super admin user from database for dev mode
-    try {
-      const { PrismaClient } = await import('@prisma/client');
-      const prisma = new PrismaClient();
-      
-      const superAdminUser = await prisma.user.findFirst({
-        where: { isSuperAdmin: true },
-        include: {
-          emails: {
-            where: { isPrimary: true }
-          }
-        }
-      });
-      
-      if (superAdminUser) {
-        req.user = {
-          id: superAdminUser.id,
-          username: superAdminUser.username,
-          displayName: superAdminUser.displayName,
-          isSuperAdmin: superAdminUser.isSuperAdmin,
-          isActive: superAdminUser.isActive,
-          createdAt: superAdminUser.createdAt,
-          lastLogin: superAdminUser.lastLogin,
-          emails: superAdminUser.emails
-        } as Express.User;
-      } else {
-        // Fallback to mock user if no super admin found
-        req.user = {
-          id: 'dev-user-id',
-          username: 'dev-user',
-          isSuperAdmin: true
-        } as Express.User;
-      }
-      
-      await prisma.$disconnect();
-    } catch (error) {
-      console.error('Dev mode: Error fetching super admin user:', error);
-      // Fallback to mock user
-      req.user = {
-        id: 'dev-user-id',
-        username: 'dev-user',
-        isSuperAdmin: true
-      } as Express.User;
-    }
-    
-    return next();
-  }
 
   const token = extractTokenFromHeader(req);
   
@@ -135,14 +84,9 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
 /**
  * Middleware to require super admin privileges
- * In development mode, this check is bypassed for easier testing
+ * Proper privilege checking - no dev mode bypass
  */
 export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  // Bypass super admin check in development environment
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🚀 Dev mode: Bypassing super admin check');
-    return next();
-  }
 
   if (!req.user) {
     return res.status(401).json({

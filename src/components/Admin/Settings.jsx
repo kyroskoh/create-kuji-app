@@ -3,6 +3,8 @@ import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass } from "../../utils/tierColors.js";
 import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
+import { useAuth } from "../../utils/AuthContext.jsx";
+import { syncUserData } from "../../services/syncService.js";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -43,6 +45,7 @@ const normalizeTierKey = (value) => value.trim().toUpperCase().slice(0, 6);
 
 export default function Settings() {
   const { getPrizes, setPrizes, getPricing, setPricing, getHistory, saveHistory, getSettings, setSettings, resetAll } = useLocalStorageDAO();
+  const { user } = useAuth();
   const [settings, setLocalSettings] = useState({
     sessionStatus: "INACTIVE",
     lastReset: null,
@@ -112,6 +115,18 @@ export default function Settings() {
     setLocalSettings(merged);
     await setSettings(merged);
     setStatusMessage("Settings saved.");
+    
+    // Sync settings to backend if user is authenticated
+    if (user?.username) {
+      setTimeout(async () => {
+        try {
+          await syncUserData(user.username, 'settings', merged);
+          console.log('✅ Settings synced to backend');
+        } catch (syncError) {
+          console.warn('⚠️ Failed to sync settings to backend:', syncError);
+        }
+      }, 500);
+    }
   };
 
   const performReset = async () => {

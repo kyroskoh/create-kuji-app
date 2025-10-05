@@ -6,11 +6,14 @@ Backend API server for the Create Kuji gacha application with comprehensive user
 
 - 🔐 **JWT Authentication** - Access tokens (15 min) + refresh tokens (30 days)
 - 👥 **User Management** - Registration, login, email verification
+- 🎭 **Username Generation** - Automatic unique username creation for email-only signups
 - 🔑 **Password Management** - Secure reset flow with email tokens
 - 🎫 **SSO Support** - Google, GitHub, Discord, Facebook, X (Twitter), LinkedIn
 - 🛡️ **Security** - bcrypt hashing, hCaptcha verification, helmet headers
 - 📧 **Email Service** - Beautiful HTML email templates with Nodemailer
 - 👑 **Admin System** - Super admin capabilities with role-based access
+- 🎲 **Kuji Management** - Prize pool, settings, and stock management with caching
+- 🔄 **Data Sync** - Frontend-to-backend synchronization for prizes and settings
 - 🗄️ **Database** - PostgreSQL with Prisma ORM
 
 ## Tech Stack
@@ -165,6 +168,65 @@ Verify email address.
 #### GET /api/auth/me
 Get current user information (requires authentication).
 
+### User Kuji Endpoints
+
+#### GET /api/users/:username/stock
+Get public stock information for a user's prize pool.
+
+**Response:**
+```json
+{
+  "username": "demo",
+  "tiers": [
+    {
+      "id": "S",
+      "name": "S Tier",
+      "color": "#A855F7",
+      "totalStock": 10,
+      "remainingStock": 8,
+      "probability": 0.15,
+      "description": "Prize 1, Prize 2"
+    }
+  ],
+  "lastUpdated": "2025-10-05T22:00:00.000Z"
+}
+```
+
+#### POST /api/users/:username/prizes/sync
+Sync prize pool data from frontend to backend (requires authentication).
+
+**Request:**
+```json
+{
+  "prizes": [
+    {
+      "prizeName": "Grand Prize",
+      "tier": "S",
+      "quantity": 5,
+      "weight": 1,
+      "isDrawn": false
+    }
+  ]
+}
+```
+
+#### POST /api/users/:username/settings/sync
+Sync user settings from frontend to backend (requires authentication).
+
+**Request:**
+```json
+{
+  "settings": {
+    "tierColors": {
+      "S": "purple",
+      "A": "emerald"
+    },
+    "weightMode": "advanced",
+    "currency": "USD"
+  }
+}
+```
+
 ### Health Check
 
 #### GET /health
@@ -193,21 +255,29 @@ Check server status.
 ```
 server/
 ├── prisma/
-│   └── schema.prisma          # Database schema
+│   ├── schema.prisma          # Database schema
+│   └── migrations/            # Database migrations
 ├── src/
 │   ├── config/
 │   │   └── passport.ts        # Passport strategies
 │   ├── controllers/
-│   │   └── authController.ts  # Auth route handlers
+│   │   ├── authController.ts  # Auth route handlers
+│   │   ├── kujiController.ts  # Kuji/prize route handlers
+│   │   ├── userController.ts  # User management handlers
+│   │   └── userKujiController.ts # User-specific kuji handlers
 │   ├── middleware/
 │   │   └── auth.ts            # Auth middleware
 │   ├── routes/
-│   │   └── authRoutes.ts      # Route definitions
+│   │   ├── authRoutes.ts      # Auth route definitions
+│   │   ├── kujiRoutes.ts      # Kuji route definitions
+│   │   ├── userRoutes.ts      # User route definitions
+│   │   └── usersRoutes.ts     # User kuji route definitions
 │   ├── services/
 │   │   └── emailService.ts    # Email functionality
 │   ├── utils/
 │   │   ├── jwt.ts             # JWT utilities
 │   │   ├── hcaptcha.ts        # hCaptcha verification
+│   │   ├── usernameGenerator.ts # Auto username generation
 │   │   └── seed.ts            # Database seeding
 │   └── index.ts               # Main server file
 ├── .env                       # Environment variables

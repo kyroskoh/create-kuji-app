@@ -5,6 +5,7 @@ import passport from '../config/passport';
 import { generateAccessToken, createSession, refreshAccessToken, revokeSession } from '../utils/jwt';
 import { sendVerificationEmail, sendPasswordResetEmail, verifyToken, sendPasswordChangedEmail } from '../services/emailService';
 import { verifyHCaptcha } from '../utils/hcaptcha';
+import { generateTemporaryUsername } from '../utils/usernameGenerator';
 
 const prisma = new PrismaClient();
 
@@ -14,13 +15,13 @@ const prisma = new PrismaClient();
  */
 export async function signup(req: Request, res: Response) {
   try {
-    const { email, username, password, hcaptchaToken } = req.body;
+    const { email, password, hcaptchaToken } = req.body;
 
-    // Validate required fields
-    if (!email || !username || !password || !hcaptchaToken) {
+    // Validate required fields (username is now optional)
+    if (!email || !password || !hcaptchaToken) {
       return res.status(400).json({
         error: 'MISSING_FIELDS',
-        message: 'Email, username, password, and captcha are required'
+        message: 'Email, password, and captcha are required'
       });
     }
 
@@ -30,15 +31,6 @@ export async function signup(req: Request, res: Response) {
       return res.status(400).json({
         error: 'INVALID_CAPTCHA',
         message: 'Captcha verification failed'
-      });
-    }
-
-    // Validate username format (alphanumeric, underscore, hyphen, 3-20 chars)
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(username)) {
-      return res.status(400).json({
-        error: 'INVALID_USERNAME',
-        message: 'Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens'
       });
     }
 
@@ -59,18 +51,6 @@ export async function signup(req: Request, res: Response) {
       });
     }
 
-    // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username: username.toLowerCase() }
-    });
-
-    if (existingUsername) {
-      return res.status(409).json({
-        error: 'USERNAME_EXISTS',
-        message: 'Username already taken'
-      });
-    }
-
     // Check if email already exists
     const existingEmail = await prisma.email.findUnique({
       where: { address: email.toLowerCase() }
@@ -83,14 +63,18 @@ export async function signup(req: Request, res: Response) {
       });
     }
 
+    // Generate temporary username from email
+    const temporaryUsername = await generateTemporaryUsername(email);
+    
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create user with email and password
+    // Create user with email and password (username is temporary and not set by user)
     const user = await prisma.user.create({
       data: {
-        username: username.toLowerCase(),
-        displayName: username,
+        username: temporaryUsername,
+        displayName: temporaryUsername,
+        usernameSetByUser: false, // Mark as temporary username
         emails: {
           create: {
             address: email.toLowerCase(),
@@ -139,6 +123,7 @@ export async function signup(req: Request, res: Response) {
         displayName: user.displayName,
         email: user.emails[0]?.address,
         emailVerified: user.emails[0]?.verifiedAt !== null,
+        usernameSetByUser: user.usernameSetByUser,
         isSuperAdmin: user.isSuperAdmin
       },
       tokens: {
@@ -179,7 +164,12 @@ export async function login(req: Request, res: Response) {
     try {
       const { rememberMe } = req.body;
 
-      // Create session
+      // Revoke any existing sessions for this user to prevent multiple active sessions
+      await prisma.session.deleteMany({
+        where: { userId: user.id }
+      });
+
+      // Create new session
       const { session, refreshToken } = await createSession(
         user.id,
         rememberMe === true,
@@ -202,6 +192,7 @@ export async function login(req: Request, res: Response) {
           displayName: user.displayName,
           email: user.emails[0]?.address,
           emailVerified: user.emails[0]?.verifiedAt !== null,
+          usernameSetByUser: user.usernameSetByUser,
           isSuperAdmin: user.isSuperAdmin
         },
         tokens: {
@@ -500,6 +491,7 @@ export async function getCurrentUser(req: Request, res: Response) {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
+        usernameSetByUser: user.usernameSetByUser,
         emails: user.emails,
         providers: user.providerAccounts,
         isSuperAdmin: user.isSuperAdmin,

@@ -16,6 +16,7 @@ model User {
   id          String   @id @default(uuid())
   username    String   @unique
   displayName String?
+  usernameSetByUser Boolean @default(false)
   createdAt   DateTime @default(now())
   lastLogin   DateTime?
   isSuperAdmin Boolean  @default(false)
@@ -27,6 +28,12 @@ model User {
   sessions        Session[]
   providerAccounts ProviderAccount[]
   tokens          Token[]
+  
+  // Kuji system relations
+  prizes          Prize[]
+  drawSessions    DrawSession[]
+  userSettings    UserSettings?
+  pricingPresets  PricingPreset[]
   
   @@index([username])
   @@map("users")
@@ -135,4 +142,103 @@ enum TokenType {
   PASSWORD_RESET
   
   @@map("token_type")
+}
+
+// Kuji system models
+
+model Prize {
+  id          String   @id @default(uuid())
+  prizeName   String   @map("prize_name")
+  tier        String
+  quantity    Int
+  weight      Float    @default(1.0)
+  sku         String?
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Foreign key
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  drawResults DrawResult[]
+  
+  @@index([userId, tier])
+  @@map("prizes")
+}
+
+model DrawSession {
+  id            String   @id @default(uuid())
+  sessionNumber Int      @map("session_number")
+  fanName       String   @map("fan_name")
+  queueNumber   String?  @map("queue_number")
+  label         String?
+  timestamp     DateTime @default(now())
+  
+  // Foreign key
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  drawResults   DrawResult[]
+  
+  @@index([userId, sessionNumber])
+  @@map("draw_sessions")
+}
+
+model DrawResult {
+  id        String @id @default(uuid())
+  drawIndex Int    @map("draw_index")
+  tier      String
+  prizeName String @map("prize_name")
+  sku       String?
+  
+  // Foreign keys
+  sessionId String      @map("session_id")
+  session   DrawSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  prizeId   String?     @map("prize_id")
+  prize     Prize?      @relation(fields: [prizeId], references: [id], onDelete: SetNull)
+  
+  @@index([sessionId])
+  @@map("draw_results")
+}
+
+model UserSettings {
+  id               String   @id @default(uuid())
+  sessionStatus    String   @default("INACTIVE") @map("session_status")
+  lastReset        DateTime? @map("last_reset")
+  country          String   @default("Malaysia")
+  countryCode      String   @default("MY") @map("country_code")
+  countryEmoji     String   @default("🇲🇾") @map("country_emoji")
+  currency         String   @default("MYR")
+  locale           String   @default("ms-MY")
+  tierColors       String   @default("{}") @map("tier_colors")
+  nextSessionNumber Int     @default(1) @map("next_session_number")
+  weightMode       String   @default("basic") @map("weight_mode")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  // Foreign key  
+  userId           String   @unique @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_settings")
+}
+
+model PricingPreset {
+  id          String   @id @default(uuid())
+  label       String
+  drawCount   Int      @map("draw_count")
+  bonusDraws  Int      @default(0) @map("bonus_draws")
+  price       Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Foreign key
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("pricing_presets")
 }

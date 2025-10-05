@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userAPI } from '../utils/api';
 import SSOButtons from '../auth/SSOButtons';
 
 export default function Account() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
   
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [addingEmail, setAddingEmail] = useState(false);
+  
+  // Username setup state
+  const [newUsername, setNewUsername] = useState('');
+  const [settingUsername, setSettingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
   
   // Password change form
   const [currentPassword, setCurrentPassword] = useState('');
@@ -28,7 +35,24 @@ export default function Account() {
       const response = await userAPI.getProfile();
       setProfile(response.data.user);
     } catch (error) {
-      toast.error('Failed to load profile');
+      console.error('Failed to load detailed profile:', error);
+      // Fallback to user data from AuthContext if backend is unavailable
+      if (user) {
+        setProfile({
+          ...user,
+          emails: user.emails || [{ 
+            id: 'fallback', 
+            address: user.email || 'No email set', 
+            isPrimary: true, 
+            verifiedAt: user.emailVerified ? new Date() : null 
+          }],
+          hasPassword: true, // Assume user has password
+          providerAccounts: [] // Empty for fallback
+        });
+        toast.warning('Using cached profile data - some features may be limited');
+      } else {
+        toast.error('Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,13 +72,22 @@ export default function Account() {
       setNewEmail('');
       await loadProfile();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add email');
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        toast.error('Server unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to add email');
+      }
     } finally {
       setAddingEmail(false);
     }
   };
 
   const handleRemoveEmail = async (emailId) => {
+    if (emailId === 'fallback') {
+      toast.error('Cannot remove email while in fallback mode');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to remove this email?')) return;
 
     try {
@@ -62,18 +95,31 @@ export default function Account() {
       toast.success('Email removed successfully');
       await loadProfile();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to remove email');
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        toast.error('Server unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to remove email');
+      }
     }
   };
 
   const handleSetPrimary = async (emailId) => {
+    if (emailId === 'fallback') {
+      toast.error('Cannot modify email while in fallback mode');
+      return;
+    }
+    
     try {
       await userAPI.setPrimaryEmail(emailId);
       toast.success('Primary email updated');
       await loadProfile();
       await refreshUser();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to set primary email');
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        toast.error('Server unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to set primary email');
+      }
     }
   };
 
@@ -101,10 +147,95 @@ export default function Account() {
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        toast.error('Server unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to change password');
+      }
     } finally {
       setChangingPassword(false);
     }
+  };
+
+  const handleResendVerification = async (emailId) => {
+    if (emailId === 'fallback') {
+      toast.error('Cannot send verification email while in fallback mode');
+      return;
+    }
+    
+    try {
+      await userAPI.resendEmailVerification(emailId);
+      toast.success('Verification email sent! Check your inbox.');
+    } catch (error) {
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        toast.error('Server unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to send verification email');
+      }
+    }
+  };
+
+  const handleUsernameChange = (e) => {
+    setNewUsername(e.target.value);
+    setUsernameError(''); // Clear error when user types
+  };
+
+  const handleSetUsername = async (e) => {
+    e.preventDefault();
+    setUsernameError('');
+
+    // Validate username
+    if (!newUsername) {
+      setUsernameError('Username is required');
+      return;
+    }
+    
+    if (newUsername.length < 5 || newUsername.length > 20) {
+      setUsernameError('Username must be 5-20 characters');
+      return;
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(newUsername)) {
+      setUsernameError('Username can only contain letters, numbers, hyphens, and underscores');
+      return;
+    }
+
+    setSettingUsername(true);
+    try {
+      const response = await userAPI.updateUsername(newUsername);
+      toast.success('Username set successfully!');
+      
+      // Refresh user data
+      await refreshUser();
+      
+      // Reload profile
+      await loadProfile();
+      
+      // Navigate to new username URL
+      navigate(`/${newUsername}/account`, { replace: true });
+    } catch (error) {
+      if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
+        setUsernameError('Server unavailable. Please try again later.');
+      } else if (error.response?.status === 409 || error.response?.data?.error === 'USERNAME_EXISTS') {
+        // Username is already taken
+        setUsernameError(`Username "${newUsername}" is already taken. Please choose a different one.`);
+      } else if (error.response?.status === 400 || error.response?.data?.error === 'INVALID_USERNAME') {
+        // Invalid username format
+        setUsernameError(error.response?.data?.message || 'Invalid username format.');
+      } else {
+        setUsernameError(error.response?.data?.message || 'Failed to set username');
+      }
+    } finally {
+      setSettingUsername(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!confirm('Are you sure you want to log out?')) return;
+    
+    await logout();
+    toast.success('Logged out successfully');
+    navigate('/');
   };
 
   if (loading) {
@@ -130,7 +261,94 @@ export default function Account() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-white mb-6">Account Settings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-white">Account Settings</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+        >
+          Log Out
+        </button>
+      </div>
+
+      {/* Username Setup Card - Show if username not set by user */}
+      {profile && !profile.usernameSetByUser && (
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg border-2 border-blue-400 p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-2">Complete Your Profile</h2>
+              <p className="text-blue-100 mb-4">
+                Please set a permanent username for your account. Once set, it cannot be changed (contact support if needed).
+              </p>
+              <form onSubmit={handleSetUsername} className="space-y-4">
+                <div>
+                  <label htmlFor="newUsername" className="block text-sm font-medium text-white mb-2">
+                    Choose Your Username
+                  </label>
+                  <input
+                    id="newUsername"
+                    type="text"
+                    value={newUsername}
+                    onChange={handleUsernameChange}
+                    className="w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+                    placeholder="username (5-20 characters, letters, numbers, - and _)"
+                    disabled={settingUsername}
+                    autoComplete="username"
+                  />
+                  {usernameError && (
+                    <div className="mt-2 flex items-start gap-2 text-sm text-yellow-200 bg-red-500/20 px-3 py-2 rounded border border-red-500/30">
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      <span>{usernameError}</span>
+                    </div>
+                  )}
+                  <p className="mt-2 text-sm text-blue-100">
+                    Current temporary username: <span className="font-mono font-bold">{profile.username}</span>
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={settingUsername}
+                  className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-50 disabled:bg-gray-300 disabled:text-gray-500 transition-colors shadow-lg"
+                >
+                  {settingUsername ? 'Setting Username...' : 'Set Username'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Verification Alert - Show if email not verified */}
+      {profile && profile.emails[0] && !profile.emails[0].verifiedAt && (
+        <div className="bg-yellow-500/10 border-2 border-yellow-500/50 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-yellow-500 mb-1">Email Verification Required</h3>
+              <p className="text-slate-300 mb-3">
+                Please verify your email address to access all features. Check your inbox for a verification link.
+              </p>
+              <button
+                onClick={() => handleResendVerification(profile.emails[0].id)}
+                className="text-sm text-yellow-400 hover:text-yellow-300 underline"
+              >
+                Resend Verification Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Account Info Card */}
       <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
@@ -141,8 +359,15 @@ export default function Account() {
             <label className="block text-sm font-medium text-slate-400 mb-1">Username</label>
             <div className="flex items-center gap-2">
               <p className="text-white font-mono text-lg">{profile.username}</p>
-              <span className="text-xs text-slate-500">(contact support to change)</span>
+              {profile.usernameSetByUser ? (
+                <span className="text-xs text-green-500 bg-green-500/10 px-2 py-1 rounded">✓ Permanent</span>
+              ) : (
+                <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">⚠ Temporary</span>
+              )}
             </div>
+            {profile.usernameSetByUser && (
+              <p className="text-xs text-slate-500 mt-1">(Contact support to change)</p>
+            )}
           </div>
 
           <div>
@@ -194,9 +419,17 @@ export default function Account() {
                       ✓ Verified
                     </span>
                   ) : (
-                    <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded">
-                      Unverified
-                    </span>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded">
+                        Unverified
+                      </span>
+                      <button
+                        onClick={() => handleResendVerification(email.id)}
+                        className="text-xs text-blue-400 hover:text-blue-300 underline"
+                      >
+                        Resend verification
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

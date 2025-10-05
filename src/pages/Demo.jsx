@@ -16,7 +16,7 @@ export default function Demo() {
       email: 'demo@createkuji.com',
       password: 'Demo123!',
       description: 'Regular user with access to kuji drawing and account management',
-      redirects: '/account',
+      redirects: 'your personal draw page',
       color: 'bg-blue-600 hover:bg-blue-700',
       icon: '👤'
     }
@@ -31,7 +31,10 @@ export default function Demo() {
     
     if (result.success) {
       toast.success(`Logged in as ${user.type}!`);
-      const redirectTo = result.user.isSuperAdmin ? '/admin/users' : '/account';
+      // Redirect to user's space with new URL structure
+      const redirectTo = result.user.isSuperAdmin 
+        ? `/${result.user.username}/admin` 
+        : `/${result.user.username}/draw`;
       navigate(redirectTo);
     } else {
       toast.error(result.error || 'Demo login failed');
@@ -90,7 +93,7 @@ export default function Demo() {
               ← Back to Home
             </Link>
             <Link 
-              to="/stock" 
+              to="/demo/stock" 
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               View Stock 📦

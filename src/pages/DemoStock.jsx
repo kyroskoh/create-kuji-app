@@ -1,73 +1,99 @@
-import { Link } from "react-router-dom";
 import { useState, useEffect } from 'react';
-import { useTranslation } from "../utils/TranslationContext.jsx";
-import { useAuth } from "../utils/AuthContext.jsx";
-import { useUserNavigation } from "../hooks/useUserNavigation.js";
+import { Link, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
 
-export default function Home() {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const { getUserPageUrl } = useUserNavigation();
+export default function DemoStock() {
+  const location = useLocation();
   const [stockData, setStockData] = useState(null);
-  const [stockLoading, setStockLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load stock data when user logs in
+  const TITLE = 'Demo Kuji Stock';
+
   useEffect(() => {
-    if (user) {
-      loadStock();
-    }
-  }, [user]);
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Fetch actual demo user's stock data instead of mock data
+        const response = await kujiAPI.getUserStock('demo');
+        setStockData(response.data);
+      } catch (err) {
+        console.error('Error loading demo stock:', err);
+        setError('Failed to load stock data');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [location.key]); // Reload when navigating to this page
 
-  const loadStock = async () => {
+  const refreshStock = async () => {
     try {
-      setStockLoading(true);
-      const response = await kujiAPI.getStock();
+      setLoading(true);
+      setError(null);
+      // Fetch actual demo user's stock data instead of mock data
+      const response = await kujiAPI.getUserStock('demo');
       setStockData(response.data);
-    } catch (error) {
-      console.error('Failed to load stock:', error);
-      setStockData(null);
+    } catch (err) {
+      console.error('Error refreshing stock:', err);
+      setError('Failed to refresh stock data');
     } finally {
-      setStockLoading(false);
+      setLoading(false);
     }
   };
-  
-  // If user is logged in, show stock page content
-  if (user) {
+
+  if (loading) {
     return (
-      <div className="max-w-6xl mx-auto p-6 space-y-8 min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome back, {user.displayName || user.username}!</h1>
-          <p className="text-slate-400 mb-6">
-            View available prizes and their probabilities
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-slate-400">Loading stock data...</p>
         </div>
+      </div>
+    );
+  }
 
-        {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <Link to={getUserPageUrl("draw")} className="block">
-            <button className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
-              🎯 {t("home.startDrawing")}
-            </button>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={refreshStock}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+          <br />
+          <Link
+            to="/demo"
+            className="inline-block mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
+          >
+            ← Back to Demo
           </Link>
-          {user.isSuperAdmin && (
-            <Link to={getUserPageUrl("admin")} className="block">
-              <button className="w-full sm:w-auto px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors">
-                ⚙️ {t("home.adminArea")}
-              </button>
-            </Link>
-          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">{TITLE}</h1>
+          <p className="text-slate-400 mb-6">
+            View available prizes and their probabilities (Public Demo)
+          </p>
+          <Link
+            to="/demo"
+            className="inline-block px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
+          >
+            ← Back to Demo
+          </Link>
         </div>
 
-        {/* Stock Information */}
-        {stockLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-slate-400">Loading stock data...</p>
-            </div>
-          </div>
-        ) : stockData ? (
+        {stockData && stockData.tiers && stockData.tiers.length > 0 ? (
           <>
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -177,11 +203,17 @@ export default function Home() {
             {/* Refresh Button */}
             <div className="text-center">
               <button
-                onClick={loadStock}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                onClick={refreshStock}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors mr-4"
               >
                 Refresh Stock Data
               </button>
+              <Link
+                to="/demo"
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Try Demo Login 🎮
+              </Link>
               {stockData.cached && (
                 <p className="text-xs text-slate-500 mt-2">
                   (Cached data - updates every 30 seconds)
@@ -190,45 +222,19 @@ export default function Home() {
             </div>
           </>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-slate-400 mb-4">Unable to load stock data</p>
-            <button
-              onClick={loadStock}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          <div className="text-center bg-slate-800 rounded-lg border border-slate-700 p-12">
+            <p className="text-2xl text-slate-300 mb-4">No Prizes Available Yet</p>
+            <p className="text-slate-400 mb-6">
+              The demo user hasn't set up any prizes yet. Try the demo login to manage prizes!
+            </p>
+            <Link
+              to="/demo"
+              className="inline-block px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
             >
-              Try Again
-            </button>
+              Try Demo Login 🎮
+            </Link>
           </div>
         )}
-      </div>
-    );
-  }
-
-  // If user is not logged in, show original homepage
-  return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 text-center">
-        <h1 className="text-4xl font-bold text-white">{t("app.title")}</h1>
-        <p className="text-slate-300">
-          {t("home.description")}
-        </p>
-        <div className="flex flex-col gap-4 pt-4">
-          <Link to="/demo" className="block w-full">
-            <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
-              🎮 Try Live Demo
-            </button>
-          </Link>
-          <Link to="/login" className="block w-full">
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-              Sign In
-            </button>
-          </Link>
-          <Link to="/signup" className="block w-full">
-            <button className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-              Create Account
-            </button>
-          </Link>
-        </div>
       </div>
     </div>
   );

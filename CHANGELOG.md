@@ -5,6 +5,135 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-10-05
+
+### Added
+
+#### Username Generation System
+- Automatic username generation for users who sign up with only email addresses
+- `usernameSetByUser` field to track if username was user-chosen or auto-generated
+- Username generator utility with format: `{adjective}-{noun}-{4-digit-number}` (e.g., "swift-falcon-4521")
+- Database migration to add `usernameSetByUser` boolean field
+- Username can be changed later if it was auto-generated
+
+#### User Interface Components
+- **UserDropdown Component** - Modern dropdown menu for user navigation
+  - Profile link to account settings
+  - Quick navigation to manage/draw/stock pages
+  - Logout functionality
+  - Avatar display with first letter of username
+- **DemoStock Page** - Public demo stock page at `/demo/stock`
+  - Displays actual demo user's prize inventory
+  - No authentication required (public read access)
+  - Empty state handling with call-to-action
+  - Location-based automatic refresh
+
+#### Navigation Enhancements
+- **useUserNavigation Hook** - Custom hook for user-specific navigation
+  - Centralized navigation logic for user routes
+  - Handles authenticated user routing
+- Enhanced MainLayout with integrated UserDropdown
+- Improved navigation flow between manage/draw/stock pages
+
+### Fixed
+
+#### Tier Color Display
+- **Backend Color Loading** - Fixed tier colors not displaying on stock pages
+  - Backend now uses custom tier colors from user settings
+  - Added palette ID to hex code conversion (e.g., "purple" → "#A855F7")
+  - Supports 19 color palettes with light and dark variants
+  - Proper fallback priority: custom → default → gray
+- **Public Access** - Removed authentication requirement from stock endpoints
+  - Stock pages now publicly accessible (read-only)
+  - Demo stock page works without login
+- **Cache Invalidation** - Settings sync now clears stock cache
+  - Tier color changes visible immediately after save
+
+#### Stock Synchronization
+- **Real-time Data Updates** - Stock page now shows fresh data on every visit
+  - Added `location.key` dependency to useEffect
+  - Ensures data reloads when navigating to stock page
+  - Manual refresh button with loading states
+- **Demo Stock Data** - Fixed demo stock showing mock data instead of real prizes
+  - Changed from public mock endpoint to user-specific endpoint
+  - Now displays actual demo user's configured prizes
+  - Shows all tiers (S through M) instead of just S-C
+
+#### Authentication & Routing
+- **Login Redirects** - Fixed post-login destination
+  - Changed from `/{username}/stock` to `/{username}/manage`
+  - Users now land on manage page after authentication
+- **Page Refresh Persistence** - Fixed authentication state on page refresh
+  - Improved initialization guards in AuthContext
+  - Added comprehensive debug logging
+  - Prevents redirect loops on refresh
+- **Token Management** - Improved logout to preserve demo kuji data
+  - Only clears authentication tokens
+  - Retains LocalForage kuji data for offline mode
+
+### Enhanced
+
+#### Backend API
+- **User Stock Endpoint** - `/api/users/:username/stock`
+  - Now publicly accessible (removed auth requirement)
+  - Returns user's prize tiers with custom colors
+  - Includes palette-to-hex color conversion
+  - 30-second cache with automatic invalidation on updates
+- **Settings Sync** - Enhanced settings synchronization
+  - Cache clearing after settings updates
+  - Improved tier color persistence
+- **Prize Sync** - Better prize data synchronization
+  - 500ms delay for optimal UX
+  - Automatic cache invalidation
+  - Maintains data consistency between frontend and backend
+
+#### User Experience
+- **Better Navigation** - Streamlined user navigation flow
+  - Consistent user dropdown across all pages
+  - Quick access to common actions
+  - Clear visual feedback for current page
+- **Loading States** - Improved loading indicators
+  - Disabled buttons during operations
+  - "Refreshing..." text on refresh button
+  - Toast notifications for user feedback
+- **Empty States** - Better handling of missing data
+  - Helpful messages when no prizes configured
+  - Call-to-action links to guide users
+  - Clear instructions for first-time users
+
+### Technical Improvements
+
+#### Database Schema
+- Added `usernameSetByUser` field to User model
+- Migration: `20251005221929_add_username_set_by_user_field`
+- Maintains backward compatibility with existing users
+
+#### Code Organization
+- New utility: `server/src/utils/usernameGenerator.ts`
+- New controller: `server/src/controllers/userKujiController.ts`
+- New component: `src/components/UserDropdown.jsx`
+- New page: `src/pages/DemoStock.jsx`
+- New hook: `src/hooks/useUserNavigation.js`
+- Enhanced routing structure in `src/components/UserRoutes.jsx`
+
+#### Cache Management
+- Improved cache invalidation strategy
+- Clear cache on both prize and settings sync
+- 30-second TTL for stock data
+- Manual refresh capability with user feedback
+
+### Documentation
+
+- Added `FIXES_SUMMARY.md` - Authentication and routing fixes
+- Added `DEMO_STOCK_FIX.md` - Demo stock page real data display fix
+- Added `STOCK_SYNC_FIX.md` - Stock update synchronization fix
+- Added `TIER_COLOR_FIX.md` - Initial tier color display fix
+- Added `TIER_COLOR_COMPLETE_FIX.md` - Complete tier color fix with palette conversion
+
+### Breaking Changes
+
+None. All changes are backward compatible with existing data and functionality.
+
 ## [2.0.0] - 2025-01-05
 
 ### Added

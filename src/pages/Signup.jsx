@@ -6,7 +6,6 @@ import SSOButtons from '../auth/SSOButtons';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -25,15 +24,6 @@ export default function Signup() {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email is invalid';
-    }
-
-    // Username validation
-    if (!username) {
-      newErrors.username = 'Username is required';
-    } else if (username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      newErrors.username = 'Username can only contain letters, numbers, hyphens, and underscores';
     }
 
     // Password validation
@@ -69,13 +59,17 @@ export default function Signup() {
     // TODO: Integrate real hCaptcha token
     const hcaptchaToken = 'mock-token';
 
-    const result = await signup(email, username, password, hcaptchaToken);
+    const result = await signup(email, password, hcaptchaToken);
     
     setLoading(false);
 
     if (result.success) {
-      toast.success('Account created successfully! Welcome to Create Kuji!');
-      navigate('/account', { replace: true });
+      toast.success('Account created successfully! Please set your username and verify your email.');
+      // Redirect to account page with first-time setup flag
+      navigate(`/${result.user.username}/account`, { 
+        replace: true,
+        state: { firstTimeSetup: true }
+      });
     } else {
       toast.error(result.error || 'Signup failed');
     }
@@ -109,25 +103,6 @@ export default function Signup() {
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={`w-full px-4 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 ${
-                  errors.username ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-blue-500'
-                }`}
-                placeholder="cooluser123"
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-400">{errors.username}</p>
               )}
             </div>
 

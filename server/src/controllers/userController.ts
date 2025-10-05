@@ -333,6 +333,104 @@ export async function resendVerification(req: Request, res: Response) {
 }
 
 /**
+ * Update username (first-time only)
+ * PUT /api/user/username
+ */
+export async function updateUsername(req: Request, res: Response) {
+  try {
+    const userId = req.user!.id;
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        error: 'INVALID_INPUT',
+        message: 'Username is required',
+      });
+    }
+
+    // Validate username format (alphanumeric, underscore, hyphen, 5-20 chars)
+    const usernameRegex = /^[a-zA-Z0-9_-]{5,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({
+        error: 'INVALID_USERNAME',
+        message: 'Username must be 5-20 characters and contain only letters, numbers, underscores, and hyphens',
+      });
+    }
+
+    // Fetch current user
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    // Check if username has already been set by user
+    if (currentUser.usernameSetByUser) {
+      return res.status(403).json({
+        error: 'USERNAME_ALREADY_SET',
+        message: 'Username has already been set. Please contact support to change it.',
+      });
+    }
+
+    // Check if new username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: username.toLowerCase() },
+    });
+
+    if (existingUsername && existingUsername.id !== userId) {
+      return res.status(409).json({
+        error: 'USERNAME_EXISTS',
+        message: 'Username already taken',
+      });
+    }
+
+    // Update username and mark as set by user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        username: username.toLowerCase(),
+        displayName: username,
+        usernameSetByUser: true,
+      },
+      include: {
+        emails: {
+          select: {
+            address: true,
+            isPrimary: true,
+            verifiedAt: true,
+          },
+          orderBy: { isPrimary: 'desc' },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      message: 'Username updated successfully',
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        displayName: updatedUser.displayName,
+        usernameSetByUser: updatedUser.usernameSetByUser,
+        email: updatedUser.emails[0]?.address,
+        emailVerified: updatedUser.emails[0]?.verifiedAt !== null,
+        isSuperAdmin: updatedUser.isSuperAdmin,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating username:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to update username',
+    });
+  }
+}
+
+/**
  * Get user's own profile with all details
  * GET /api/user/profile
  */

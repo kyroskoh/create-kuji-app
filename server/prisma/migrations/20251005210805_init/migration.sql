@@ -70,6 +70,78 @@ CREATE TABLE "tokens" (
     CONSTRAINT "tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE "prizes" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "prize_name" TEXT NOT NULL,
+    "tier" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "weight" REAL NOT NULL DEFAULT 1.0,
+    "sku" TEXT,
+    "description" TEXT,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    "user_id" TEXT NOT NULL,
+    CONSTRAINT "prizes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "draw_sessions" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "session_number" INTEGER NOT NULL,
+    "fan_name" TEXT NOT NULL,
+    "queue_number" TEXT,
+    "label" TEXT,
+    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "user_id" TEXT NOT NULL,
+    CONSTRAINT "draw_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "draw_results" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "draw_index" INTEGER NOT NULL,
+    "tier" TEXT NOT NULL,
+    "prize_name" TEXT NOT NULL,
+    "sku" TEXT,
+    "session_id" TEXT NOT NULL,
+    "prize_id" TEXT,
+    CONSTRAINT "draw_results_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "draw_sessions" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "draw_results_prize_id_fkey" FOREIGN KEY ("prize_id") REFERENCES "prizes" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "user_settings" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "session_status" TEXT NOT NULL DEFAULT 'INACTIVE',
+    "last_reset" DATETIME,
+    "country" TEXT NOT NULL DEFAULT 'Malaysia',
+    "country_code" TEXT NOT NULL DEFAULT 'MY',
+    "country_emoji" TEXT NOT NULL DEFAULT '🇲🇾',
+    "currency" TEXT NOT NULL DEFAULT 'MYR',
+    "locale" TEXT NOT NULL DEFAULT 'ms-MY',
+    "tier_colors" TEXT NOT NULL DEFAULT '{}',
+    "next_session_number" INTEGER NOT NULL DEFAULT 1,
+    "weight_mode" TEXT NOT NULL DEFAULT 'basic',
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    "user_id" TEXT NOT NULL,
+    CONSTRAINT "user_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "pricing_presets" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "label" TEXT NOT NULL,
+    "draw_count" INTEGER NOT NULL,
+    "bonus_draws" INTEGER NOT NULL DEFAULT 0,
+    "price" REAL NOT NULL DEFAULT 0,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    "user_id" TEXT NOT NULL,
+    CONSTRAINT "pricing_presets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
@@ -114,3 +186,18 @@ CREATE INDEX "tokens_token_idx" ON "tokens"("token");
 
 -- CreateIndex
 CREATE INDEX "tokens_expiresAt_idx" ON "tokens"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "prizes_user_id_tier_idx" ON "prizes"("user_id", "tier");
+
+-- CreateIndex
+CREATE INDEX "draw_sessions_user_id_session_number_idx" ON "draw_sessions"("user_id", "session_number");
+
+-- CreateIndex
+CREATE INDEX "draw_results_session_id_idx" ON "draw_results"("session_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_settings_user_id_key" ON "user_settings"("user_id");
+
+-- CreateIndex
+CREATE INDEX "pricing_presets_user_id_idx" ON "pricing_presets"("user_id");

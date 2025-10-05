@@ -6,6 +6,8 @@ import { tierChipClass } from "../../utils/tierColors.js";
 import ResultCard from "./ResultCard.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import ScratchCard from "./ScratchCard.jsx";
+import { useAuth } from "../../utils/AuthContext.jsx";
+import { syncUserData } from "../../services/syncService.js";
 
 const createId = () => (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
 
@@ -35,6 +37,7 @@ const normalisePresets = (list) =>
 
 export default function DrawScreen() {
   const { getPrizes, setPrizes, getPricing, saveHistory, getHistory, getSettings, setSettings } = useLocalStorageDAO();
+  const { user } = useAuth();
   const [prizes, setPrizePool] = useState([]);
   const [presets, setPresets] = useState([]);
   const [sessionSettings, setSessionSettings] = useState({
@@ -188,6 +191,22 @@ export default function DrawScreen() {
       saveHistory(nextHistory),
       setSettings(updatedSettings)
     ]);
+    
+    // Sync updated data to backend if user is authenticated
+    if (user?.username) {
+      setTimeout(async () => {
+        try {
+          await Promise.allSettled([
+            syncUserData(user.username, 'prizes', remaining),
+            syncUserData(user.username, 'history', nextHistory),
+            syncUserData(user.username, 'settings', updatedSettings)
+          ]);
+          console.log('✅ Draw results synced to backend');
+        } catch (syncError) {
+          console.warn('⚠️ Failed to sync draw results to backend:', syncError);
+        }
+      }, 1000); // Longer delay to let UI animations complete
+    }
 
     setIsDrawing(false);
   };
@@ -229,6 +248,10 @@ export default function DrawScreen() {
       return tierA.localeCompare(tierB);
     });
   }, [processedResults]);
+
+  const unrevealedScratchCards = useMemo(() => {
+    return processedResults.filter(item => useScratchMode && !revealedResults.has(item.id)).length;
+  }, [processedResults, useScratchMode, revealedResults]);
 
   const openHistory = () => {
     setHistoryOpen(true);
@@ -394,15 +417,21 @@ export default function DrawScreen() {
           </div>
         </div>
         <div className="mb-4 flex flex-wrap gap-2">
-          {tierCounts.length ? (
-            tierCounts.map(([tier, qty]) => (
-              <span key={tier} className={tierChipClass(tier, tierColors)}>
-                {tier}:{qty}
+          {(unrevealedScratchCards === 0) ? (
+            tierCounts.length ? (
+              tierCounts.map(([tier, qty]) => (
+                <span key={tier} className={tierChipClass(tier, tierColors)}>
+                  {tier}:{qty}
+                </span>
+              ))
+            ) : (
+              <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs uppercase tracking-wide text-slate-400">
+                No matching draws
               </span>
-            ))
+            )
           ) : (
             <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs uppercase tracking-wide text-slate-400">
-              No matching draws
+              🪙 Scratch all cards to reveal tier counts
             </span>
           )}
         </div>

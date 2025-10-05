@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Image as KonvaImage, Line, Group } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Line, Group, Rect } from 'react-konva';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
@@ -136,10 +136,14 @@ export default function ScratchCard({
 
   return (
     <div className="relative">
-      {/* Prize content underneath */}
+      {/* Prize content underneath - always visible so it shows through when scratching */}
       <div 
         className="absolute inset-0 flex items-center justify-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg"
-        style={{ width, height }}
+        style={{ 
+          width, 
+          height,
+          zIndex: 1
+        }}
       >
         {prizeContent}
       </div>
@@ -153,7 +157,8 @@ export default function ScratchCard({
             transition={{ duration: 0.5 }}
             className="absolute inset-0"
             style={{
-              cursor: enabled ? `url(/assets/coin-cursor.svg) 16 16, auto` : 'default'
+              cursor: enabled ? `url(/assets/coin-cursor.svg) 16 16, auto` : 'default',
+              zIndex: 10
             }}
           >
             <Stage
@@ -168,11 +173,6 @@ export default function ScratchCard({
               onTouchEnd={handleMouseUp}
               className="rounded-lg shadow-2xl"
             >
-              {/* Prize layer (behind) */}
-              <Layer>
-                {/* This will be covered by scratch layer */}
-              </Layer>
-
               {/* Scratch surface layer */}
               <Layer ref={scratchLayerRef}>
                 {surfaceTexture && (

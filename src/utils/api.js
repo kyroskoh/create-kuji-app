@@ -2,6 +2,7 @@ import axios from 'axios';
 import localforage from 'localforage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+console.log('🌐 API Base URL:', API_BASE_URL);
 
 // Create axios instance
 const api = axios.create({
@@ -38,9 +39,9 @@ api.interceptors.response.use(
         const refreshToken = await localforage.getItem('refreshToken');
         
         if (!refreshToken) {
-          // No refresh token, redirect to login
-          await localforage.clear();
-          window.location.href = '/login';
+          // No refresh token, clear auth tokens but preserve kuji data
+          await localforage.removeItem('accessToken');
+          await localforage.removeItem('refreshToken');
           return Promise.reject(error);
         }
 
@@ -59,9 +60,9 @@ api.interceptors.response.use(
         return api(originalRequest);
 
       } catch (refreshError) {
-        // Refresh failed, clear auth and redirect to login
-        await localforage.clear();
-        window.location.href = '/login';
+        // Refresh failed, clear auth tokens but preserve kuji data
+        await localforage.removeItem('accessToken');
+        await localforage.removeItem('refreshToken');
         return Promise.reject(refreshError);
       }
     }
@@ -69,6 +70,15 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Create a separate axios instance for public endpoints (no auth headers)
+const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: false, // No cookies for public endpoints
+});
 
 export default api;
 
@@ -86,12 +96,14 @@ export const authAPI = {
 
 // User API functions (for account management)
 export const userAPI = {
-  // Will be implemented as needed
+  getProfile: () => api.get('/user/profile'),
   updateProfile: (data) => api.patch('/user/profile', data),
+  updateUsername: (username) => api.put('/user/username', { username }),
   changePassword: (data) => api.post('/user/change-password', data),
   addEmail: (email) => api.post('/user/emails', { email }),
   removeEmail: (emailId) => api.delete(`/user/emails/${emailId}`),
   setPrimaryEmail: (emailId) => api.patch(`/user/emails/${emailId}/primary`),
+  resendEmailVerification: (emailId) => api.post(`/user/emails/${emailId}/resend-verification`),
 };
 
 // Admin API functions
@@ -106,5 +118,16 @@ export const adminAPI = {
 
 // Kuji API functions
 export const kujiAPI = {
-  getStock: () => api.get('/kuji/stock'),
+  getStock: () => publicApi.get('/kuji/stock'), // Public endpoint - no auth needed
+  getUserStock: (username) => api.get(`/users/${username}/stock`),
+  
+  // Sync endpoints
+  syncPrizes: (username, prizes) => api.post(`/users/${username}/sync-prizes`, { prizes }),
+  syncSettings: (username, settings) => api.post(`/users/${username}/sync-settings`, settings),
+  syncHistory: (username, history) => api.post(`/users/${username}/sync-history`, { history }),
+  syncPresets: (username, presets) => api.post(`/users/${username}/sync-presets`, { presets }),
+  
+  // Data retrieval endpoints
+  getUserPrizes: (username) => api.get(`/users/${username}/prizes`),
+  getUserSettings: (username) => api.get(`/users/${username}/settings`),
 };

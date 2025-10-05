@@ -7,6 +7,7 @@ import { cleanupExpiredSessions } from './utils/jwt';
 import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/adminRoutes';
 import userRoutes from './routes/userRoutes';
+import usersRoutes from './routes/usersRoutes';
 import kujiRoutes from './routes/kujiRoutes';
 
 // Load environment variables
@@ -64,6 +65,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/kuji', kujiRoutes);
 
 // 404 handler

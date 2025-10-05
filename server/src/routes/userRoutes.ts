@@ -10,6 +10,7 @@ router.use(requireAuth);
 // Profile management
 router.get('/profile', userController.getProfile);
 router.patch('/profile', userController.updateProfile);
+router.put('/username', userController.updateUsername);
 
 // Password management
 router.post('/change-password', userController.changePassword);

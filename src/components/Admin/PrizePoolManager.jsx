@@ -3,6 +3,8 @@ import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
 import { compareTierLabels, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
 import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
+import { useAuth } from "../../utils/AuthContext.jsx";
+import { syncUserData } from "../../services/syncService.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -30,6 +32,7 @@ const WEIGHT_MODE_LABEL = {
 
 export default function PrizePoolManager() {
   const { getPrizes, setPrizes, getSettings } = useLocalStorageDAO();
+  const { user } = useAuth();
   const [prizes, setPrizeRows] = useState([]);
   const [tierColors, setTierColors] = useState({});
   const [weightMode, setWeightMode] = useState("basic");
@@ -144,8 +147,27 @@ export default function PrizePoolManager() {
   };
 
   const handleSave = async () => {
-    await setPrizes(prizes);
-    setStatus({ type: "success", message: "Prize pool saved to storage." });
+    try {
+      // Save to LocalForage first
+      await setPrizes(prizes);
+      setStatus({ type: "success", message: "Prize pool saved to storage." });
+      
+      // Sync to backend if user is authenticated
+      if (user?.username) {
+        setTimeout(async () => {
+          try {
+            await syncUserData(user.username, 'prizes', prizes);
+            console.log('✅ Prizes synced to backend after save');
+          } catch (syncError) {
+            console.warn('⚠️ Failed to sync prizes to backend:', syncError);
+            // Don't show error to user as LocalForage save succeeded
+          }
+        }, 500); // Small delay to let UI update first
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: "Failed to save prize pool." });
+      console.error('Error saving prizes:', error);
+    }
   };
 
   const applySuggestedWeights = () => {

@@ -1,4 +1,4 @@
-// Language localization configuration
+﻿// Language localization configuration
 export const SUPPORTED_LANGUAGES = {
   en: {
     code: "en",
@@ -119,6 +119,17 @@ export const translations = {
     "prizes.exportCsv": "Export CSV",
     "prizes.noPrizes": "No prize data yet. Import a CSV, load sample data, or add rows manually.",
     
+    // Stock
+    "stock.title": "Stock",
+    "stock.description": "View available prizes and their probabilities",
+    
+    // Manage
+    "manage.title": "Manage",
+    "manage.description": "Manage prize pools, configure pricing presets, and control session settings.",
+    "manage.prizes": "Prizes",
+    "manage.pricing": "Pricing",
+    "manage.settings": "Settings",
+    
     // Admin
     "admin.title": "Admin Console",
     "admin.description": "Manage prize pools, configure pricing presets, and control session settings.",
@@ -228,6 +239,17 @@ export const translations = {
     "prizes.addRow": "添加行",
     "prizes.exportCsv": "导出CSV",
     "prizes.noPrizes": "尚无奖品数据。导入CSV，加载示例数据，或手动添加行。",
+    
+    // Stock
+    "stock.title": "库存",
+    "stock.description": "查看可用奖品及其概率",
+    
+    // Manage
+    "manage.title": "管理",
+    "manage.description": "管理奖品池，配置价格预设，以及控制会话设置。",
+    "manage.prizes": "奖品",
+    "manage.pricing": "价格",
+    "manage.settings": "设置",
     
     // Admin
     "admin.title": "管理控制台",
@@ -339,6 +361,17 @@ export const translations = {
     "prizes.exportCsv": "匯出CSV",
     "prizes.noPrizes": "尚無獎品數據。匯入CSV，載入範例數據，或手動新增行。",
     
+    // Stock
+    "stock.title": "庫存",
+    "stock.description": "查看可用獎品及其概率",
+    
+    // Manage
+    "manage.title": "管理",
+    "manage.description": "管理獎品池，配置價格預設，以及控制會話設定。",
+    "manage.prizes": "獎品",
+    "manage.pricing": "價格",
+    "manage.settings": "設定",
+    
     // Admin
     "admin.title": "管理控制台",
     "admin.description": "管理獎品池，配置價格預設，以及控制會話設定。",
@@ -393,19 +426,20 @@ export function translate(key, lang = null) {
   return langData[key] || translations[DEFAULT_LANGUAGE][key] || key;
 }
 
-// Initialize language
-export function initLanguage() {
-  if (!localStorage.getItem('language')) {
-    localStorage.setItem('language', getBrowserLanguage());
-  }
-  return localStorage.getItem('language');
-}
-
-// Set language
+// Set language and save to localStorage
 export function setLanguage(lang) {
-  if (translations[lang]) {
+  if (SUPPORTED_LANGUAGES[lang]) {
     localStorage.setItem('language', lang);
     return true;
   }
   return false;
+}
+
+// Initialize language and return current language
+export function initLanguage() {
+  const currentLang = localStorage.getItem('language') || getBrowserLanguage();
+  if (!localStorage.getItem('language')) {
+    localStorage.setItem('language', currentLang);
+  }
+  return currentLang;
 }

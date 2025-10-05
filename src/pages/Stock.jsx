@@ -1,22 +1,32 @@
 import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 
 export default function Stock() {
+  const { username } = useParams();
+  const location = useLocation();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
 
   useEffect(() => {
     loadStock();
-  }, []);
+  }, [username, location.key]); // Reload when username changes or when navigating to this page
 
-  const loadStock = async () => {
+  const loadStock = async (forceRefresh = false) => {
     try {
-      const response = await kujiAPI.getStock();
+      setLoading(true);
+      // Add timestamp to bypass any client-side caching
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
+      const response = await kujiAPI.getUserStock(username);
       setStockData(response.data);
+      if (forceRefresh) {
+        toast.success('Stock data refreshed');
+      }
     } catch (error) {
-      toast.error('Failed to load stock information');
+      console.error('Error loading user stock:', error);
+      toast.error(`Failed to load stock information for ${username}`);
     } finally {
       setLoading(false);
     }
@@ -46,9 +56,9 @@ export default function Stock() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">Kuji Stock & Pricing</h1>
+        <h1 className="text-4xl font-bold text-white mb-2">{username}'s Kuji Stock</h1>
         <p className="text-slate-400">
-          View available prizes and their probabilities
+          View available prizes and their probabilities for {username}
         </p>
       </div>
 
@@ -160,10 +170,11 @@ export default function Stock() {
       {/* Refresh Info */}
       <div className="text-center">
         <button
-          onClick={loadStock}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          onClick={() => loadStock(true)}
+          disabled={loading}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
         >
-          Refresh Stock Data
+          {loading ? 'Refreshing...' : 'Refresh Stock Data'}
         </button>
         {stockData.cached && (
           <p className="text-xs text-slate-500 mt-2">

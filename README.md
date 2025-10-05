@@ -18,10 +18,13 @@ A full-featured kuji drawing application with user authentication, admin dashboa
 
 ### Authentication & User Management
 - **Secure Authentication** – JWT-based login/signup system with session management
+- **Automatic Username Generation** – Users can sign up with email only; system generates unique usernames
 - **Multi-Provider SSO** – Support for Google, GitHub, Discord, Facebook, X (Twitter), and LinkedIn
 - **User Profiles** – Complete account management with email verification and password changes
+- **User Dropdown Navigation** – Modern dropdown menu with profile, manage, draw, and stock quick links
 - **Super Admin Dashboard** – User management with D3.js analytics and administrative controls
 - **Demo Mode** – Interactive demo with sample user credentials for easy testing
+- **Public Demo Stock** – View demo user's prize inventory at `/demo/stock` without authentication
 
 ### Modern UI/UX
 - **Responsive Design** – Tailwind-powered layout optimized for desktop, tablet, and mobile
@@ -158,7 +161,9 @@ When advanced weighting is enabled, the **Prize Pool** tab displays probability 
 
 - **CSV Format** – Pricing uses whole-dollar amounts (price column). Legacy price_minor columns are still parsed and converted.
 - **Tier Ordering** – Tier S is preconfigured as the top tier; additional tiers follow the custom ordering helper.
+- **Tier Colors** – Choose from 19 color palettes (amber, purple, emerald, etc.) with automatic conversion to hex codes for consistent display.
 - **Emoji Flags** – Flags are derived from ISO country codes to avoid mojibake (for example, MY → 🇲🇾, SG → 🇸🇬).
+- **Username Generation** – Auto-generated usernames follow the format: `{adjective}-{noun}-{4-digit-number}` (e.g., "swift-falcon-4521").
 
 ## License
 
@@ -166,4 +171,4 @@ MIT License – see LICENSE for details.
 
 ## Acknowledgments
 
-Built with ❤️ for the Carol × Iris community.
+Built with ❤️ for the community.
