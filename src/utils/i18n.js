@@ -24,7 +24,7 @@ const DEFAULT_LANGUAGE = "en";
 export const translations = {
   en: {
     // General
-    "app.title": "Caris Kuji",
+    "app.title": "Create Kuji",
     "app.loading": "Loading...",
     "app.save": "Save",
     "app.cancel": "Cancel",
@@ -40,7 +40,7 @@ export const translations = {
     "app.error": "Error",
     
     // Home page
-    "home.description": "Gacha prize drawing application for Carol x Iris merchandise",
+    "home.description": "Gacha prize drawing application for  merchandise",
     "home.startDrawing": "Start Drawing",
     "home.adminArea": "Admin Area",
     
@@ -134,7 +134,7 @@ export const translations = {
   },
   "zh-CN": {
     // General
-    "app.title": "Caris 抽奖",
+    "app.title": "Create 抽奖",
     "app.loading": "加载中...",
     "app.save": "保存",
     "app.cancel": "取消",
@@ -150,7 +150,7 @@ export const translations = {
     "app.error": "错误",
     
     // Home page
-    "home.description": "Carol x Iris周边抽奖应用",
+    "home.description": "周边抽奖应用",
     "home.startDrawing": "开始抽奖",
     "home.adminArea": "管理区域",
     
@@ -244,7 +244,7 @@ export const translations = {
   },
   "zh-TW": {
     // General
-    "app.title": "Caris 抽獎",
+    "app.title": "Create 抽獎",
     "app.loading": "載入中...",
     "app.save": "儲存",
     "app.cancel": "取消",
@@ -260,7 +260,7 @@ export const translations = {
     "app.error": "錯誤",
     
     // Home page
-    "home.description": "Carol x Iris周邊抽獎應用",
+    "home.description": "周邊抽獎應用",
     "home.startDrawing": "開始抽獎",
     "home.adminArea": "管理區域",
     

@@ -215,14 +215,14 @@ export default function PricingManager() {
               <tr key={row.preset_id || index} className="hover:bg-slate-900/40">
                 <td className="px-3 py-2">
                   <input
-                    className="w-24 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                    className="w-24 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                     value={row.preset_id}
                     onChange={(event) => handleChange(index, "preset_id", event.target.value)}
                   />
                 </td>
                 <td className="px-3 py-2">
                   <input
-                    className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                    className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                     value={row.label}
                     onChange={(event) => handleChange(index, "label", event.target.value)}
                   />
@@ -231,7 +231,7 @@ export default function PricingManager() {
                   <input
                     type="number"
                     min="1"
-                    className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                    className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                     value={row.draw_count}
                     onChange={(event) => handleChange(index, "draw_count", event.target.value)}
                   />
@@ -243,7 +243,7 @@ export default function PricingManager() {
                       type="number"
                       min="0"
                       step="1"
-                      className="w-24 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-24 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.price}
                       onChange={(event) => handleChange(index, "price", event.target.value)}
                     />
@@ -253,7 +253,7 @@ export default function PricingManager() {
                   <input
                     type="number"
                     min="0"
-                    className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                    className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                     value={row.bonus_draws}
                     onChange={(event) => handleChange(index, "bonus_draws", event.target.value)}
                   />

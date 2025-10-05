@@ -11,7 +11,7 @@ const openEntryInNewTab = (entry) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Session #${entry.sessionNumber ?? "?"} – ${entry.fanName || "Fan"}</title>
+        <title>Session #${entry.sessionNumber ?? "?"} ï¿½ ${entry.fanName || "Fan"}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" />
         <style>
           body { background: #0f172a; color: #e2e8f0; }
@@ -38,7 +38,7 @@ const openEntryInNewTab = (entry) => {
               <p class="text-lg text-slate-200">${entry.fanName || "Unknown fan"}${
                 entry.queueNumber ? ` (Queue ${entry.queueNumber})` : ""
               }</p>
-              <p class="text-sm text-slate-400">${entry.label || "Custom"} · ${formatTimestamp(entry.timestamp)}</p>
+              <p class="text-sm text-slate-400">${entry.label || "Custom"} ï¿½ ${formatTimestamp(entry.timestamp)}</p>
             </header>
           </section>
           <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg">
@@ -124,10 +124,10 @@ export default function HistoryPanel({ history, tierColors, onClose }) {
             </label>
             <input
               id="history-search"
-              className="w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+              className="w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Fan, tier, prize…"
+              placeholder="Fan, tier, prizeï¿½"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function HistoryPanel({ history, tierColors, onClose }) {
             </label>
             <select
               id="search-type"
-              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={searchType}
               onChange={(event) => setSearchType(event.target.value)}
             >
@@ -176,7 +176,7 @@ export default function HistoryPanel({ history, tierColors, onClose }) {
                     </div>
                   </header>
                   <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
-                    {entry.label || "Custom"} · {entry.draws?.length || 0} pulls
+                    {entry.label || "Custom"} ï¿½ {entry.draws?.length || 0} pulls
                   </p>
                   <ul className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
                     {(entry.draws || []).map((draw, index) => (

@@ -11,9 +11,9 @@ body {
 }
 
 a {
-  @apply text-caris-accent hover:underline;
+  @apply text-create-accent hover:underline;
 }
 
 button {
-  @apply rounded-md bg-caris-primary px-4 py-2 font-semibold text-white transition hover:bg-caris-secondary;
+  @apply rounded-md bg-create-primary px-4 py-2 font-semibold text-white transition hover:bg-create-secondary;
 }

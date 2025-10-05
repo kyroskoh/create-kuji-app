@@ -25,7 +25,7 @@ const toPercent = (value) => `${(Math.round(value * 1000) / 10).toFixed(1)}%`;
 
 const WEIGHT_MODE_LABEL = {
   basic: "Basic weight system (weight only)",
-  advanced: "Advanced weight system (weight × quantity × tier priority)"
+  advanced: "Advanced weight system (weight ï¿½ quantity ï¿½ tier priority)"
 };
 
 export default function PrizePoolManager() {
@@ -209,7 +209,7 @@ export default function PrizePoolManager() {
         </div>
       </div>
       {weightMode === "advanced" && (
-        <div className="flex flex-col gap-3 rounded-xl border border-caris-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
+        <div className="flex flex-col gap-3 rounded-xl border border-create-primary/30 bg-slate-900/70 p-4 text-xs text-slate-300">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 className="font-semibold text-white">Probability guidance (advanced)</h4>
@@ -219,7 +219,7 @@ export default function PrizePoolManager() {
             </div>
             <button
               type="button"
-              className="rounded-md bg-caris-primary px-3 py-2 text-xs font-semibold text-white hover:bg-caris-primary/80"
+              className="rounded-md bg-create-primary px-3 py-2 text-xs font-semibold text-white hover:bg-create-primary/80"
               onClick={applySuggestedWeights}
             >
               Apply Suggested Weights
@@ -268,7 +268,7 @@ export default function PrizePoolManager() {
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.prize_name}
                       onChange={(event) => handleCellChange(index, "prize_name", event.target.value)}
                     />
@@ -277,7 +277,7 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="0"
-                      className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.quantity}
                       onChange={(event) => handleCellChange(index, "quantity", event.target.value)}
                     />
@@ -286,14 +286,14 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="1"
-                      className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.weight}
                       onChange={(event) => handleCellChange(index, "weight", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.sku}
                       placeholder="Optional"
                       onChange={(event) => handleCellChange(index, "sku", event.target.value)}
@@ -301,7 +301,7 @@ export default function PrizePoolManager() {
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.notes}
                       onChange={(event) => handleCellChange(index, "notes", event.target.value)}
                     />

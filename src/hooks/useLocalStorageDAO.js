@@ -4,14 +4,14 @@ import { DEFAULT_TIER_COLOR_MAP } from "../utils/tierColors.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../utils/flags.js";
 
 const STORE_KEYS = {
-  prizes: "caris::prizes",
-  pricing: "caris::pricing",
-  history: "caris::history",
-  settings: "caris::settings"
+  prizes: "create::prizes",
+  pricing: "create::pricing",
+  history: "create::history",
+  settings: "create::settings"
 };
 
 localforage.config({
-  name: "caris-kuji",
+  name: "create-kuji",
   storeName: "caris_kuji_store"
 });
 

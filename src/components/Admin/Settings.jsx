@@ -199,7 +199,7 @@ export default function Settings() {
     const now = new Date();
     const pad = (value) => String(value).padStart(2, "0");
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    link.download = `caris-kuji-export-settings-${timestamp}.json`;
+    link.download = `create-kuji-export-settings-${timestamp}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -291,7 +291,7 @@ export default function Settings() {
               type="button"
               className={`rounded-full px-4 py-2 text-xs font-semibold uppercase ${
                 settings.sessionStatus === status
-                  ? "bg-caris-primary text-white"
+                  ? "bg-create-primary text-white"
                   : "bg-slate-800 text-slate-300"
               }`}
               onClick={() => updateSettings({ sessionStatus: status })}
@@ -315,7 +315,7 @@ export default function Settings() {
               <input
                 id="country-search"
                 list="country-options"
-                className="w-56 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                className="w-56 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                 value={countryQuery}
                 onChange={(event) => handleCountryInput(event.target.value)}
                 placeholder="Malaysia"
@@ -339,7 +339,7 @@ export default function Settings() {
               <input
                 id="currency-code"
                 maxLength={5}
-                className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+                className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                 value={customCurrency}
                 onChange={(event) => setCustomCurrency(event.target.value)}
                 placeholder="MYR"
@@ -393,8 +393,8 @@ export default function Settings() {
               onClick={() => handleWeightModeChange(mode.id)}
               className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
                 settings.weightMode === mode.id
-                  ? "border-caris-primary bg-caris-primary/20 text-white"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-caris-primary/60"
+                  ? "border-create-primary bg-create-primary/20 text-white"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60"
               }`}
             >
               <div className="font-semibold">{mode.label}</div>
@@ -429,7 +429,7 @@ export default function Settings() {
             </label>
             <input
               id="new-tier"
-              className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-caris-primary/70 focus:outline-none focus:ring-2 focus:ring-caris-primary/30"
+              className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={newTierKey}
               onChange={(event) => setNewTierKey(event.target.value)}
               placeholder="E"
@@ -447,8 +447,8 @@ export default function Settings() {
               onClick={() => handleTierColorChange(palette.id)}
               className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
                 tierColors[activeTier] === palette.id
-                  ? "border-caris-primary bg-caris-primary/20 text-white"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-caris-primary/60"
+                  ? "border-create-primary bg-create-primary/20 text-white"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60"
               }`}
             >
               <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)}`} />
@@ -466,7 +466,7 @@ export default function Settings() {
           <button type="button" className="bg-emerald-600/80 text-white" onClick={handleImportAllClick}>
             Import All Data
           </button>
-          <button type="button" className="bg-caris-primary/80 text-white" onClick={handleExportAll}>
+          <button type="button" className="bg-create-primary/80 text-white" onClick={handleExportAll}>
             Export All Data
           </button>
           <button type="button" className="bg-red-600/80" onClick={handleResetClick}>

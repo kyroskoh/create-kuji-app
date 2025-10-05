@@ -1,11 +1,12 @@
-﻿# Caris Kuji App
+# Create Kuji App
 
 > **Created by [Kyros Koh](https://github.com/kyroskoh)**
 
-A multilingual gacha prize drawing application for Carol × Iris (CARIS) merchandise, built with React, Vite, and Tailwind CSS.
+A full-featured kuji drawing application with user authentication, admin dashboard, and comprehensive prize management built with React, Node.js, and modern web technologies.
 
 ## Features
 
+### Core Kuji System
 - **Prize Drawing System** – Weighted random engine with configurable tiers (Tier S and beyond) plus fan/session metadata.
 - **Advanced Weight Modes** – Switch between basic (weight-only) and advanced (weight × quantity × tier priority) probability calculations.
 - **Admin Probability Guidance** – The Prize Pool tab surfaces advanced suggestions and one-click weight recommendations when the advanced system is enabled.
@@ -14,16 +15,41 @@ A multilingual gacha prize drawing application for Carol × Iris (CARIS) merchan
 - **History Tracking** – Search, filter, and review draw sessions with fan names, queue numbers, and per-tier tallies.
 - **Sample Data Import** – Built-in CSV samples for prizes and pricing to bootstrap offline events quickly.
 - **Data Export/Import** – Export JSON snapshots or CSV backups before resetting sessions, then re-import to restore state.
-- **Responsive UI** – Tailwind-powered layout tuned for tablets, laptops, and widescreen kiosks.
+
+### Authentication & User Management
+- **Secure Authentication** – JWT-based login/signup system with session management
+- **Multi-Provider SSO** – Support for Google, GitHub, Discord, Facebook, X (Twitter), and LinkedIn
+- **User Profiles** – Complete account management with email verification and password changes
+- **Super Admin Dashboard** – User management with D3.js analytics and administrative controls
+- **Demo Mode** – Interactive demo with sample user credentials for easy testing
+
+### Modern UI/UX
+- **Responsive Design** – Tailwind-powered layout optimized for desktop, tablet, and mobile
+- **Toast Notifications** – Real-time feedback with animated notifications
+- **Protected Routes** – Role-based access control for admin and authenticated areas
+- **Stock Display** – Public prize pool visualization with tier-based styling
 
 ## Technology Stack
 
-- **Frontend** – React 18 + React Router 7
+### Frontend
+- **Framework** – React 18 with React Router DOM
 - **Build Tool** – Vite 5
 - **Styling** – Tailwind CSS 3
-- **State & Storage** – React hooks with LocalForage persistence
+- **State Management** – React Context API with hooks
+- **Storage** – LocalForage for client-side persistence
 - **Animation** – Framer Motion
+- **Data Visualization** – D3.js for charts and analytics
+- **3D Graphics** – Three.js for animations
+- **HTTP Client** – Axios with automatic token refresh
 - **CSV Handling** – PapaParse
+
+### Backend
+- **Runtime** – Node.js 18+ with Express.js
+- **Language** – TypeScript
+- **Database** – SQLite with Prisma ORM
+- **Authentication** – JWT tokens with Passport.js
+- **Security** – bcrypt password hashing, CORS, Helmet
+- **Email** – Nodemailer for verification emails
 
 ## Getting Started
 
@@ -32,16 +58,53 @@ A multilingual gacha prize drawing application for Carol × Iris (CARIS) merchan
 - Node.js 18.x or higher
 - npm 9.x or higher
 
-### Installation
+### Quick Start (Demo Mode)
+
+For a quick demo without backend setup:
 
 ```bash
-git clone https://github.com/kyroskoh/caris-kuji-app.git
-cd caris-kuji-app
+git clone https://github.com/kyroskoh/create-kuji-app.git
+cd create-kuji-app
 npm install
 npm run dev
 ```
 
+Then open http://localhost:5173/demo in your browser to explore the demo.
+
+### Full Installation (Frontend + Backend)
+
+1. **Clone and setup frontend:**
+```bash
+git clone https://github.com/kyroskoh/create-kuji-app.git
+cd create-kuji-app
+npm install
+```
+
+2. **Setup backend server:**
+```bash
+cd server
+npm install
+cp .env.example .env
+# Edit .env with your configuration
+npm run prisma:migrate
+npm run prisma:seed
+```
+
+3. **Start both servers:**
+```bash
+# Terminal 1: Backend (from server/ directory)
+npm run dev
+
+# Terminal 2: Frontend (from root directory)
+npm run dev
+```
+
 Then open http://localhost:5173 in your browser.
+
+### Demo Credentials
+
+- **Demo User**: username `demo`, password `Demo123!`
+- **Super Admin**: Contact repository owner for credentials
 
 ### Production Build
 

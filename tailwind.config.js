@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        caris: {
+        create: {
           primary: "#7c3aed",
           secondary: "#f472b6",
           accent: "#0ea5e9"

@@ -22,7 +22,7 @@ export default function MainLayout({ children }) {
                   to="/draw" 
                   className={`rounded-md px-3 py-2 text-sm font-medium ${
                     isActive("/draw") 
-                      ? "bg-caris-primary text-white" 
+                      ? "bg-create-primary text-white" 
                       : "text-slate-300 hover:bg-slate-700 hover:text-white"
                   }`}
                 >
@@ -32,7 +32,7 @@ export default function MainLayout({ children }) {
                   to="/admin" 
                   className={`rounded-md px-3 py-2 text-sm font-medium ${
                     isActive("/admin") 
-                      ? "bg-caris-primary text-white" 
+                      ? "bg-create-primary text-white" 
                       : "text-slate-300 hover:bg-slate-700 hover:text-white"
                   }`}
                 >

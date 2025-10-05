@@ -12,6 +12,11 @@ export default function Home() {
           {t("home.description")}
         </p>
         <div className="flex flex-col gap-4 pt-4">
+          <Link to="/demo" className="block w-full">
+            <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+              🎮 Try Live Demo
+            </button>
+          </Link>
           <Link to="/draw" className="block w-full">
             <button className="w-full">{t("home.startDrawing")}</button>
           </Link>

@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User authentication and management models
+
+model User {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  displayName String?
+  createdAt   DateTime @default(now())
+  lastLogin   DateTime?
+  isSuperAdmin Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  emails          Email[]
+  password        Password?
+  sessions        Session[]
+  providerAccounts ProviderAccount[]
+  tokens          Token[]
+  
+  @@index([username])
+  @@map("users")
+}
+
+model Email {
+  id         String    @id @default(uuid())
+  address    String    @unique
+  verifiedAt DateTime?
+  isPrimary  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  
+  // Foreign key
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([address])
+  @@index([userId, isPrimary])
+  @@map("emails")
+}
+
+model Password {
+  id        String   @id @default(uuid())
+  hash      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Foreign key
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("passwords")
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  refreshToken String    @unique
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  lastUsed     DateTime  @default(now())
+  rememberMe   Boolean   @default(false)
+  userAgent    String?
+  ipAddress    String?
+  
+  // Foreign key
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([refreshToken])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model ProviderAccount {
+  id         String   @id @default(uuid())
+  provider   Provider
+  providerId String
+  email      String?
+  name       String?
+  avatarUrl  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Foreign key
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("provider_accounts")
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  type      TokenType
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+  
+  // Foreign key
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([expiresAt])
+  @@map("tokens")
+}
+
+// Enums
+
+enum Provider {
+  GOOGLE
+  GITHUB
+  DISCORD
+  FACEBOOK
+  TWITTER
+  LINKEDIN
+  
+  @@map("provider")
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  
+  @@map("token_type")
+}
