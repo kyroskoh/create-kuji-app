@@ -9,28 +9,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function ScratchCard({ 
   prizeContent, 
   onComplete, 
-  width = 400, 
-  height = 300,
+  width, 
+  height,
   surfaceColor = '#c0c0c0',
   enabled = true 
 }) {
   const stageRef = useRef(null);
   const scratchLayerRef = useRef(null);
+  const contentRef = useRef(null);
   const [isScratching, setIsScratching] = useState(false);
   const [scratchedPercentage, setScratchedPercentage] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [lines, setLines] = useState([]);
   const [surfaceTexture, setSurfaceTexture] = useState(null);
+  const [dimensions, setDimensions] = useState({ width: width || 400, height: height || 300 });
+
+  // Measure content dimensions if width/height not provided
+  useEffect(() => {
+    if (contentRef.current && (!width || !height)) {
+      const rect = contentRef.current.getBoundingClientRect();
+      setDimensions({
+        width: width || rect.width,
+        height: height || rect.height
+      });
+    }
+  }, [width, height, prizeContent]);
 
   // Create metallic scratch surface texture
   useEffect(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
     const ctx = canvas.getContext('2d');
 
     // Create metallic gradient
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    const gradient = ctx.createLinearGradient(0, 0, dimensions.width, dimensions.height);
     gradient.addColorStop(0, '#b8b8b8');
     gradient.addColorStop(0.25, '#d4d4d4');
     gradient.addColorStop(0.5, '#e8e8e8');
@@ -38,10 +51,10 @@ export default function ScratchCard({
     gradient.addColorStop(1, '#b8b8b8');
     
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
     // Add noise texture
-    const imageData = ctx.getImageData(0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, dimensions.width, dimensions.height);
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
       const noise = Math.random() * 20 - 10;
@@ -56,14 +69,14 @@ export default function ScratchCard({
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('SCRATCH HERE', width / 2, height / 2 - 20);
+    ctx.fillText('SCRATCH HERE', dimensions.width / 2, dimensions.height / 2 - 20);
     ctx.font = '16px Arial';
-    ctx.fillText('🪙 Use your mouse to reveal!', width / 2, height / 2 + 20);
+    ctx.fillText('🪙 Use your mouse to reveal!', dimensions.width / 2, dimensions.height / 2 + 20);
 
     const image = new Image();
     image.src = canvas.toDataURL();
     image.onload = () => setSurfaceTexture(image);
-  }, [width, height]);
+  }, [dimensions.width, dimensions.height]);
 
   // Calculate scratched percentage
   const calculateScratchedPercentage = () => {
@@ -72,7 +85,7 @@ export default function ScratchCard({
     const layer = scratchLayerRef.current;
     const canvas = layer.getCanvas()._canvas;
     const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, dimensions.width, dimensions.height);
     const data = imageData.data;
 
     let transparentPixels = 0;
@@ -80,7 +93,7 @@ export default function ScratchCard({
       if (data[i] < 128) transparentPixels++; // Alpha channel
     }
 
-    const percentage = (transparentPixels / (width * height)) * 100;
+    const percentage = (transparentPixels / (dimensions.width * dimensions.height)) * 100;
     return percentage;
   };
 
@@ -138,14 +151,15 @@ export default function ScratchCard({
     <div 
       className="relative"
       style={{ 
-        width, 
-        height,
-        minHeight: height,
+        width: dimensions.width, 
+        height: dimensions.height,
+        minHeight: dimensions.height,
       }}
     >
       {/* Prize content underneath - always visible so it shows through when scratching */}
       <div 
-        className="absolute inset-0 flex items-center justify-center p-6 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-lg"
+        ref={contentRef}
+        className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-lg"
         style={{ 
           zIndex: 1
         }}
@@ -168,8 +182,8 @@ export default function ScratchCard({
           >
             <Stage
               ref={stageRef}
-              width={width}
-              height={height}
+              width={dimensions.width}
+              height={dimensions.height}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -184,15 +198,15 @@ export default function ScratchCard({
                 <Rect
                   x={0}
                   y={0}
-                  width={width}
-                  height={height}
+                  width={dimensions.width}
+                  height={dimensions.height}
                   fill={surfaceColor}
                 />
                 {surfaceTexture && (
                   <KonvaImage
                     image={surfaceTexture}
-                    width={width}
-                    height={height}
+                    width={dimensions.width}
+                    height={dimensions.height}
                   />
                 )}
 

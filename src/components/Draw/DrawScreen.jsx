@@ -435,7 +435,7 @@ export default function DrawScreen() {
             </span>
           )}
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence>
             {processedResults.map((item) => (
               <motion.div
@@ -444,22 +444,23 @@ export default function DrawScreen() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                className="flex justify-center"
               >
-                {useScratchMode && !revealedResults.has(item.id) ? (
-                  <ScratchCard
-                    prizeContent={
-                      <ResultCard drawIndex={item.drawIndex} prize={item.prize} tierColors={tierColors} />
-                    }
-                    onComplete={() => {
-                      setRevealedResults(new Set(revealedResults.add(item.id)));
-                    }}
-                    width={400}
-                    height={250}
-                    enabled={true}
-                  />
-                ) : (
-                  <ResultCard drawIndex={item.drawIndex} prize={item.prize} tierColors={tierColors} />
-                )}
+                <div className="w-full">
+                  {useScratchMode && !revealedResults.has(item.id) ? (
+                    <ScratchCard
+                      prizeContent={
+                        <ResultCard drawIndex={item.drawIndex} prize={item.prize} tierColors={tierColors} />
+                      }
+                      onComplete={() => {
+                        setRevealedResults(new Set(revealedResults.add(item.id)));
+                      }}
+                      enabled={true}
+                    />
+                  ) : (
+                    <ResultCard drawIndex={item.drawIndex} prize={item.prize} tierColors={tierColors} />
+                  )}
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>

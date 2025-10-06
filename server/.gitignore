@@ -1,5 +1,37 @@
+# Dependencies
 node_modules
-# Keep environment variables out of version control
-.env
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist
+build
+
+# Generated files
 /src/generated/prisma
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+logs
+*.log
+
+# Database
+*.db
+*.db-journal
+dev.db
+prisma/dev.db
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
