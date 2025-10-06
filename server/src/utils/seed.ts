@@ -70,11 +70,12 @@ async function main() {
   if (existingDemo) {
     console.log(`✅ Demo user already exists: ${existingDemo.username}`);
   } else {
-    // Create demo user
+    // Create demo user with username already set
     const demoUser = await prisma.user.create({
       data: {
         username: demoUsername,
         displayName: 'Demo User',
+        usernameSetByUser: true, // Mark as already set to skip profile completion
         isSuperAdmin: false,
         emails: {
           create: {

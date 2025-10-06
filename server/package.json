@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node src/utils/seed.ts",
+    "fix:demo": "ts-node src/utils/fix-demo-username.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["nodejs", "express", "typescript", "prisma", "authentication", "kuji", "gacha"],

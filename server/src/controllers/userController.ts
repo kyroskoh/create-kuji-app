@@ -401,7 +401,8 @@ export async function updateUsername(req: Request, res: Response) {
     }
 
     // Check if username has already been set by user
-    if (currentUser.usernameSetByUser) {
+    // Exception: Allow demo user to re-set 'demo' username
+    if (currentUser.usernameSetByUser && !(isDemoUser && isSettingDemoUsername)) {
       return res.status(403).json({
         error: 'USERNAME_ALREADY_SET',
         message: 'Username has already been set. Please contact support to change it.',

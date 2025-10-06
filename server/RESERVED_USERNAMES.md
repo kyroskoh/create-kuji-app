@@ -83,10 +83,19 @@ The `demo` user account is allowed to keep/set the username "demo":
 const isDemoUser = currentUser.username === 'demo';
 const isSettingDemoUsername = lowerUsername === 'demo';
 
+// Bypass 1: Reserved username check
 if (reservedUsernames.includes(lowerUsername) && !(isDemoUser && isSettingDemoUsername)) {
   return res.status(400).json({
     error: 'RESERVED_USERNAME',
     message: 'This username is reserved and cannot be used',
+  });
+}
+
+// Bypass 2: Username already set check
+if (currentUser.usernameSetByUser && !(isDemoUser && isSettingDemoUsername)) {
+  return res.status(403).json({
+    error: 'USERNAME_ALREADY_SET',
+    message: 'Username has already been set. Please contact support to change it.',
   });
 }
 ```

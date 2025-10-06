@@ -18,10 +18,19 @@ const currentUser = await prisma.user.findUnique({
 const isDemoUser = currentUser.username === 'demo';
 const isSettingDemoUsername = lowerUsername === 'demo';
 
+// Exception 1: Bypass reserved username check for demo
 if (reservedUsernames.includes(lowerUsername) && !(isDemoUser && isSettingDemoUsername)) {
   return res.status(400).json({
     error: 'RESERVED_USERNAME',
     message: 'This username is reserved and cannot be used',
+  });
+}
+
+// Exception 2: Bypass usernameSetByUser check for demo
+if (currentUser.usernameSetByUser && !(isDemoUser && isSettingDemoUsername)) {
+  return res.status(403).json({
+    error: 'USERNAME_ALREADY_SET',
+    message: 'Username has already been set. Please contact support to change it.',
   });
 }
 ```
