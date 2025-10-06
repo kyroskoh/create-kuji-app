@@ -135,13 +135,18 @@ export default function ScratchCard({
   };
 
   return (
-    <div className="relative">
+    <div 
+      className="relative"
+      style={{ 
+        width, 
+        height,
+        minHeight: height,
+      }}
+    >
       {/* Prize content underneath - always visible so it shows through when scratching */}
       <div 
-        className="absolute inset-0 flex items-center justify-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg"
+        className="absolute inset-0 flex items-center justify-center p-6 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-lg"
         style={{ 
-          width, 
-          height,
           zIndex: 1
         }}
       >
@@ -175,6 +180,14 @@ export default function ScratchCard({
             >
               {/* Scratch surface layer */}
               <Layer ref={scratchLayerRef}>
+                {/* Fallback background in case texture hasn't loaded */}
+                <Rect
+                  x={0}
+                  y={0}
+                  width={width}
+                  height={height}
+                  fill={surfaceColor}
+                />
                 {surfaceTexture && (
                   <KonvaImage
                     image={surfaceTexture}

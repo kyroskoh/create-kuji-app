@@ -4,10 +4,10 @@ import { useAuth } from '../utils/AuthContext.jsx';
 import Home from '../pages/Home.jsx';
 
 export default function AuthenticatedHome() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
   // Show loading state while auth is being determined
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">

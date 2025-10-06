@@ -13,11 +13,11 @@ import RequireSetup from "../auth/RequireSetup.jsx";
 // Component to validate that the URL username matches the authenticated user
 function ValidateUserAccess({ children }) {
   const { username: urlUsername } = useParams();
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   
-  console.log(`🔍 ValidateUserAccess - URL: ${urlUsername}, User: ${user?.username}, Loading: ${isLoading}`);
+  console.log(`🔍 ValidateUserAccess - URL: ${urlUsername}, User: ${user?.username}, Loading: ${loading}`);
   
-  if (isLoading) {
+  if (loading) {
     console.log(`⏳ ValidateUserAccess - Still loading auth...`);
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
