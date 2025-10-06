@@ -192,6 +192,7 @@ Update username (one-time only, requires authentication).
   - API/Endpoints: `api`, `www`, `mail`, `ftp`, `smtp`, `http`, `https`
   - App-specific: `createkuji`, `createmykuji`, `makekuji`, `makemykuji`, `kuji`, `kyros`, `kyroskoh`
   - Safety: `null`, `undefined`, `none`, `nil`, `void`, `bot`, `official`, `verified`, `account`
+  - **Exception**: The demo user (with current username "demo") can set/keep "demo" as their username
 - Can only be set once per account
 
 **Response:**

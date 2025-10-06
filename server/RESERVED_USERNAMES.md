@@ -72,10 +72,24 @@ When a user attempts to use a reserved username:
 ```
 
 ## Demo User Exception
-The `demo` user account itself (created during seed) is allowed to keep the username "demo" because:
-1. It's created directly in the database during seeding with `usernameSetByUser: true`
-2. The validation only applies to the `PUT /api/user/username` endpoint
-3. The demo account already has its username set, so it cannot be changed anyway
+The `demo` user account is allowed to keep/set the username "demo":
+
+1. **Special Exception**: If the current user already has "demo" as their username, they can set it again
+2. **Implementation**: The code checks `currentUser.username === 'demo'` before applying reserved username validation
+3. **Security**: Other users cannot choose "demo" - only the existing demo user can keep it
+
+```typescript
+// Allow demo user to keep 'demo' username
+const isDemoUser = currentUser.username === 'demo';
+const isSettingDemoUsername = lowerUsername === 'demo';
+
+if (reservedUsernames.includes(lowerUsername) && !(isDemoUser && isSettingDemoUsername)) {
+  return res.status(400).json({
+    error: 'RESERVED_USERNAME',
+    message: 'This username is reserved and cannot be used',
+  });
+}
+```
 
 ## API Endpoint
 **PUT** `/api/user/username`

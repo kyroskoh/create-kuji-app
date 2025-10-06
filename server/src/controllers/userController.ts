@@ -357,7 +357,20 @@ export async function updateUsername(req: Request, res: Response) {
       });
     }
 
+    // Fetch current user first to check for exceptions
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
     // Check for reserved usernames (system accounts, common roles, and protected names)
+    // Exception: Allow demo user to keep/set 'demo' username
     const reservedUsernames = [
       // System accounts
       'admin', 'administrator', 'system', 'root', 'superuser', 'sudo',
@@ -375,22 +388,15 @@ export async function updateUsername(req: Request, res: Response) {
       'bot', 'official', 'verified', 'account'
     ];
     const lowerUsername = username.toLowerCase();
-    if (reservedUsernames.includes(lowerUsername)) {
+    
+    // Allow demo user to keep 'demo' username
+    const isDemoUser = currentUser.username === 'demo';
+    const isSettingDemoUsername = lowerUsername === 'demo';
+    
+    if (reservedUsernames.includes(lowerUsername) && !(isDemoUser && isSettingDemoUsername)) {
       return res.status(400).json({
         error: 'RESERVED_USERNAME',
         message: 'This username is reserved and cannot be used',
-      });
-    }
-
-    // Fetch current user
-    const currentUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!currentUser) {
-      return res.status(404).json({
-        error: 'USER_NOT_FOUND',
-        message: 'User not found',
       });
     }
 
