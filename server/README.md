@@ -294,12 +294,21 @@ Check server status.
 
 ## Scripts
 
+### Development
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm start` - Run compiled production build
+
+### Database
 - `npm run prisma:generate` - Generate Prisma client (required before first run and after schema changes)
 - `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:seed` - Seed database with initial data
+
+### Support Tools
+- `npm run fix:demo` - Update demo user to have permanent username
+- `npm run support:change-username <current> <new>` - Change username by current username
+- `npm run support:change-username-email <email> <new>` - Change username by email address (useful for temp usernames)
+  - See `SUPPORT_USERNAME_CHANGE.md` for detailed guide
 
 ## Project Structure
 
