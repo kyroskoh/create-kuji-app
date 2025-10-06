@@ -1,0 +1,49 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Build output
+dist
+
+# Environment files (should be mounted or provided at runtime)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+
+# Documentation
+README.md
+docs
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# SQLite database (for development)
+*.db
+*.db-journal
+dev.db
+
+# Logs
+logs
+*.log

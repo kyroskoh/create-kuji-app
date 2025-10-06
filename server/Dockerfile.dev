@@ -1,0 +1,40 @@
+# Development Dockerfile for Create Kuji Server
+FROM node:20-alpine
+
+# Install dependencies for native modules (bcrypt, etc.)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    postgresql-client
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including dev dependencies for development)
+RUN npm ci
+
+# Copy Prisma schema first to leverage layer caching
+COPY prisma ./prisma/
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Copy tsconfig
+COPY tsconfig.json ./
+
+# Expose the application port
+EXPOSE 3001
+
+# Create a non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
+# Development command with hot-reloading
+CMD ["npm", "run", "dev"]
