@@ -492,6 +492,7 @@ export async function getCurrentUser(req: Request, res: Response) {
         username: user.username,
         displayName: user.displayName,
         usernameSetByUser: user.usernameSetByUser,
+        emailVerified: user.emails[0]?.verifiedAt !== null,
         emails: user.emails,
         providers: user.providerAccounts,
         isSuperAdmin: user.isSuperAdmin,
