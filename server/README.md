@@ -108,11 +108,12 @@ Register a new user account.
 ```json
 {
   "email": "user@example.com",
-  "username": "username",
   "password": "SecurePass123!",
   "hcaptchaToken": "token-from-frontend"
 }
 ```
+
+**Note:** Username is auto-generated from email. Users can set their own username later via the profile settings.
 
 **Response:**
 ```json
@@ -168,6 +169,54 @@ Verify email address.
 
 #### GET /api/auth/me
 Get current user information (requires authentication).
+
+### User Management Endpoints
+
+#### PUT /api/user/username
+Update username (one-time only, requires authentication).
+
+**Request:**
+```json
+{
+  "username": "newusername"
+}
+```
+
+**Validation:**
+- Must be 5-20 characters
+- Only letters, numbers, underscores, and hyphens allowed
+- **Reserved usernames** (cannot be used):
+  - System: `admin`, `administrator`, `root`, `system`, `superuser`, `sudo`
+  - Demo/Test: `demo`, `test`, `guest`, `anonymous`, `user`
+  - Roles: `moderator`, `mod`, `support`, `help`, `staff`, `owner`
+  - API/Endpoints: `api`, `www`, `mail`, `ftp`, `smtp`, `http`, `https`
+  - App-specific: `createkuji`, `createmykuji`, `makekuji`, `makemykuji`, `kuji`, `kyros`, `kyroskoh`
+  - Safety: `null`, `undefined`, `none`, `nil`, `void`, `bot`, `official`, `verified`, `account`
+- Can only be set once per account
+
+**Response:**
+```json
+{
+  "message": "Username updated successfully",
+  "user": {
+    "id": "uuid",
+    "username": "newusername",
+    "displayName": "newusername",
+    "usernameSetByUser": true,
+    "email": "user@example.com",
+    "emailVerified": false,
+    "isSuperAdmin": false
+  }
+}
+```
+
+**Error Responses:**
+- `RESERVED_USERNAME` - Username is reserved and cannot be used
+- `USERNAME_EXISTS` - Username already taken
+- `USERNAME_ALREADY_SET` - Username has already been set (contact support to change)
+
+#### GET /api/user/profile
+Get user's complete profile information (requires authentication).
 
 ### User Kuji Endpoints
 

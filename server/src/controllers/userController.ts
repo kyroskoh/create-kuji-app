@@ -357,6 +357,31 @@ export async function updateUsername(req: Request, res: Response) {
       });
     }
 
+    // Check for reserved usernames (system accounts, common roles, and protected names)
+    const reservedUsernames = [
+      // System accounts
+      'admin', 'administrator', 'system', 'root', 'superuser', 'sudo',
+      // Demo and test accounts
+      'demo', 'test', 'guest', 'anonymous', 'user',
+      // Common roles
+      'moderator', 'mod', 'support', 'help', 'staff', 'owner',
+      // API and system endpoints
+      'api', 'www', 'mail', 'ftp', 'smtp', 'http', 'https',
+      // Application specific
+      'createkuji', 'createmykuji', 'makekuji', 'makemykuji', 'kuji', 'kyros', 'kyroskoh',
+      // Reserved for safety
+      'null', 'undefined', 'none', 'nil', 'void',
+      // Potentially offensive or problematic
+      'bot', 'official', 'verified', 'account'
+    ];
+    const lowerUsername = username.toLowerCase();
+    if (reservedUsernames.includes(lowerUsername)) {
+      return res.status(400).json({
+        error: 'RESERVED_USERNAME',
+        message: 'This username is reserved and cannot be used',
+      });
+    }
+
     // Fetch current user
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },

@@ -1,0 +1,70 @@
+RESERVED USERNAMES - QUICK REFERENCE
+=====================================
+
+Total: 38 reserved usernames (case-insensitive)
+
+SYSTEM ACCOUNTS (6)
+-------------------
+admin
+administrator
+root
+system
+superuser
+sudo
+
+DEMO AND TEST ACCOUNTS (5)
+---------------------------
+demo
+test
+guest
+anonymous
+user
+
+COMMON ROLES (6)
+----------------
+moderator
+mod
+support
+help
+staff
+owner
+
+API AND SYSTEM ENDPOINTS (7)
+-----------------------------
+api
+www
+mail
+ftp
+smtp
+http
+https
+
+APPLICATION SPECIFIC (7)
+------------------------
+createkuji
+createmykuji
+makekuji
+makemykuji
+kuji
+kyros
+kyroskoh
+
+RESERVED FOR SAFETY (5)
+-----------------------
+null
+undefined
+none
+nil
+void
+
+POTENTIALLY PROBLEMATIC (6)
+---------------------------
+bot
+official
+verified
+account
+
+=====================================
+Last updated: 2025-10-06
+Location: server/src/controllers/userController.ts
+Error code: RESERVED_USERNAME
