@@ -20,7 +20,7 @@ Backend API server for the Create Kuji gacha application with comprehensive user
 
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL 15+ with Prisma ORM
+- **Database**: SQLite with Prisma ORM (development), PostgreSQL-ready for production
 - **Authentication**: Passport.js + JWT
 - **Email**: Nodemailer (Ethereal for dev, SendGrid for prod)
 - **Security**: Helmet, bcrypt, hCaptcha
@@ -29,7 +29,7 @@ Backend API server for the Create Kuji gacha application with comprehensive user
 
 - Node.js 18.x or higher
 - npm 9.x or higher
-- PostgreSQL 15+ (or Docker)
+- No additional database setup needed (uses SQLite for development)
 
 ## Setup
 
@@ -48,28 +48,29 @@ copy .env.example .env
 ```
 
 Key variables to configure:
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_ACCESS_SECRET` - Secret for access tokens
-- `JWT_REFRESH_SECRET` - Secret for refresh tokens
-- `HCAPTCHA_SECRET` - hCaptcha secret key
-- `EMAIL_*` - Email service configuration
-- OAuth provider credentials (Google, GitHub, etc.)
+- `DATABASE_URL` - SQLite path (default: `file:./dev.db`)
+- `JWT_ACCESS_SECRET` - Secret for access tokens (default values OK for dev)
+- `JWT_REFRESH_SECRET` - Secret for refresh tokens (default values OK for dev)
+- `HCAPTCHA_SECRET` - Optional in development
+- `EMAIL_*` - Auto-generated in development
+- OAuth provider credentials - Optional, only needed if using SSO
 
-### 3. Start PostgreSQL
+### 3. Database Setup
 
-Using Docker (recommended for development):
+SQLite is used by default for development - no additional setup needed!
 
-```bash
-docker-compose up -d
-```
+The database file (`dev.db`) will be created automatically when you run migrations.
 
-Or install PostgreSQL locally and create a database.
+### 4. Generate Prisma Client & Run Migrations
 
-### 4. Run Migrations
+**IMPORTANT:** Generate Prisma client before starting the server:
 
 ```bash
+npm run prisma:generate
 npm run prisma:migrate
 ```
+
+> **Note:** If you see `@prisma/client did not initialize yet` error, run `npm run prisma:generate`
 
 ### 5. Seed Database
 
@@ -246,7 +247,7 @@ Check server status.
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm start` - Run compiled production build
-- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:generate` - Generate Prisma client (required before first run and after schema changes)
 - `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:seed` - Seed database with initial data
 
@@ -299,20 +300,22 @@ server/
 
 ## Development Notes
 
+- **Prisma Client**: Must run `npm run prisma:generate` before first server start or after any schema changes
 - Email service uses Ethereal in development (check console for test URLs)
 - hCaptcha is skipped in development if not configured
-- PostgreSQL with citext extension for case-insensitive searches
+- SQLite database stored as `dev.db` in server directory
 - Automatic session cleanup runs every hour
 
 ## Production Deployment
 
 1. Set `NODE_ENV=production`
-2. Configure production database
-3. Set up SendGrid or SMTP email service
-4. Configure OAuth provider callbacks
-5. Set strong JWT secrets
-6. Enable hCaptcha
-7. Configure CORS for production domain
+2. **Switch to PostgreSQL**: Update `schema.prisma` datasource to use `postgresql` provider
+3. Configure production database URL in `.env`
+4. Set up SendGrid or SMTP email service
+5. Configure OAuth provider callbacks
+6. Set strong JWT secrets (generate new ones, don't use defaults)
+7. Enable hCaptcha
+8. Configure CORS for production domain
 
 ## License
 

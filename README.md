@@ -49,7 +49,7 @@ A full-featured kuji drawing application with user authentication, admin dashboa
 ### Backend
 - **Runtime** – Node.js 18+ with Express.js
 - **Language** – TypeScript
-- **Database** – SQLite with Prisma ORM
+- **Database** – SQLite with Prisma ORM (development), PostgreSQL-ready for production
 - **Authentication** – JWT tokens with Passport.js
 - **Security** – bcrypt password hashing, CORS, Helmet
 - **Email** – Nodemailer for verification emails
@@ -89,6 +89,7 @@ cd server
 npm install
 cp .env.example .env
 # Edit .env with your configuration
+npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
 ```
