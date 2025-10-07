@@ -40,10 +40,23 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
+      'localhost:3001', // Backend port
+      'localhost:5173', // Frontend dev server (primary)
+      'localhost:5174', // Frontend dev server (fallback)
+      'localhost:3000',  // Alternative frontend port
       'servarica0.layeredserver.com',
       '.layeredserver.com', // Allow all subdomains
       'createkuji.app',
+      '.createkuji.app', // Allow all createkuji.app subdomains
     ],
+    proxy: {
+      // Proxy API calls to backend server
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     https: getHttpsConfig(),
   },
   resolve: {
