@@ -6,7 +6,8 @@ const STORE_KEYS = {
   prizes: "create::prizes",
   pricing: "create::pricing",
   history: "create::history",
-  settings: "create::settings"
+  settings: "create::settings",
+  syncQueue: "create::sync_queue" // New: persistent sync queue
 };
 
 // Configure LocalForage (same as in useLocalStorageDAO)
@@ -19,31 +20,133 @@ localforage.config({
 class SyncService {
   constructor() {
     this.isOnline = navigator.onLine;
-    this.pendingSyncs = new Set();
+    this.syncQueue = [];
     this.syncInProgress = false;
+    this.retryAttempts = new Map(); // Track retry attempts per operation
+    this.maxRetries = 3;
+    this.retryDelay = 1000; // Start with 1 second
+    
+    // Initialize: load persisted queue from storage
+    this.initializeQueue();
     
     // Listen for online/offline events
     window.addEventListener('online', () => {
+      console.log('🌐 Connection restored - processing pending syncs');
       this.isOnline = true;
-      this.processPendingSyncs();
+      this.processSyncQueue();
     });
     
     window.addEventListener('offline', () => {
+      console.log('📡 Connection lost - queueing syncs');
       this.isOnline = false;
     });
+
+    // Periodic sync check (every 30 seconds)
+    setInterval(() => {
+      if (this.isOnline && !this.syncInProgress && this.syncQueue.length > 0) {
+        this.processSyncQueue();
+      }
+    }, 30000);
   }
 
-  // Sync all LocalForage data to backend for a user
-  async syncAllData(username) {
-    if (!username || this.syncInProgress) {
-      return;
+  // Initialize queue from persistent storage
+  async initializeQueue() {
+    try {
+      const persistedQueue = await localforage.getItem(STORE_KEYS.syncQueue);
+      if (Array.isArray(persistedQueue) && persistedQueue.length > 0) {
+        this.syncQueue = persistedQueue;
+        console.log(`📦 Restored ${persistedQueue.length} queued syncs from storage`);
+        
+        // Try to process if online
+        if (this.isOnline) {
+          this.processSyncQueue();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize sync queue:', error);
+    }
+  }
+
+  // Persist queue to storage
+  async persistQueue() {
+    try {
+      await localforage.setItem(STORE_KEYS.syncQueue, this.syncQueue);
+    } catch (error) {
+      console.error('Failed to persist sync queue:', error);
+    }
+  }
+
+  // Add operation to queue
+  async addToQueue(operation) {
+    const queueItem = {
+      ...operation,
+      id: `${operation.username}_${operation.dataType}_${Date.now()}`,
+      timestamp: Date.now(),
+      attempts: 0
+    };
+    
+    this.syncQueue.push(queueItem);
+    await this.persistQueue();
+    console.log(`➕ Added ${operation.dataType} sync to queue (${this.syncQueue.length} items)`);
+  }
+
+  // Remove operation from queue
+  async removeFromQueue(id) {
+    this.syncQueue = this.syncQueue.filter(item => item.id !== id);
+    await this.persistQueue();
+  }
+
+  // Pull data from server and update local storage
+  async pullDataFromServer(username) {
+    if (!username || !this.isOnline) {
+      console.log('Cannot pull data: offline or no username');
+      return { success: false };
     }
 
-    this.syncInProgress = true;
-    console.log(`Starting full sync for user: ${username}`);
+    console.log(`⬇️ Pulling latest data from server for ${username}...`);
 
     try {
-      // Load all data from LocalForage directly
+      // Fetch all data from server
+      const [prizesResponse, settingsResponse, presetsResponse] = await Promise.allSettled([
+        kujiAPI.getUserPrizes(username),
+        kujiAPI.getUserSettings(username),
+        kujiAPI.getUserPresets(username)
+      ]);
+
+      // Update local storage with server data
+      if (prizesResponse.status === 'fulfilled' && prizesResponse.value.data.prizes) {
+        await localforage.setItem(STORE_KEYS.prizes, prizesResponse.value.data.prizes);
+        console.log(`✅ Pulled ${prizesResponse.value.data.prizes.length} prizes from server`);
+      }
+
+      if (settingsResponse.status === 'fulfilled' && settingsResponse.value.data) {
+        await localforage.setItem(STORE_KEYS.settings, settingsResponse.value.data);
+        console.log('✅ Pulled settings from server');
+      }
+
+      if (presetsResponse.status === 'fulfilled' && presetsResponse.value.data.presets) {
+        await localforage.setItem(STORE_KEYS.pricing, presetsResponse.value.data.presets);
+        console.log(`✅ Pulled ${presetsResponse.value.data.presets.length} pricing presets from server`);
+      }
+
+      return { success: true };
+
+    } catch (error) {
+      console.error('Error pulling data from server:', error);
+      return { success: false, error };
+    }
+  }
+
+  // Push local data to server (full sync)
+  async pushDataToServer(username) {
+    if (!username) {
+      return { success: false };
+    }
+
+    console.log(`⬆️ Pushing local data to server for ${username}...`);
+
+    try {
+      // Load all data from LocalForage
       const [prizes, settings, history, presets] = await Promise.all([
         localforage.getItem(STORE_KEYS.prizes).then(data => Array.isArray(data) ? data : []),
         localforage.getItem(STORE_KEYS.settings),
@@ -51,102 +154,155 @@ class SyncService {
         localforage.getItem(STORE_KEYS.pricing).then(data => Array.isArray(data) ? data : [])
       ]);
 
-      // Sync each data type
-      const syncPromises = [];
+      // Queue each data type for sync
+      const syncOperations = [];
       
       if (prizes.length > 0) {
-        syncPromises.push(
-          kujiAPI.syncPrizes(username, prizes)
-            .then(() => console.log(`✓ Synced ${prizes.length} prizes`))
-            .catch(error => console.error('Failed to sync prizes:', error))
-        );
+        syncOperations.push({ username, dataType: 'prizes', data: prizes });
       }
 
       if (settings) {
-        syncPromises.push(
-          kujiAPI.syncSettings(username, settings)
-            .then(() => console.log('✓ Synced settings'))
-            .catch(error => console.error('Failed to sync settings:', error))
-        );
+        syncOperations.push({ username, dataType: 'settings', data: settings });
       }
 
       if (history.length > 0) {
-        syncPromises.push(
-          kujiAPI.syncHistory(username, history)
-            .then(() => console.log(`✓ Synced ${history.length} history entries`))
-            .catch(error => console.error('Failed to sync history:', error))
-        );
+        syncOperations.push({ username, dataType: 'history', data: history });
       }
 
       if (presets.length > 0) {
-        syncPromises.push(
-          kujiAPI.syncPresets(username, presets)
-            .then(() => console.log(`✓ Synced ${presets.length} presets`))
-            .catch(error => console.error('Failed to sync presets:', error))
-        );
+        syncOperations.push({ username, dataType: 'presets', data: presets });
       }
 
-      // Wait for all syncs to complete
-      await Promise.allSettled(syncPromises);
+      // Add all to queue
+      for (const operation of syncOperations) {
+        await this.addToQueue(operation);
+      }
+
+      // Process queue
+      if (this.isOnline) {
+        await this.processSyncQueue();
+      }
       
-      console.log(`✅ Full sync completed for user: ${username}`);
       return { success: true };
 
     } catch (error) {
-      console.error('Error during full sync:', error);
+      console.error('Error pushing data to server:', error);
+      return { success: false, error };
+    }
+  }
+
+  // Bidirectional sync: pull from server first, then push local changes
+  async syncAllData(username) {
+    if (!username || this.syncInProgress) {
+      return;
+    }
+
+    this.syncInProgress = true;
+    console.log(`🔄 Starting bidirectional sync for user: ${username}`);
+
+    try {
+      // Step 1: Pull latest data from server
+      await this.pullDataFromServer(username);
+      
+      // Step 2: Push any local changes to server
+      await this.pushDataToServer(username);
+      
+      console.log(`✨ Bidirectional sync completed for user: ${username}`);
+      return { success: true };
+
+    } catch (error) {
+      console.error('Error during bidirectional sync:', error);
       return { success: false, error };
     } finally {
       this.syncInProgress = false;
     }
   }
 
-  // Sync specific data type
-  async syncData(username, dataType, data) {
-    if (!username || !this.isOnline) {
-      this.pendingSyncs.add({ username, dataType, data });
+  // Process sync queue with retry logic
+  async processSyncQueue() {
+    if (!this.isOnline || this.syncInProgress || this.syncQueue.length === 0) {
       return;
     }
 
-    try {
-      switch (dataType) {
-        case 'prizes':
-          await kujiAPI.syncPrizes(username, data);
-          break;
-        case 'settings':
-          await kujiAPI.syncSettings(username, data);
-          break;
-        case 'history':
-          await kujiAPI.syncHistory(username, data);
-          break;
-        case 'presets':
-          await kujiAPI.syncPresets(username, data);
-          break;
-        default:
-          console.warn(`Unknown data type for sync: ${dataType}`);
-          return;
-      }
+    this.syncInProgress = true;
+    console.log(`🔄 Processing ${this.syncQueue.length} queued syncs...`);
+
+    // Process queue items one by one
+    while (this.syncQueue.length > 0 && this.isOnline) {
+      const item = this.syncQueue[0];
       
-      console.log(`✓ Synced ${dataType} for user: ${username}`);
-    } catch (error) {
-      console.error(`Failed to sync ${dataType}:`, error);
-      // Add to pending syncs for retry
-      this.pendingSyncs.add({ username, dataType, data });
+      try {
+        // Perform sync based on data type
+        await this.executeSyncOperation(item);
+        
+        // Success - remove from queue
+        await this.removeFromQueue(item.id);
+        console.log(`✅ Synced ${item.dataType} for ${item.username}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to sync ${item.dataType}:`, error);
+        
+        // Increment attempts
+        item.attempts = (item.attempts || 0) + 1;
+        
+        if (item.attempts >= this.maxRetries) {
+          console.warn(`⚠️ Max retries reached for ${item.dataType}, removing from queue`);
+          await this.removeFromQueue(item.id);
+        } else {
+          // Exponential backoff
+          const delay = this.retryDelay * Math.pow(2, item.attempts - 1);
+          console.log(`🔁 Retrying ${item.dataType} in ${delay}ms (attempt ${item.attempts}/${this.maxRetries})`);
+          
+          // Move to end of queue and wait before retry
+          this.syncQueue.shift();
+          this.syncQueue.push(item);
+          await this.persistQueue();
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    this.syncInProgress = false;
+    
+    if (this.syncQueue.length === 0) {
+      console.log('✨ All syncs completed!');
     }
   }
 
-  // Process any pending syncs when coming back online
-  async processPendingSyncs() {
-    if (!this.isOnline || this.pendingSyncs.size === 0) {
+  // Execute a single sync operation
+  async executeSyncOperation(item) {
+    const { username, dataType, data } = item;
+    
+    switch (dataType) {
+      case 'prizes':
+        return await kujiAPI.syncPrizes(username, data);
+      case 'settings':
+        return await kujiAPI.syncSettings(username, data);
+      case 'history':
+        return await kujiAPI.syncHistory(username, data);
+      case 'presets':
+        return await kujiAPI.syncPresets(username, data);
+      case 'pricing':
+        // Alias for presets - both refer to pricing data
+        return await kujiAPI.syncPresets(username, data);
+      default:
+        throw new Error(`Unknown data type for sync: ${dataType}`);
+    }
+  }
+
+  // Sync specific data type (public API)
+  async syncData(username, dataType, data) {
+    if (!username) {
+      console.warn('Cannot sync: username is required');
       return;
     }
 
-    console.log(`Processing ${this.pendingSyncs.size} pending syncs...`);
+    // Add to queue (will be processed immediately if online, or later if offline)
+    await this.addToQueue({ username, dataType, data });
     
-    const syncsToProcess = Array.from(this.pendingSyncs);
-    this.pendingSyncs.clear();
-
-    for (const { username, dataType, data } of syncsToProcess) {
-      await this.syncData(username, dataType, data);
+    // Try to process immediately if online
+    if (this.isOnline && !this.syncInProgress) {
+      this.processSyncQueue();
     }
   }
 

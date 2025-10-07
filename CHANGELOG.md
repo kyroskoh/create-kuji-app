@@ -5,6 +5,138 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-10-07
+
+### Added
+
+#### Sync Service Enhancements
+- **Pricing/Presets Sync Support** - Extended sync service to handle pricing presets
+  - Added `getUserPresets` endpoint to fetch pricing data from server
+  - Updated `pullDataFromServer()` to sync pricing alongside prizes and settings
+  - Added 'pricing' dataType support in sync queue processing
+- **Bidirectional Sync Integration** - Stock page now performs full sync on refresh
+  - Pulls latest server data before displaying stock
+  - Pushes any local changes to server
+  - Ensures data consistency across devices
+- **Comprehensive Sync Documentation** - Added `SYNC_SERVICE.md`
+  - Architecture and file structure overview
+  - Integration points for all pages/components
+  - Testing instructions for offline/online scenarios
+  - Monitoring, debugging, and troubleshooting guides
+  - Best practices and future enhancements
+
+#### Visual Improvements
+- **Auto-sizing Scratch Cards** - Cards now dynamically match wrapped content dimensions
+  - Uses `getBoundingClientRect()` for accurate measurement
+  - Eliminates layout shifts during scratching animation
+  - Responsive to different prize card sizes
+- **Enhanced Scratch Card Visuals**
+  - Added fallback gray background behind scratch surface
+  - Improved prize content gradient (light pastel → vibrant purple)
+  - Better visibility and contrast for prize reveals
+  - Responsive grid layout with improved breakpoints
+
+#### Docker Development Environment
+- **Docker Compose Setup** - Full development environment with hot-reloading
+  - `Dockerfile.dev` with Node.js 18 Alpine
+  - `docker-compose.dev.yml` with frontend, backend, and PostgreSQL
+  - `.dockerignore` for optimized builds
+  - Volume mounts for live code updates
+  - Comprehensive documentation in `server/DOCKER.md`
+
+### Fixed
+
+#### Authentication & Navigation
+- **Username Redirect Loop** - Fixed infinite redirects after setting permanent username
+  - Updated backend `getCurrentUser` to include `emailVerified` boolean
+  - Changed from `user.emailVerified` to `user.emails[0]?.verifiedAt !== null`
+  - Fixed frontend loading state consistency (using `loading` instead of `isLoading`)
+  - Navigation links now appear correctly after username setup
+- **Navigation Links Missing** - Resolved issue where nav links didn't show after auth
+  - Added debug logs to verify auth state loading
+  - Fixed AuthContext initialization guards
+  - Improved state synchronization between frontend and backend
+  - Advised cache clearing and auth data reset for clean state
+
+#### Visual Fixes
+- **Scratch Card Display** - Fixed white/blank scratch card appearance
+  - Added gray fallback background
+  - Enhanced prize content background gradient
+  - Improved text visibility with better color contrast
+- **Stock Page NaN Bug** - Fixed "NaN% remaining" on public stock page
+  - Added division guard: shows 0% when total stock is zero
+  - Improved percentage calculation safety
+
+#### Build & Configuration
+- **GitIgnore Updates** - Comprehensive ignore patterns for build artifacts
+  - Added dist/ and build/ folders to root `.gitignore`
+  - Added server-specific patterns to `server/.gitignore`
+  - Excluded logs, database files, and editor configs
+  - Prevents accidental commits of generated files
+
+### Enhanced
+
+#### Sync Service Integration
+- **PrizePoolManager** - Now syncs prizes to backend after save
+  - Automatic sync with 500ms delay for UI updates
+  - Graceful error handling without blocking user
+- **PricingManager** - Now syncs presets to backend after save
+  - Follows same pattern as PrizePoolManager
+  - Queues sync operations for offline resilience
+- **Settings Component** - Enhanced settings sync
+  - Already syncing to backend (existing functionality)
+  - Now part of bidirectional sync flow
+- **DrawScreen** - Enhanced draw result syncing
+  - Syncs prizes, history, and settings after each draw
+  - Uses `Promise.allSettled()` for parallel operations
+  - 1-second delay to let animations complete
+- **Stock Page** - Bidirectional sync on manual refresh
+  - Full sync before fetching updated stock
+  - Ensures latest data from all sources
+
+#### Offline Support
+- **Queue Persistence** - Sync queue survives page reloads
+  - Stored in LocalForage under `create::sync_queue`
+  - Restored on app initialization
+  - Processed automatically when connection restored
+- **Exponential Backoff** - Smart retry for failed operations
+  - 3 max attempts per operation
+  - Delays: 1s → 2s → 4s
+  - Operations removed after max retries
+- **Network Detection** - Automatic online/offline handling
+  - Queues operations when offline
+  - Processes queue when connection restored
+  - Periodic 30-second queue check
+
+### Technical Improvements
+
+#### Code Organization
+- Enhanced `syncService.js` with pricing support
+- Updated `kujiAPI` with `getUserPresets` endpoint
+- Improved error handling across sync operations
+- Better logging for sync monitoring and debugging
+
+#### Developer Experience
+- Docker development environment for easy setup
+- Comprehensive sync service documentation
+- Detailed testing instructions for offline scenarios
+- Console logging with emojis for better readability
+
+### Documentation
+
+- Added `SYNC_SERVICE.md` - Complete sync service guide
+- Added `server/DOCKER.md` - Docker development setup
+- Added `SYNC_SERVICE_IMPROVEMENTS.md` - Sync enhancement details
+- Added `FIX_SUMMARY_2025-10-07.md` - Recent bug fixes
+- Added `SCRATCH_CARD_AUTO_SIZE.md` - Auto-sizing feature
+- Added `SCRATCH_CARD_IMPROVEMENTS.md` - Visual enhancements
+- Added `BUG_FIX_SUMMARY.md` - Authentication fixes
+- Added `BUGFIX_USERNAME_REDIRECT.md` - Redirect loop fix
+- Added `TROUBLESHOOTING_NAV_LINKS.md` - Navigation debugging
+- Added `GITIGNORE_UPDATE.md` - Build artifact exclusions
+
+---
+
 ## [2.1.0] - 2025-10-05
 
 ### Added

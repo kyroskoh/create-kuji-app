@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../utils/AuthContext';
+import syncService from '../services/syncService';
 
 export default function Stock() {
   const { username } = useParams();
   const location = useLocation();
+  const { user } = useAuth();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -17,6 +20,18 @@ export default function Stock() {
   const loadStock = async (forceRefresh = false) => {
     try {
       setLoading(true);
+      
+      // If this is the current user and force refresh is requested, do bidirectional sync first
+      if (forceRefresh && user?.username === username) {
+        try {
+          console.log('🔄 Performing bidirectional sync before refreshing stock...');
+          await syncService.syncAllData(username);
+          console.log('✅ Sync completed, now fetching updated stock');
+        } catch (syncError) {
+          console.warn('⚠️ Sync error (continuing with stock fetch):', syncError);
+        }
+      }
+      
       // Add timestamp to bypass any client-side caching
       const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
       const response = await kujiAPI.getUserStock(username);
@@ -85,7 +100,9 @@ export default function Stock() {
         <h2 className="text-2xl font-bold text-white mb-4">Prize Tiers</h2>
         <div className="space-y-4">
           {stockData.tiers.map((tier) => {
-            const percentage = (tier.remainingStock / tier.totalStock) * 100;
+            const percentage = tier.totalStock > 0 
+              ? (tier.remainingStock / tier.totalStock) * 100 
+              : 0;
             
             return (
               <div

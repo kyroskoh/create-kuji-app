@@ -1,7 +1,7 @@
 import { useState } from "react";
-import PrizePoolManager from "../components/Admin/PrizePoolManager.jsx";
-import PricingManager from "../components/Admin/PricingManager.jsx";
-import Settings from "../components/Admin/Settings.jsx";
+import PrizePoolManager from "../components/Manage/PrizePoolManager.jsx";
+import PricingManager from "../components/Manage/PricingManager.jsx";
+import Settings from "../components/Manage/Settings.jsx";
 import { useTranslation } from "../utils/TranslationContext.jsx";
 
 export default function Manage() {

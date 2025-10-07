@@ -130,4 +130,5 @@ export const kujiAPI = {
   // Data retrieval endpoints
   getUserPrizes: (username) => api.get(`/users/${username}/prizes`),
   getUserSettings: (username) => api.get(`/users/${username}/settings`),
+  getUserPresets: (username) => api.get(`/users/${username}/presets`),
 };

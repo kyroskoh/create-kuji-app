@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRICING_HEADERS, exportToCsv, parsePricingCsv } from "../../utils/csvUtils.js";
+import { useAuth } from "../../utils/AuthContext.jsx";
+import { syncUserData } from "../../services/syncService.js";
 
 const EMPTY_PRESET = {
   preset_id: "",
@@ -41,6 +43,7 @@ async function fetchSamplePricing() {
 
 export default function PricingManager() {
   const { getPricing, setPricing, getSettings } = useLocalStorageDAO();
+  const { user } = useAuth();
   const [presets, setPresets] = useState([]);
   const [status, setStatus] = useState(null);
   const [currency, setCurrency] = useState("MYR");
@@ -121,8 +124,27 @@ export default function PricingManager() {
   };
 
   const handleSave = async () => {
-    await setPricing(presets);
-    setStatus({ type: "success", message: "Pricing presets saved." });
+    try {
+      // Save to LocalForage first
+      await setPricing(presets);
+      setStatus({ type: "success", message: "Pricing presets saved to storage." });
+      
+      // Sync to backend if user is authenticated
+      if (user?.username) {
+        setTimeout(async () => {
+          try {
+            await syncUserData(user.username, 'presets', presets);
+            console.log('✅ Pricing presets synced to backend after save');
+          } catch (syncError) {
+            console.warn('⚠️ Failed to sync pricing presets to backend:', syncError);
+            // Don't show error to user as LocalForage save succeeded
+          }
+        }, 500); // Small delay to let UI update first
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: "Failed to save pricing presets." });
+      console.error('Error saving pricing presets:', error);
+    }
   };
 
   const handleChange = (index, key, value) => {

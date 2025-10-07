@@ -118,7 +118,9 @@ export default function DemoStock() {
               <h2 className="text-2xl font-bold text-white mb-4">Prize Tiers</h2>
               <div className="space-y-4">
                 {stockData.tiers.map((tier) => {
-                  const percentage = (tier.remainingStock / tier.totalStock) * 100;
+                  const percentage = tier.totalStock > 0 
+                    ? (tier.remainingStock / tier.totalStock) * 100 
+                    : 0;
                   
                   return (
                     <div
