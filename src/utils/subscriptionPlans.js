@@ -29,7 +29,7 @@ export const SUBSCRIPTION_PLANS = {
   BASIC: {
     id: "basic",
     name: "Basic",
-    price: "$3/mo",
+    price: "$3",
     maxTiers: 5,
     maxTierNameLength: 1,
     maxColors: 5,
@@ -57,7 +57,7 @@ export const SUBSCRIPTION_PLANS = {
   ADVANCED: {
     id: "advanced",
     name: "Advanced",
-    price: "$5/mo",
+    price: "$5",
     maxTiers: 10,
     maxTierNameLength: 2,
     maxColors: 10,
@@ -69,7 +69,7 @@ export const SUBSCRIPTION_PLANS = {
     allowedWeightModes: ["basic", "advanced"],
     features: {
       scratchCards: true,
-      analytics: true,
+      analytics: true, // User analytics enabled
       exportData: true,
       importData: true,
       customCurrency: true,
@@ -79,6 +79,7 @@ export const SUBSCRIPTION_PLANS = {
       customColorNaming: true, // Can name custom colors
       customPalettePicker: false,
       publicStockPage: true, // Can publish stock page
+      customBranding: false, // No custom branding
       apiAccess: true, // API access
       betaAccess: true // Beta access for future features
     },
@@ -88,7 +89,7 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: "pro",
     name: "Pro",
-    price: "$10/mo",
+    price: "$10",
     maxTiers: Infinity,
     maxTierNameLength: 3,
     maxColors: Infinity, // Unlimited colors
@@ -97,7 +98,7 @@ export const SUBSCRIPTION_PLANS = {
     allowedWeightModes: ["basic", "advanced"],
     features: {
       scratchCards: true,
-      analytics: true,
+      analytics: true, // Full user analytics
       exportData: true,
       importData: true,
       customCurrency: true,
@@ -107,7 +108,7 @@ export const SUBSCRIPTION_PLANS = {
       customColorNaming: true, // Can name custom colors
       customPalettePicker: true, // Full palette picker
       prioritySupport: true,
-      customBranding: true,
+      customBranding: true, // Full branding customization
       publicStockPage: true, // Can publish stock page
       apiAccess: true,
       betaAccess: true, // Beta access for future features
@@ -217,4 +218,14 @@ export function validateTierName(tierName, planId) {
   }
   
   return { valid: true, value: trimmed };
+}
+
+// Check if analytics is available for plan
+export function hasAnalyticsAccess(planId) {
+  return isFeatureAvailable('analytics', planId);
+}
+
+// Check if custom branding is available for plan
+export function hasCustomBranding(planId) {
+  return isFeatureAvailable('customBranding', planId);
 }

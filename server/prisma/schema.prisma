@@ -34,6 +34,7 @@ model User {
   drawSessions    DrawSession[]
   userSettings    UserSettings?
   pricingPresets  PricingPreset[]
+  userBranding    UserBranding?
   
   @@index([username])
   @@map("users")
@@ -218,6 +219,7 @@ model UserSettings {
   tierColors       String   @default("{}") @map("tier_colors")
   nextSessionNumber Int     @default(1) @map("next_session_number")
   weightMode       String   @default("basic") @map("weight_mode")
+  subscriptionPlan String   @default("free") @map("subscription_plan")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
   
@@ -243,4 +245,26 @@ model PricingPreset {
   
   @@index([userId])
   @@map("pricing_presets")
+}
+
+model UserBranding {
+  id                String   @id @default(uuid())
+  companyName       String?  @map("company_name")
+  eventName         String?  @map("event_name")
+  logoUrl           String?  @map("logo_url")  // Base64 data URI or external URL
+  primaryColor      String   @default("#3b82f6") @map("primary_color")
+  secondaryColor    String   @default("#8b5cf6") @map("secondary_color")
+  accentColor       String   @default("#06b6d4") @map("accent_color")
+  fontFamily        String   @default("Inter") @map("font_family")
+  backgroundPattern String?  @map("background_pattern")  // URL or pattern name
+  backgroundImage   String?  @map("background_image")    // Base64 data URI or external URL
+  footerText        String?  @map("footer_text")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  
+  // Foreign key
+  userId            String   @unique @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_branding")
 }
