@@ -28,10 +28,15 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
+      // Development URLs
       'http://localhost:5173', // Vite dev server (primary)
       'http://localhost:5174', // Vite dev server (fallback)
       'http://localhost:3000', // Alternative frontend port
-      process.env.FRONTEND_URL // Production frontend URL
+      // Production URLs
+      'https://createkuji.app',
+      'https://www.createkuji.app',
+      'https://servarica0.layeredserver.com',
+      process.env.FRONTEND_URL // Environment-specific frontend URL
     ].filter(Boolean);
     
     // For development, also allow any localhost port in the 5000-6000 range
@@ -107,10 +112,13 @@ setInterval(async () => {
 }, 60 * 60 * 1000); // 1 hour
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Create Kuji Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Health check endpoints:`);
+  console.log(`   Local: http://localhost:${PORT}/health`);
+  console.log(`   Network: http://0.0.0.0:${PORT}/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 CORS enabled for production domains: createkuji.app, servarica0.layeredserver.com`);
 });
 
 export default app;
