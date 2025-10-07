@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext.jsx';
+import useLocalStorageDAO from '../hooks/useLocalStorageDAO.js';
+import { SUBSCRIPTION_PLANS } from '../utils/subscriptionPlans';
 
 export default function UserDropdown() {
   const { user, logout, isAuthenticated } = useAuth();
+  const { getSettings } = useLocalStorageDAO();
   const [isOpen, setIsOpen] = useState(false);
+  const [subscriptionPlan, setSubscriptionPlan] = useState('free');
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Load subscription plan
+  useEffect(() => {
+    const loadPlan = async () => {
+      try {
+        const settings = await getSettings();
+        setSubscriptionPlan(settings.subscriptionPlan || 'free');
+      } catch (error) {
+        console.error('Failed to load subscription plan:', error);
+      }
+    };
+    if (isAuthenticated) {
+      loadPlan();
+    }
+  }, [isAuthenticated, getSettings]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -65,14 +84,56 @@ export default function UserDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-40 rounded-md bg-slate-800 shadow-lg ring-1 ring-slate-700 z-50">
+        <div className="absolute right-0 mt-2 w-56 rounded-md bg-slate-800 shadow-lg ring-1 ring-slate-700 z-50">
           <div className="py-1">
+            {/* Subscription Plan Info */}
+            <div className="px-4 py-3 border-b border-slate-700">
+              <p className="text-xs text-slate-400 mb-1">Current Plan</p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-white capitalize">
+                  {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.name || 'Free'}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded ${
+                  subscriptionPlan === 'free' 
+                    ? 'bg-slate-600 text-slate-200'
+                    : subscriptionPlan === 'basic'
+                    ? 'bg-blue-500/20 text-blue-300'
+                    : subscriptionPlan === 'advanced'
+                    ? 'bg-purple-500/20 text-purple-300'
+                    : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300'
+                }`}>
+                  {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.price || '$0'}
+                </span>
+              </div>
+            </div>
+
+            {/* Menu Items */}
             <button
-              onClick={handleLogout}
+              onClick={() => {
+                setIsOpen(false);
+                navigate(`/${user.username}/account`);
+              }}
               className="block w-full text-left px-4 py-2 text-sm text-white transition hover:bg-slate-700"
             >
-              Logout
+              Account Settings
             </button>
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                navigate(`/${user.username}/settings`);
+              }}
+              className="block w-full text-left px-4 py-2 text-sm text-white transition hover:bg-slate-700"
+            >
+              Manage Plan
+            </button>
+            <div className="border-t border-slate-700 mt-1 pt-1">
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-sm text-red-400 transition hover:bg-slate-700"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       )}

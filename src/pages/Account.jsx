@@ -4,9 +4,12 @@ import { useAuth } from '../utils/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { userAPI } from '../utils/api';
 import SSOButtons from '../auth/SSOButtons';
+import useLocalStorageDAO from '../hooks/useLocalStorageDAO.js';
+import { SUBSCRIPTION_PLANS } from '../utils/subscriptionPlans';
 
 export default function Account() {
   const { user, refreshUser, logout } = useAuth();
+  const { getSettings } = useLocalStorageDAO();
   const toast = useToast();
   const navigate = useNavigate();
   
@@ -14,6 +17,7 @@ export default function Account() {
   const [loading, setLoading] = useState(true);
   const [newEmail, setNewEmail] = useState('');
   const [addingEmail, setAddingEmail] = useState(false);
+  const [subscriptionPlan, setSubscriptionPlan] = useState('free');
   
   // Username setup state
   const [newUsername, setNewUsername] = useState('');
@@ -28,6 +32,7 @@ export default function Account() {
 
   useEffect(() => {
     loadProfile();
+    loadSubscriptionPlan();
   }, []);
 
   const loadProfile = async () => {
@@ -55,6 +60,16 @@ export default function Account() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSubscriptionPlan = async () => {
+    try {
+      const settings = await getSettings();
+      setSubscriptionPlan(settings.subscriptionPlan || 'free');
+    } catch (error) {
+      console.error('Failed to load subscription plan:', error);
+      setSubscriptionPlan('free');
     }
   };
 
@@ -373,6 +388,35 @@ export default function Account() {
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-1">Display Name</label>
             <p className="text-white">{profile.displayName || 'Not set'}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Subscription Plan</label>
+            <div className="flex items-center gap-2">
+              <p className="text-white font-semibold capitalize">
+                {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.name || 'Free'}
+              </p>
+              <span className={`text-xs px-2 py-1 rounded ${
+                subscriptionPlan === 'free' 
+                  ? 'bg-slate-600 text-slate-200'
+                  : subscriptionPlan === 'basic'
+                  ? 'bg-blue-500/20 text-blue-300'
+                  : subscriptionPlan === 'advanced'
+                  ? 'bg-purple-500/20 text-purple-300'
+                  : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300'
+              }`}>
+                {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.price || '$0'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.description || 'Perfect for getting started'}
+            </p>
+            <button
+              onClick={() => navigate(`/${user.username}/settings`)}
+              className="mt-2 text-sm text-blue-400 hover:text-blue-300 underline"
+            >
+              Manage Plan →
+            </button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
