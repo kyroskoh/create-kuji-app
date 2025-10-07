@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Tier Order</title>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #334155;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Tier Order Debug Tool</h1>
+    
+    <div class="section">
+        <h2>Current Settings</h2>
+        <button onclick="checkSettings()">Check Current Settings</button>
+        <button onclick="clearSettings()">Clear All Settings (DANGER)</button>
+        <pre id="settings-output">Click "Check Current Settings" to view...</pre>
+    </div>
+
+    <div class="section">
+        <h2>Set Custom Tier Order (Pro Plan)</h2>
+        <button onclick="setCustomOrder('BASDC')">Set Order: B → A → S → D → C</button>
+        <button onclick="setCustomOrder('SABCD')">Set Order: S → A → B → C → D (Default)</button>
+        <button onclick="setCustomOrder('DCBAS')">Set Order: D → C → B → A → S (Reverse)</button>
+    </div>
+
+    <div class="section">
+        <h2>Actions</h2>
+        <button onclick="upgradeToProPlan()">Upgrade to Pro Plan</button>
+        <button onclick="location.reload()">Refresh Page</button>
+    </div>
+
+    <script>
+        localforage.config({
+            name: 'create-kuji',
+            storeName: 'caris_kuji_store'
+        });
+
+        async function checkSettings() {
+            const settings = await localforage.getItem('create::settings');
+            document.getElementById('settings-output').textContent = JSON.stringify(settings, null, 2);
+        }
+
+        async function clearSettings() {
+            if (!confirm('This will DELETE all settings! Are you sure?')) return;
+            await localforage.removeItem('create::settings');
+            document.getElementById('settings-output').textContent = 'Settings cleared! Refresh the app.';
+        }
+
+        async function setCustomOrder(orderString) {
+            const settings = await localforage.getItem('create::settings') || {};
+            
+            // Create tier colors in custom order
+            const colors = ['amber', 'blue', 'cyan', 'emerald', 'rose'];
+            const tierColors = {};
+            
+            for (let i = 0; i < orderString.length; i++) {
+                const tier = orderString[i];
+                tierColors[tier] = colors[i % colors.length];
+            }
+            
+            settings.tierColors = tierColors;
+            settings.subscriptionPlan = 'pro'; // Ensure Pro plan
+            
+            await localforage.setItem('create::settings', settings);
+            
+            document.getElementById('settings-output').textContent = 
+                `✅ Custom order set: ${orderString.split('').join(' → ')}\n\n` +
+                JSON.stringify(settings, null, 2);
+            
+            alert(`Tier order updated to: ${orderString.split('').join(' → ')}\n\nPlease refresh the app!`);
+        }
+
+        async function upgradeToProPlan() {
+            const settings = await localforage.getItem('create::settings') || {};
+            settings.subscriptionPlan = 'pro';
+            await localforage.setItem('create::settings', settings);
+            
+            document.getElementById('settings-output').textContent = 
+                '✅ Upgraded to Pro plan!\n\n' +
+                JSON.stringify(settings, null, 2);
+            
+            alert('Upgraded to Pro plan! Refresh the app to see changes.');
+        }
+
+        // Auto-load on page load
+        checkSettings();
+    </script>
+</body>
+</html>

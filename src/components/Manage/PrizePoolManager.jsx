@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
-import { compareTierLabels, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
+import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
 import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
+import { isTierSortingAllowed } from "../../utils/subscriptionPlans.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -31,16 +33,19 @@ const WEIGHT_MODE_LABEL = {
 };
 
 export default function PrizePoolManager() {
+  const location = useLocation();
   const { getPrizes, setPrizes, getSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
   const { user } = useAuth();
   const [prizes, setPrizeRows] = useState([]);
   const [tierColors, setTierColors] = useState({});
   const [weightMode, setWeightMode] = useState("basic");
+  const [subscriptionPlan, setSubscriptionPlan] = useState("free");
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Load initial data
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -53,6 +58,7 @@ export default function PrizePoolManager() {
         setPrizeRows(storedPrizes.length ? storedPrizes : []);
         setTierColors(storedSettings.tierColors ?? {});
         setWeightMode(storedSettings.weightMode ?? "basic");
+        setSubscriptionPlan(storedSettings.subscriptionPlan ?? "free");
         setHasUnsavedChanges(dirtyState.prizes === true);
         setLoading(false);
       }
@@ -62,14 +68,51 @@ export default function PrizePoolManager() {
     };
   }, [getPrizes, getSettings, getDirtyState]);
 
+  // Refresh settings when navigating to this page (to pick up tier order changes)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const storedSettings = await getSettings();
+      if (mounted) {
+        setTierColors(storedSettings.tierColors ?? {});
+        setWeightMode(storedSettings.weightMode ?? "basic");
+        setSubscriptionPlan(storedSettings.subscriptionPlan ?? "free");
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [location.pathname, getSettings]); // Re-run when route changes
+
   const tierTotals = useMemo(() => {
     const totals = prizes.reduce((acc, prize) => {
       const tier = String(prize.tier || "?").trim().toUpperCase();
       acc[tier] = (acc[tier] || 0) + (Number(prize.quantity) || 0);
       return acc;
     }, {});
-    return Object.entries(totals).sort(([tierA], [tierB]) => compareTierLabels(tierA, tierB));
-  }, [prizes]);
+    // Sort tiers using custom order from settings if allowed
+    const allowCustomOrder = isTierSortingAllowed(subscriptionPlan);
+    return sortTierEntries(Object.entries(totals), tierColors, allowCustomOrder);
+  }, [prizes, tierColors, subscriptionPlan]);
+
+  // Sort prizes by tier order for display
+  // Keep original indices for editing
+  const sortedPrizesWithIndices = useMemo(() => {
+    const tierOrder = tierTotals.map(([tier]) => tier); // Get tier order from tierTotals
+    const tierIndexMap = new Map(tierOrder.map((tier, index) => [tier, index]));
+    
+    return prizes
+      .map((prize, originalIndex) => ({ prize, originalIndex }))
+      .sort((a, b) => {
+        const tierA = String(a.prize.tier || "?").trim().toUpperCase();
+        const tierB = String(b.prize.tier || "?").trim().toUpperCase();
+        
+        const indexA = tierIndexMap.has(tierA) ? tierIndexMap.get(tierA) : Number.MAX_SAFE_INTEGER;
+        const indexB = tierIndexMap.has(tierB) ? tierIndexMap.get(tierB) : Number.MAX_SAFE_INTEGER;
+        
+        return indexA - indexB;
+      });
+  }, [prizes, tierTotals]);
 
   const advancedGuidance = useMemo(() => {
     if (weightMode !== "advanced" || !prizes.length) {
@@ -297,17 +340,17 @@ export default function PrizePoolManager() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
-            {prizes.map((row, index) => {
+            {sortedPrizesWithIndices.map(({ prize: row, originalIndex }) => {
               const tierValue = row.tier;
               return (
-                <tr key={`${row.sku || "row"}-${index}`} className="hover:bg-slate-900/40">
+                <tr key={`${row.sku || "row"}-${originalIndex}`} className="hover:bg-slate-900/40">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className={tierBadgeClass(tierValue, tierColors)}>{(tierValue || "?").toString().toUpperCase()}</span>
                       <input
                         className={`w-16 rounded-md bg-slate-900 px-2 py-1 text-slate-100 ${tierInputClass(tierValue, tierColors)}`}
                         value={tierValue}
-                        onChange={(event) => handleCellChange(index, "tier", event.target.value)}
+                        onChange={(event) => handleCellChange(originalIndex, "tier", event.target.value)}
                       />
                     </div>
                   </td>
@@ -315,7 +358,7 @@ export default function PrizePoolManager() {
                     <input
                       className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.prize_name}
-                      onChange={(event) => handleCellChange(index, "prize_name", event.target.value)}
+                      onChange={(event) => handleCellChange(originalIndex, "prize_name", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -324,7 +367,7 @@ export default function PrizePoolManager() {
                       min="0"
                       className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.quantity}
-                      onChange={(event) => handleCellChange(index, "quantity", event.target.value)}
+                      onChange={(event) => handleCellChange(originalIndex, "quantity", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -333,7 +376,7 @@ export default function PrizePoolManager() {
                       min="1"
                       className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.weight}
-                      onChange={(event) => handleCellChange(index, "weight", event.target.value)}
+                      onChange={(event) => handleCellChange(originalIndex, "weight", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -341,21 +384,21 @@ export default function PrizePoolManager() {
                       className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.sku}
                       placeholder="Optional"
-                      onChange={(event) => handleCellChange(index, "sku", event.target.value)}
+                      onChange={(event) => handleCellChange(originalIndex, "sku", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <input
                       className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
                       value={row.notes}
-                      onChange={(event) => handleCellChange(index, "notes", event.target.value)}
+                      onChange={(event) => handleCellChange(originalIndex, "notes", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2 text-right">
                     <button
                       type="button"
                       className="rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white"
-                      onClick={() => handleDelete(index)}
+                      onClick={() => handleDelete(originalIndex)}
                     >
                       Delete
                     </button>

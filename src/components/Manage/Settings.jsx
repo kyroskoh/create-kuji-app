@@ -83,9 +83,12 @@ export default function Settings() {
       if (mounted) {
         setLocalSettings(data);
         setCountryQuery(data.country ?? "");
-        const tiers = data.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...data.tierColors }) : DEFAULT_TIER_SEQUENCE;
-        const sortedTiers = tiers.sort(compareTierLabels);
-        setActiveTier(sortedTiers[0] ?? "S");
+        // Use the tier order from saved settings, or default sequence if none
+        const tiers = data.tierColors ? Object.keys(data.tierColors) : DEFAULT_TIER_SEQUENCE;
+        // Only sort if tier sorting is not allowed (determined by subscription plan)
+        const shouldSort = !isTierSortingAllowed(data.subscriptionPlan || "free");
+        const orderedTiers = shouldSort ? tiers.sort(compareTierLabels) : tiers;
+        setActiveTier(orderedTiers[0] ?? "S");
       }
     })();
     return () => {
@@ -95,11 +98,24 @@ export default function Settings() {
 
   const tierColors = settings.tierColors ?? DEFAULT_TIER_COLOR_MAP;
 
+  // Check if tier sorting is allowed (must be declared before tierList)
+  const tierSortingAllowed = useMemo(() => {
+    return isTierSortingAllowed(settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+
   const tierList = useMemo(() => {
+    // If tier sorting is allowed and we have custom order in tierColors, use that order
+    // Otherwise, sort alphabetically
+    const tierKeys = Object.keys(tierColors);
+    if (tierKeys.length > 0 && tierSortingAllowed) {
+      // Use the order from tierColors object (insertion order is preserved in JS objects)
+      return tierKeys;
+    }
+    // Default: merge DEFAULT_TIER_SEQUENCE with tierColors keys and sort
     const keys = new Set(DEFAULT_TIER_SEQUENCE);
     Object.keys(tierColors).forEach((key) => keys.add(key));
     return Array.from(keys).sort(compareTierLabels);
-  }, [tierColors]);
+  }, [tierColors, tierSortingAllowed]);
 
   // Get available colors and weight modes based on subscription plan
   const availableColors = useMemo(() => {
@@ -120,11 +136,6 @@ export default function Settings() {
     return getMaxTierNameLength(settings.subscriptionPlan || "free");
   }, [settings.subscriptionPlan]);
 
-  // Check if tier sorting is allowed
-  const tierSortingAllowed = useMemo(() => {
-    return isTierSortingAllowed(settings.subscriptionPlan || "free");
-  }, [settings.subscriptionPlan]);
-
   // Manage custom tier order (only for Advanced & Pro plans)
   const [customTierOrder, setCustomTierOrder] = useState([]);
 
@@ -135,8 +146,10 @@ export default function Settings() {
   }, [tierList, activeTier]);
 
   const updateSettings = async (next) => {
+    // When updating tierColors, preserve the order from next.tierColors if provided
+    // Only merge with defaults if next.tierColors is not provided
     const nextTierColors = next.tierColors
-      ? { ...DEFAULT_TIER_COLOR_MAP, ...tierColors, ...next.tierColors }
+      ? next.tierColors // Use the new order directly (for drag-and-drop reordering)
       : tierColors;
 
     const countryCode = normalizeCountryCode(next.countryCode ?? settings.countryCode ?? "");
@@ -172,9 +185,11 @@ export default function Settings() {
     const fresh = await getSettings();
     setLocalSettings(fresh);
     setCountryQuery(fresh.country ?? "");
-    const tiers = fresh.tierColors ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...fresh.tierColors }) : DEFAULT_TIER_SEQUENCE;
-    const sortedTiers = tiers.sort(compareTierLabels);
-    setActiveTier(sortedTiers[0] ?? "S");
+    // Use the tier order from reset settings, or default sequence if none
+    const tiers = fresh.tierColors ? Object.keys(fresh.tierColors) : DEFAULT_TIER_SEQUENCE;
+    const shouldSort = !isTierSortingAllowed(fresh.subscriptionPlan || "free");
+    const orderedTiers = shouldSort ? tiers.sort(compareTierLabels) : tiers;
+    setActiveTier(orderedTiers[0] ?? "S");
     setStatusMessage("All data reset.");
   };
 
@@ -215,11 +230,11 @@ export default function Settings() {
       const mergedSettings = await getSettings();
       setLocalSettings(mergedSettings);
       setCountryQuery(mergedSettings.country ?? "");
-      const tiers = mergedSettings.tierColors
-        ? Object.keys({ ...DEFAULT_TIER_COLOR_MAP, ...mergedSettings.tierColors })
-        : DEFAULT_TIER_SEQUENCE;
-      const sortedTiers = tiers.sort(compareTierLabels);
-      setActiveTier(sortedTiers[0] ?? "S");
+      // Use the tier order from imported settings, or default sequence if none
+      const tiers = mergedSettings.tierColors ? Object.keys(mergedSettings.tierColors) : DEFAULT_TIER_SEQUENCE;
+      const shouldSort = !isTierSortingAllowed(mergedSettings.subscriptionPlan || "free");
+      const orderedTiers = shouldSort ? tiers.sort(compareTierLabels) : tiers;
+      setActiveTier(orderedTiers[0] ?? "S");
 
       setStatusMessage("Data import complete.");
     } catch (error) {
@@ -337,9 +352,8 @@ export default function Settings() {
       return;
     }
 
-    const updatedColors = { ...tierColors };
-    const nextPalette = availableColors[Object.keys(updatedColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id;
-    updatedColors[tier] = nextPalette;
+    // Preserve existing tier order and add new tier at the end
+    const updatedColors = { ...tierColors, [tier]: availableColors[Object.keys(tierColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id };
     
     updateSettings({ tierColors: updatedColors });
     setActiveTier(tier);
@@ -373,21 +387,74 @@ export default function Settings() {
       />
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Session Controls</h3>
+        <p className="text-sm text-slate-400">
+          Control your kuji drawing session state. Use these to manage when prizes can be drawn.
+        </p>
         <div className="flex flex-wrap gap-2">
-          {SESSION_STATUSES.map((status) => (
-            <button
-              key={status}
-              type="button"
-              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase transition-all ${
-                settings.sessionStatus === status
-                  ? "bg-create-primary text-white shadow-lg shadow-create-primary/30"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => updateSettings({ sessionStatus: status })}
-            >
-              {status}
-            </button>
-          ))}
+          {SESSION_STATUSES.map((status) => {
+            const statusInfo = {
+              INACTIVE: {
+                description: "Drawing disabled - Setup mode",
+                icon: "⏸️"
+              },
+              ACTIVE: {
+                description: "Drawing enabled - Users can draw prizes",
+                icon: "✅"
+              },
+              PAUSED: {
+                description: "Temporarily paused - No draws allowed",
+                icon: "⏯️"
+              }
+            };
+            
+            return (
+              <button
+                key={status}
+                type="button"
+                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase transition-all ${
+                  settings.sessionStatus === status
+                    ? "bg-create-primary text-white shadow-lg shadow-create-primary/30"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md"
+                }`}
+                onClick={() => updateSettings({ sessionStatus: status })}
+                title={statusInfo[status]?.description || status}
+              >
+                {statusInfo[status]?.icon} {status}
+              </button>
+            );
+          })}
+        </div>
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+          <h4 className="text-sm font-semibold text-white mb-2">Session Status Guide:</h4>
+          <ul className="space-y-2 text-xs text-slate-300">
+            <li className="flex items-start gap-2">
+              <span className="text-yellow-400 mt-0.5">⏸️</span>
+              <div>
+                <span className="font-semibold text-white">INACTIVE:</span> Use this when setting up your kuji event. 
+                No prizes can be drawn. Perfect for configuring tiers, adding prizes, and testing.
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-400 mt-0.5">✅</span>
+              <div>
+                <span className="font-semibold text-white">ACTIVE:</span> Your kuji event is live! 
+                Users can draw prizes. Switch to this when you're ready to start the event.
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-400 mt-0.5">⏯️</span>
+              <div>
+                <span className="font-semibold text-white">PAUSED:</span> Temporarily stop drawing without ending the session. 
+                Use this for breaks, restocking prizes, or when you need to make adjustments.
+              </div>
+            </li>
+          </ul>
+          <div className="mt-3 pt-3 border-t border-slate-700">
+            <p className="text-xs text-slate-400">
+              💡 <span className="font-semibold">Tip:</span> Always start with INACTIVE to set up your event safely. 
+              Switch to ACTIVE when ready, and use PAUSED for temporary breaks.
+            </p>
+          </div>
         </div>
       </div>
       <div className="space-y-3">
@@ -547,24 +614,38 @@ export default function Settings() {
               key={tier}
               type="button"
               draggable={tierSortingAllowed}
-              onDragStart={() => tierSortingAllowed && setDraggedTier(index)}
+              onDragStart={(e) => {
+                if (!tierSortingAllowed) return;
+                setDraggedTier(index);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
               onDragOver={(e) => {
                 if (!tierSortingAllowed) return;
                 e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
               }}
               onDrop={(e) => {
-                if (!tierSortingAllowed) return;
+                if (!tierSortingAllowed || draggedTier === null) return;
                 e.preventDefault();
+                
+                // Don't do anything if dropped on same position
+                if (draggedTier === index) {
+                  setDraggedTier(null);
+                  return;
+                }
+                
                 const newList = [...tierList];
                 const draggedItem = newList[draggedTier];
                 newList.splice(draggedTier, 1);
                 newList.splice(index, 0, draggedItem);
                 
-                // Update tier colors with new order
+                // Update tier colors with new order - order matters in objects!
                 const reorderedColors = {};
                 newList.forEach(t => {
                   reorderedColors[t] = tierColors[t];
                 });
+                
+                console.log('Reordering tiers:', tierList, '→', newList);
                 updateSettings({ tierColors: reorderedColors });
                 setDraggedTier(null);
               }}

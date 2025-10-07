@@ -6,8 +6,9 @@ export const SUBSCRIPTION_PLANS = {
     price: "$0",
     maxTiers: 3,
     maxTierNameLength: 1,
+    maxColors: 1,
     tierSorting: false,
-    allowedColors: ["amber", "sky", "emerald", "purple", "rose"],
+    allowedColors: ["amber"], // Only 1 color
     allowedWeightModes: ["basic"],
     features: {
       scratchCards: false,
@@ -16,7 +17,10 @@ export const SUBSCRIPTION_PLANS = {
       importData: true,
       customCurrency: false,
       advancedWeights: false,
-      tierSorting: false
+      tierSorting: false,
+      customHexColors: false,
+      customColorNaming: false,
+      customPalettePicker: false
     },
     description: "Perfect for getting started",
     badge: null
@@ -27,20 +31,23 @@ export const SUBSCRIPTION_PLANS = {
     price: "$3/mo",
     maxTiers: 5,
     maxTierNameLength: 1,
+    maxColors: 5,
     tierSorting: false,
     allowedColors: [
-      "amber", "sky", "emerald", "purple", "rose",
-      "lime", "teal", "cyan", "violet", "fuchsia"
+      "amber", "sky", "emerald", "purple", "rose"
     ],
-    allowedWeightModes: ["basic", "advanced"],
+    allowedWeightModes: ["basic"], // Basic weight only
     features: {
       scratchCards: true,
       analytics: false,
       exportData: true,
       importData: true,
       customCurrency: true,
-      advancedWeights: true,
-      tierSorting: false
+      advancedWeights: false, // No advanced weights
+      tierSorting: false,
+      customHexColors: false,
+      customColorNaming: false,
+      customPalettePicker: false
     },
     description: "Best for small events",
     badge: "Popular"
@@ -51,12 +58,11 @@ export const SUBSCRIPTION_PLANS = {
     price: "$5/mo",
     maxTiers: 10,
     maxTierNameLength: 2,
+    maxColors: 10,
     tierSorting: true,
     allowedColors: [
       "amber", "sky", "emerald", "purple", "rose",
-      "lime", "teal", "cyan", "violet", "fuchsia",
-      "indigo", "orange", "yellow", "green", "blue",
-      "red", "pink", "stone", "slate"
+      "lime", "teal", "cyan", "violet", "fuchsia"
     ],
     allowedWeightModes: ["basic", "advanced"],
     features: {
@@ -67,8 +73,9 @@ export const SUBSCRIPTION_PLANS = {
       customCurrency: true,
       advancedWeights: true,
       tierSorting: true,
-      prioritySupport: true,
-      apiAccess: true
+      customHexColors: true, // Can use custom hex codes
+      customColorNaming: true, // Can name custom colors
+      customPalettePicker: false
     },
     description: "For growing businesses",
     badge: "Recommended"
@@ -79,6 +86,7 @@ export const SUBSCRIPTION_PLANS = {
     price: "$10/mo",
     maxTiers: Infinity,
     maxTierNameLength: 3,
+    maxColors: Infinity, // Unlimited colors
     tierSorting: true,
     allowedColors: null, // null means all colors
     allowedWeightModes: ["basic", "advanced"],
@@ -90,6 +98,9 @@ export const SUBSCRIPTION_PLANS = {
       customCurrency: true,
       advancedWeights: true,
       tierSorting: true,
+      customHexColors: true, // Can use custom hex codes
+      customColorNaming: true, // Can name custom colors
+      customPalettePicker: true, // Full palette picker
       prioritySupport: true,
       customBranding: true,
       apiAccess: true

@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../utils/AuthContext';
 import syncService from '../services/syncService';
+import { isTierSortingAllowed } from '../utils/subscriptionPlans';
 
 export default function Stock() {
   const { username } = useParams();
   const location = useLocation();
   const { user } = useAuth();
   const [stockData, setStockData] = useState(null);
+  const [userSettings, setUserSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
 
@@ -32,10 +34,14 @@ export default function Stock() {
         }
       }
       
-      // Add timestamp to bypass any client-side caching
-      const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
-      const response = await kujiAPI.getUserStock(username);
-      setStockData(response.data);
+      // Fetch both stock data and user settings
+      const [stockResponse, settingsResponse] = await Promise.all([
+        kujiAPI.getUserStock(username),
+        kujiAPI.getUserSettings(username)
+      ]);
+      setStockData(stockResponse.data);
+      setUserSettings(settingsResponse.data);
+      
       if (forceRefresh) {
         toast.success('Stock data refreshed');
       }
@@ -46,6 +52,50 @@ export default function Stock() {
       setLoading(false);
     }
   };
+
+  // Sort tiers based on user's custom tier order from settings
+  const sortedTiers = useMemo(() => {
+    if (!stockData?.tiers) {
+      return [];
+    }
+
+    // If settings haven't loaded yet, return unsorted (will sort once settings load)
+    if (!userSettings?.tierColors) {
+      return stockData.tiers;
+    }
+
+    const allowCustomOrder = isTierSortingAllowed(userSettings.subscriptionPlan || 'free');
+    
+    if (!allowCustomOrder) {
+      // For Free/Basic plans, sort alphabetically with S first
+      return [...stockData.tiers].sort((a, b) => {
+        if (a.id === 'S' && b.id !== 'S') return -1;
+        if (b.id === 'S' && a.id !== 'S') return 1;
+        return a.id.localeCompare(b.id);
+      });
+    }
+
+    // For Advanced/Pro plans, use custom order from tierColors (settings order)
+    const tierOrder = Object.keys(userSettings.tierColors);
+    const tierIndexMap = new Map(tierOrder.map((tier, index) => [tier.toUpperCase(), index]));
+
+    return [...stockData.tiers].sort((a, b) => {
+      const upperA = a.id.toUpperCase();
+      const upperB = b.id.toUpperCase();
+      
+      const indexA = tierIndexMap.has(upperA) ? tierIndexMap.get(upperA) : Number.MAX_SAFE_INTEGER;
+      const indexB = tierIndexMap.has(upperB) ? tierIndexMap.get(upperB) : Number.MAX_SAFE_INTEGER;
+      
+      if (indexA !== indexB) {
+        return indexA - indexB;
+      }
+      
+      // Fallback: S first, then alphabetical
+      if (upperA === 'S' && upperB !== 'S') return -1;
+      if (upperB === 'S' && upperA !== 'S') return 1;
+      return a.id.localeCompare(b.id);
+    });
+  }, [stockData, userSettings]);
 
   if (loading) {
     return (
@@ -99,7 +149,7 @@ export default function Stock() {
       <div>
         <h2 className="text-2xl font-bold text-white mb-4">Prize Tiers</h2>
         <div className="space-y-4">
-          {stockData.tiers.map((tier) => {
+          {sortedTiers.map((tier) => {
             const percentage = tier.totalStock > 0 
               ? (tier.remainingStock / tier.totalStock) * 100 
               : 0;

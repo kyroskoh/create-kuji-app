@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { executeDraw } from "../../utils/randomDraw.js";
-import { tierChipClass } from "../../utils/tierColors.js";
+import { tierChipClass, sortTierEntries } from "../../utils/tierColors.js";
+import { isTierSortingAllowed } from "../../utils/subscriptionPlans.js";
 import ResultCard from "./ResultCard.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import ScratchCard from "./ScratchCard.jsx";
@@ -36,6 +38,7 @@ const normalisePresets = (list) =>
   });
 
 export default function DrawScreen() {
+  const location = useLocation();
   const { getPrizes, setPrizes, getPricing, saveHistory, getHistory, getSettings, setSettings } = useLocalStorageDAO();
   const { user } = useAuth();
   const [prizes, setPrizePool] = useState([]);
@@ -63,6 +66,7 @@ export default function DrawScreen() {
   const [useScratchMode, setUseScratchMode] = useState(false);
   const [revealedResults, setRevealedResults] = useState(new Set());
 
+  // Load initial data
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -83,6 +87,23 @@ export default function DrawScreen() {
       mounted = false;
     };
   }, [getHistory, getPrizes, getPricing, getSettings]);
+
+  // Refresh settings when navigating to this page (to pick up tier order changes)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const storedSettings = await getSettings();
+      if (mounted) {
+        setSessionSettings(prevSettings => ({
+          ...prevSettings,
+          ...storedSettings
+        }));
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [location.pathname, getSettings]); // Re-run when route changes
 
   const currencyFormatter = useMemo(() => {
     const currency = sessionSettings.currency || "MYR";
@@ -106,15 +127,13 @@ export default function DrawScreen() {
       acc[tier] = (acc[tier] || 0) + (Number(prize.quantity) || 0);
       return acc;
     }, {});
-    return Object.entries(grouped)
-      .sort(([tierA], [tierB]) => {
-        if (tierA === "S" && tierB !== "S") return -1;
-        if (tierB === "S" && tierA !== "S") return 1;
-        return tierA.localeCompare(tierB);
-      })
+    // Sort tiers using custom order from settings if allowed
+    const allowCustomOrder = isTierSortingAllowed(sessionSettings.subscriptionPlan || "free");
+    const sortedEntries = sortTierEntries(Object.entries(grouped), sessionSettings.tierColors || {}, allowCustomOrder);
+    return sortedEntries
       .map(([tier, qty]) => `${tier}:${qty}`)
       .join(" | ");
-  }, [prizes]);
+  }, [prizes, sessionSettings.tierColors, sessionSettings.subscriptionPlan]);
 
   const handlePresetClick = (preset) => {
     const totalDraws = Number(preset.draw_count || 0) + Number(preset.bonus_draws || 0);
@@ -242,12 +261,10 @@ export default function DrawScreen() {
       acc[tier] = (acc[tier] || 0) + 1;
       return acc;
     }, {});
-    return Object.entries(counts).sort(([tierA], [tierB]) => {
-      if (tierA === "S" && tierB !== "S") return -1;
-      if (tierB === "S" && tierA !== "S") return 1;
-      return tierA.localeCompare(tierB);
-    });
-  }, [processedResults]);
+    // Sort tiers using custom order from settings if allowed
+    const allowCustomOrder = isTierSortingAllowed(sessionSettings.subscriptionPlan || "free");
+    return sortTierEntries(Object.entries(counts), sessionSettings.tierColors || {}, allowCustomOrder);
+  }, [processedResults, sessionSettings.tierColors, sessionSettings.subscriptionPlan]);
 
   const unrevealedScratchCards = useMemo(() => {
     return processedResults.filter(item => useScratchMode && !revealedResults.has(item.id)).length;

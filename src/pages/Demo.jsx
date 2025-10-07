@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import useLocalStorageDAO from '../hooks/useLocalStorageDAO';
 
 export default function Demo() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { login } = useAuth();
+  const { getSettings, setSettings } = useLocalStorageDAO();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -30,6 +32,20 @@ export default function Demo() {
     setIsLoggingIn(false);
     
     if (result.success) {
+      // Set demo user to Pro plan
+      if (user.username === 'demo') {
+        try {
+          const currentSettings = await getSettings();
+          await setSettings({
+            ...currentSettings,
+            subscriptionPlan: 'pro'
+          });
+          console.log('✅ Demo user set to Pro plan');
+        } catch (error) {
+          console.error('Failed to set demo user plan:', error);
+        }
+      }
+      
       toast.success(`Logged in as ${user.type}!`);
       // Redirect to user's space with new URL structure
       const redirectTo = result.user.isSuperAdmin 

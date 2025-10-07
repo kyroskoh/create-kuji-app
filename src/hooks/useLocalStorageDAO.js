@@ -28,7 +28,8 @@ const DEFAULT_SETTINGS = {
   locale: "ms-MY",
   tierColors: DEFAULT_TIER_COLOR_MAP,
   nextSessionNumber: 1,
-  weightMode: "basic"
+  weightMode: "basic",
+  subscriptionPlan: "pro" // Demo users get Pro plan to test all features
 };
 
 const mergeSettings = (settings) => {
@@ -37,10 +38,9 @@ const mergeSettings = (settings) => {
     ...(settings ?? {})
   };
 
-  next.tierColors = {
-    ...DEFAULT_TIER_COLOR_MAP,
-    ...(settings?.tierColors ?? {})
-  };
+  // Preserve tier order from settings - only use defaults if no tierColors provided
+  // This is critical for drag-and-drop reordering to work
+  next.tierColors = settings?.tierColors ?? DEFAULT_TIER_COLOR_MAP;
 
   next.countryCode = normalizeCountryCode(next.countryCode) || DEFAULT_COUNTRY_CODE;
   next.countryEmoji = next.countryEmoji || flagFromCountryCode(next.countryCode);

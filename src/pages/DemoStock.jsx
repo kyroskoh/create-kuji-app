@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
+import { isTierSortingAllowed } from '../utils/subscriptionPlans.js';
 
 export default function DemoStock() {
   const location = useLocation();
   const [stockData, setStockData] = useState(null);
+  const [userSettings, setUserSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,9 +17,13 @@ export default function DemoStock() {
       try {
         setLoading(true);
         setError(null);
-        // Fetch actual demo user's stock data instead of mock data
-        const response = await kujiAPI.getUserStock('demo');
-        setStockData(response.data);
+        // Fetch both stock data and user settings
+        const [stockResponse, settingsResponse] = await Promise.all([
+          kujiAPI.getUserStock('demo'),
+          kujiAPI.getUserSettings('demo')
+        ]);
+        setStockData(stockResponse.data);
+        setUserSettings(settingsResponse.data);
       } catch (err) {
         console.error('Error loading demo stock:', err);
         setError('Failed to load stock data');
@@ -31,9 +37,13 @@ export default function DemoStock() {
     try {
       setLoading(true);
       setError(null);
-      // Fetch actual demo user's stock data instead of mock data
-      const response = await kujiAPI.getUserStock('demo');
-      setStockData(response.data);
+      // Fetch both stock data and user settings
+      const [stockResponse, settingsResponse] = await Promise.all([
+        kujiAPI.getUserStock('demo'),
+        kujiAPI.getUserSettings('demo')
+      ]);
+      setStockData(stockResponse.data);
+      setUserSettings(settingsResponse.data);
     } catch (err) {
       console.error('Error refreshing stock:', err);
       setError('Failed to refresh stock data');
@@ -41,6 +51,50 @@ export default function DemoStock() {
       setLoading(false);
     }
   };
+
+  // Sort tiers based on user's custom tier order from settings
+  const sortedTiers = useMemo(() => {
+    if (!stockData?.tiers) {
+      return [];
+    }
+
+    // If settings haven't loaded yet, return unsorted (will sort once settings load)
+    if (!userSettings?.tierColors) {
+      return stockData.tiers;
+    }
+
+    const allowCustomOrder = isTierSortingAllowed(userSettings.subscriptionPlan || 'free');
+    
+    if (!allowCustomOrder) {
+      // For Free/Basic plans, sort alphabetically with S first
+      return [...stockData.tiers].sort((a, b) => {
+        if (a.id === 'S' && b.id !== 'S') return -1;
+        if (b.id === 'S' && a.id !== 'S') return 1;
+        return a.id.localeCompare(b.id);
+      });
+    }
+
+    // For Advanced/Pro plans, use custom order from tierColors (settings order)
+    const tierOrder = Object.keys(userSettings.tierColors);
+    const tierIndexMap = new Map(tierOrder.map((tier, index) => [tier.toUpperCase(), index]));
+
+    return [...stockData.tiers].sort((a, b) => {
+      const upperA = a.id.toUpperCase();
+      const upperB = b.id.toUpperCase();
+      
+      const indexA = tierIndexMap.has(upperA) ? tierIndexMap.get(upperA) : Number.MAX_SAFE_INTEGER;
+      const indexB = tierIndexMap.has(upperB) ? tierIndexMap.get(upperB) : Number.MAX_SAFE_INTEGER;
+      
+      if (indexA !== indexB) {
+        return indexA - indexB;
+      }
+      
+      // Fallback: S first, then alphabetical
+      if (upperA === 'S' && upperB !== 'S') return -1;
+      if (upperB === 'S' && upperA !== 'S') return 1;
+      return a.id.localeCompare(b.id);
+    });
+  }, [stockData, userSettings]);
 
   if (loading) {
     return (
@@ -93,7 +147,7 @@ export default function DemoStock() {
           </Link>
         </div>
 
-        {stockData && stockData.tiers && stockData.tiers.length > 0 ? (
+        {stockData && sortedTiers && sortedTiers.length > 0 ? (
           <>
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -117,7 +171,7 @@ export default function DemoStock() {
             <div>
               <h2 className="text-2xl font-bold text-white mb-4">Prize Tiers</h2>
               <div className="space-y-4">
-                {stockData.tiers.map((tier) => {
+                {sortedTiers.map((tier) => {
                   const percentage = tier.totalStock > 0 
                     ? (tier.remainingStock / tier.totalStock) * 100 
                     : 0;
