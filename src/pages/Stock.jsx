@@ -34,15 +34,25 @@ export default function Stock() {
         }
       }
       
-      // Fetch both stock data and user settings
-      const [stockResponse, settingsResponse] = await Promise.all([
+      // Fetch stock data and public stock page status
+      const [stockResponse, statusResponse] = await Promise.all([
         kujiAPI.getUserStock(username),
-        kujiAPI.getUserSettings(username)
+        kujiAPI.getStockPageStatus(username)
       ]);
       
-      const settings = settingsResponse.data;
+      const settings = statusResponse.data;
       const isOwner = user?.username === username;
       const isFree = (settings.subscriptionPlan || 'free') === 'free';
+      
+      // Debug logging
+      console.log('📊 Stock Page Access Check:');
+      console.log('   Username:', username);
+      console.log('   Is Owner:', isOwner);
+      console.log('   Plan:', settings.subscriptionPlan);
+      console.log('   Is Free Plan:', isFree);
+      console.log('   Session Status:', settings.sessionStatus);
+      console.log('   Stock Page Published:', settings.stockPagePublished);
+      console.log('   Will Block Access:', !isFree && !settings.stockPagePublished && !isOwner);
       
       // Free plan users always have public stock pages
       // Paid plan users can control visibility

@@ -13,6 +13,9 @@
     "fix:demo": "ts-node src/utils/fix-demo-username.ts",
     "support:change-username": "ts-node src/utils/change-username.ts",
     "support:change-username-email": "ts-node src/utils/change-username-by-email.ts",
+    "support:upgrade-to-pro": "ts-node src/utils/upgrade-to-pro.ts",
+    "fix:demo-plan": "ts-node src/utils/check-and-fix-demo-plan.ts",
+    "fix:publish-demo-stock": "ts-node src/utils/publish-demo-stock.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["nodejs", "express", "typescript", "prisma", "authentication", "kuji", "gacha"],

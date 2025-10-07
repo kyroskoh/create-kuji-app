@@ -17,6 +17,13 @@ export async function getBranding(req: Request, res: Response) {
   try {
     const { username } = req.params;
 
+    if (!username) {
+      return res.status(400).json({
+        error: 'INVALID_REQUEST',
+        message: 'Username is required'
+      });
+    }
+
     const branding = await getBrandingByUsername(username);
 
     if (!branding) {
@@ -47,6 +54,13 @@ export async function syncBranding(req: Request, res: Response) {
   try {
     const { username } = req.params;
     const brandingData: BrandingData = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        error: 'INVALID_REQUEST',
+        message: 'Username is required'
+      });
+    }
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -119,6 +133,13 @@ export async function syncBranding(req: Request, res: Response) {
 export async function deleteBrandingController(req: Request, res: Response) {
   try {
     const { username } = req.params;
+
+    if (!username) {
+      return res.status(400).json({
+        error: 'INVALID_REQUEST',
+        message: 'Username is required'
+      });
+    }
 
     // Find user
     const user = await prisma.user.findUnique({

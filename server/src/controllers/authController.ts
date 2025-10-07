@@ -129,7 +129,8 @@ export async function signup(req: Request, res: Response) {
         email: user.emails[0]?.address,
         emailVerified: user.emails[0]?.verifiedAt !== null,
         usernameSetByUser: user.usernameSetByUser,
-        isSuperAdmin: user.isSuperAdmin
+        isSuperAdmin: user.isSuperAdmin,
+        subscriptionPlan: user.userSettings?.subscriptionPlan || 'free'
       },
       tokens: {
         accessToken,
@@ -182,6 +183,11 @@ export async function login(req: Request, res: Response) {
         req.ip
       );
 
+      // Fetch user settings for subscription plan
+      const userSettings = await prisma.userSettings.findUnique({
+        where: { userId: user.id }
+      });
+
       // Generate access token
       const accessToken = generateAccessToken({
         userId: user.id,
@@ -198,7 +204,8 @@ export async function login(req: Request, res: Response) {
           email: user.emails[0]?.address,
           emailVerified: user.emails[0]?.verifiedAt !== null,
           usernameSetByUser: user.usernameSetByUser,
-          isSuperAdmin: user.isSuperAdmin
+          isSuperAdmin: user.isSuperAdmin,
+          subscriptionPlan: userSettings?.subscriptionPlan || 'free'
         },
         tokens: {
           accessToken,
@@ -480,7 +487,8 @@ export async function getCurrentUser(req: Request, res: Response) {
             provider: true,
             email: true
           }
-        }
+        },
+        userSettings: true
       }
     });
 
@@ -501,6 +509,7 @@ export async function getCurrentUser(req: Request, res: Response) {
         emails: user.emails,
         providers: user.providerAccounts,
         isSuperAdmin: user.isSuperAdmin,
+        subscriptionPlan: user.userSettings?.subscriptionPlan || 'free',
         createdAt: user.createdAt,
         lastLogin: user.lastLogin
       }

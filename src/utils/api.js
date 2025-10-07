@@ -120,6 +120,7 @@ export const adminAPI = {
 export const kujiAPI = {
   getStock: () => publicApi.get('/kuji/stock'), // Public endpoint - no auth needed
   getUserStock: (username) => api.get(`/users/${username}/stock`),
+  getStockPageStatus: (username) => publicApi.get(`/users/${username}/stock-status`), // Public - for visibility check
   
   // Sync endpoints
   syncPrizes: (username, prizes) => api.post(`/users/${username}/sync-prizes`, { prizes }),

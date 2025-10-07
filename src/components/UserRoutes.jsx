@@ -114,6 +114,26 @@ export default function UserRoutes() {
         </ValidateUserAccess>
       } />
       
+      <Route path="/:username/manage/analytics" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
+      <Route path="/:username/manage/branding" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
       {/* Subscription Plan route */}
       <Route path="/:username/account/plan" element={
         <ValidateUserAccess>

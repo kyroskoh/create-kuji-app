@@ -321,7 +321,52 @@ export async function getUserPrizes(req: Request, res: Response) {
 }
 
 /**
- * Get user's settings from database
+ * Get public info about user's stock page (for visibility check)
+ * GET /api/users/:username/stock-status
+ */
+export async function getStockPageStatus(req: Request, res: Response) {
+  try {
+    const { username } = req.params;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username },
+      include: {
+        userSettings: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Return only public information needed for stock page visibility
+    const settings = user.userSettings;
+    const subscriptionPlan = settings?.subscriptionPlan || 'free';
+    const sessionStatus = settings?.sessionStatus || 'INACTIVE';
+    
+    return res.status(200).json({
+      subscriptionPlan,
+      sessionStatus,
+      stockPagePublished: sessionStatus === 'PUBLISHED',
+      // Include tier colors for public viewing
+      tierColors: settings?.tierColors ? JSON.parse(settings.tierColors) : {}
+    });
+
+  } catch (error) {
+    console.error('Error getting stock page status:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to get stock page status'
+    });
+  }
+}
+
+/**
+ * Get user's settings from database (authenticated)
  * GET /api/users/:username/settings
  */
 export async function getUserSettings(req: Request, res: Response) {
@@ -356,10 +401,13 @@ export async function getUserSettings(req: Request, res: Response) {
     }
 
     // Parse tierColors from JSON string and format response for frontend
-    const { tierColors, ...rest } = userSettings;
+    const { tierColors, sessionStatus, ...rest } = userSettings;
     const settings = {
       ...rest,
-      tierColors: tierColors ? JSON.parse(tierColors) : {}
+      sessionStatus,
+      tierColors: tierColors ? JSON.parse(tierColors) : {},
+      // Add computed property for frontend compatibility
+      stockPagePublished: sessionStatus === 'PUBLISHED'
     };
 
     return res.status(200).json(settings);

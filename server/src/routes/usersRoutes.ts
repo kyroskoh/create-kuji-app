@@ -10,6 +10,10 @@ const router = Router();
 // GET /api/users/:username/stock
 router.get('/:username/stock', kujiController.getUserStock);
 
+// Stock page status (public - for visibility check)
+// GET /api/users/:username/stock-status
+router.get('/:username/stock-status', userKujiController.getStockPageStatus);
+
 // Data sync endpoints
 router.post('/:username/sync-prizes', requireAuth, userKujiController.syncPrizes);
 router.post('/:username/sync-settings', requireAuth, userKujiController.syncSettings);
@@ -18,7 +22,7 @@ router.post('/:username/sync-presets', requireAuth, userKujiController.syncPrici
 
 // Data retrieval endpoints
 router.get('/:username/prizes', requireAuth, userKujiController.getUserPrizes);
-router.get('/:username/settings', requireAuth, userKujiController.getUserSettings);
+router.get('/:username/settings', requireAuth, userKujiController.getUserSettings); // Authenticated - full settings
 
 // Branding endpoints
 router.get('/:username/branding', brandingController.getBranding); // Public endpoint

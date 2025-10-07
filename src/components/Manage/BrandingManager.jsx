@@ -164,19 +164,75 @@ export default function BrandingManager() {
     }
   };
 
+  // Function to lighten a color for better contrast
+  const adjustColorForContrast = (hexColor) => {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Calculate luminance increase needed
+    // For dark backgrounds, we need brighter colors
+    const factor = 1.4; // Increase brightness by 40%
+    const newR = Math.min(255, Math.round(r * factor));
+    const newG = Math.min(255, Math.round(g * factor));
+    const newB = Math.min(255, Math.round(b * factor));
+    
+    // Convert back to hex
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  };
+
   const checkContrast = () => {
     const warnings = [];
+    const MINIMAL_ACCEPTABLE = 4.0; // WCAG AA for large text
+    const HIGHLY_RECOMMENDED = 4.5; // WCAG AA for normal text
     
     // Check primary color against dark background
     const primaryContrast = validateColorContrast(formData.primaryColor, '#0f172a');
-    if (!primaryContrast.passAA) {
-      warnings.push(`Primary color has low contrast (${primaryContrast.ratio}:1). Recommended: 4.5:1 or higher.`);
+    if (primaryContrast.ratio < MINIMAL_ACCEPTABLE) {
+      // Fails minimal acceptable - critical warning
+      const suggestedColor = adjustColorForContrast(formData.primaryColor);
+      warnings.push({
+        type: 'primary',
+        severity: 'critical',
+        message: `Primary color has insufficient contrast (${primaryContrast.ratio}:1). Minimal acceptable: 4:1.`,
+        currentColor: formData.primaryColor,
+        suggestedColor
+      });
+    } else if (primaryContrast.ratio < HIGHLY_RECOMMENDED) {
+      // Meets minimal but not highly recommended - info warning
+      const suggestedColor = adjustColorForContrast(formData.primaryColor);
+      warnings.push({
+        type: 'primary',
+        severity: 'info',
+        message: `Primary color has acceptable contrast (${primaryContrast.ratio}:1). Highly recommended: 4.5:1 or higher.`,
+        currentColor: formData.primaryColor,
+        suggestedColor
+      });
     }
 
     // Check secondary color against dark background
     const secondaryContrast = validateColorContrast(formData.secondaryColor, '#0f172a');
-    if (!secondaryContrast.passAA) {
-      warnings.push(`Secondary color has low contrast (${secondaryContrast.ratio}:1). Recommended: 4.5:1 or higher.`);
+    if (secondaryContrast.ratio < MINIMAL_ACCEPTABLE) {
+      // Fails minimal acceptable - critical warning
+      const suggestedColor = adjustColorForContrast(formData.secondaryColor);
+      warnings.push({
+        type: 'secondary',
+        severity: 'critical',
+        message: `Secondary color has insufficient contrast (${secondaryContrast.ratio}:1). Minimal acceptable: 4:1.`,
+        currentColor: formData.secondaryColor,
+        suggestedColor
+      });
+    } else if (secondaryContrast.ratio < HIGHLY_RECOMMENDED) {
+      // Meets minimal but not highly recommended - info warning
+      const suggestedColor = adjustColorForContrast(formData.secondaryColor);
+      warnings.push({
+        type: 'secondary',
+        severity: 'info',
+        message: `Secondary color has acceptable contrast (${secondaryContrast.ratio}:1). Highly recommended: 4.5:1 or higher.`,
+        currentColor: formData.secondaryColor,
+        suggestedColor
+      });
     }
 
     setContrastWarnings(warnings);
@@ -187,9 +243,20 @@ export default function BrandingManager() {
     setIsSaving(true);
     try {
       // Check contrast
-      const contrastOk = checkContrast();
-      if (!contrastOk) {
-        toast.error('Please review color contrast warnings below');
+      checkContrast();
+      
+      // Check if there are any critical warnings
+      const criticalWarnings = contrastWarnings.filter(w => w.severity === 'critical');
+      if (criticalWarnings.length > 0) {
+        toast.error('Cannot save: Please fix critical contrast issues below');
+        setIsSaving(false);
+        return;
+      }
+      
+      // Info warnings are acceptable, just notify
+      const infoWarnings = contrastWarnings.filter(w => w.severity === 'info');
+      if (infoWarnings.length > 0) {
+        toast.info('Saved with contrast recommendations. Consider applying them for better accessibility.');
       }
 
       await updateBranding(formData);
@@ -454,18 +521,72 @@ export default function BrandingManager() {
 
             {/* Contrast Warnings */}
             {contrastWarnings.length > 0 && (
-              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
-                <h4 className="text-yellow-400 font-semibold mb-2 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Contrast Warnings
-                </h4>
-                <ul className="text-yellow-200 text-sm space-y-1">
-                  {contrastWarnings.map((warning, i) => (
-                    <li key={i}>• {warning}</li>
-                  ))}
-                </ul>
+              <div className="rounded-lg">
+                <div className="space-y-3">
+                  {contrastWarnings.map((warning, i) => {
+                    const isCritical = warning.severity === 'critical';
+                    const bgColor = isCritical ? 'bg-red-900/20' : 'bg-blue-900/20';
+                    const borderColor = isCritical ? 'border-red-700' : 'border-blue-700';
+                    const textColor = isCritical ? 'text-red-200' : 'text-blue-200';
+                    const iconColor = isCritical ? 'text-red-400' : 'text-blue-400';
+                    const titleColor = isCritical ? 'text-red-400' : 'text-blue-400';
+                    const buttonColor = isCritical ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
+                    
+                    return (
+                      <div key={i} className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
+                        <h4 className={`${titleColor} font-semibold mb-2 flex items-center gap-2`}>
+                          {isCritical ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {isCritical ? 'Insufficient Contrast' : 'Contrast Recommendation'}
+                        </h4>
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                          <p className={`${textColor} text-sm mb-2`}>{warning.message}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-8 h-8 rounded border border-slate-600"
+                                style={{ backgroundColor: warning.currentColor }}
+                                title={`Current: ${warning.currentColor}`}
+                              />
+                              <span className="text-xs text-slate-400">Current</span>
+                            </div>
+                            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-8 h-8 rounded border border-green-600"
+                                style={{ backgroundColor: warning.suggestedColor }}
+                                title={`Suggested: ${warning.suggestedColor}`}
+                              />
+                              <span className="text-xs text-slate-400">Suggested</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const field = warning.type === 'primary' ? 'primaryColor' : 'secondaryColor';
+                                handleInputChange(field, warning.suggestedColor);
+                                toast.success(`Applied ${isCritical ? 'fix' : 'recommended'} ${warning.type} color`);
+                                // Re-check contrast after applying
+                                setTimeout(checkContrast, 100);
+                              }}
+                              className={`ml-auto px-3 py-1.5 ${buttonColor} text-white text-xs rounded-md font-medium transition-colors`}
+                            >
+                              {isCritical ? 'Apply Fix' : 'Apply Recommendation'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

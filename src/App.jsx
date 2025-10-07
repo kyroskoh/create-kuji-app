@@ -1,6 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Demo from "./pages/Demo.jsx";
-import DemoStock from "./pages/DemoStock.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import MainLayout from "./components/MainLayout.jsx";
@@ -24,8 +22,8 @@ export default function App() {
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<MainLayout><AuthenticatedHome /></MainLayout>} />
-                  <Route path="/demo" element={<Demo />} />
-                  <Route path="/demo/stock" element={<DemoStock />} />
+                  {/* Redirect old demo route to new dynamic demo stock page */}
+                  <Route path="/demo" element={<Navigate to="/demo/stock" replace />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   

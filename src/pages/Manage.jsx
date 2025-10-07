@@ -27,6 +27,13 @@ export default function Manage() {
   const canAccessAnalytics = hasAnalyticsAccess(user?.subscriptionPlan || 'free');
   const canAccessBranding = hasCustomBranding(user?.subscriptionPlan || 'free');
   
+  // Debug logging
+  console.log('🔍 Manage Page Debug:');
+  console.log('   User object:', user);
+  console.log('   Subscription Plan:', user?.subscriptionPlan);
+  console.log('   Can Access Analytics:', canAccessAnalytics);
+  console.log('   Can Access Branding:', canAccessBranding);
+  
   // Determine active tab from URL path
   const getActiveTabFromPath = () => {
     const path = location.pathname;
