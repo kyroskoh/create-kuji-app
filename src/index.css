@@ -4,6 +4,12 @@
 
 :root {
   color-scheme: dark;
+  
+  /* Default brand colors (fallback values) */
+  --brand-primary: #3b82f6;
+  --brand-secondary: #8b5cf6;
+  --brand-accent: #06b6d4;
+  --brand-font-family: 'Inter', sans-serif;
 }
 
 body {

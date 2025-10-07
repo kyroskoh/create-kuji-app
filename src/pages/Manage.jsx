@@ -3,10 +3,15 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import PrizePoolManager from "../components/Manage/PrizePoolManager.jsx";
 import PricingManager from "../components/Manage/PricingManager.jsx";
 import Settings from "../components/Manage/Settings.jsx";
+import UserAnalytics from "../components/Manage/UserAnalytics.jsx";
+import BrandingManager from "../components/Manage/BrandingManager.jsx";
 import { useTranslation } from "../utils/TranslationContext.jsx";
+import { useAuth } from "../utils/AuthContext.jsx";
+import { hasAnalyticsAccess, hasCustomBranding } from "../utils/subscriptionPlans.js";
 
 export default function Manage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { username } = useParams();
@@ -18,22 +23,31 @@ export default function Manage() {
     }
   }, [location.pathname, username, navigate]);
   
+  // Check user's plan access
+  const canAccessAnalytics = hasAnalyticsAccess(user?.subscriptionPlan || 'free');
+  const canAccessBranding = hasCustomBranding(user?.subscriptionPlan || 'free');
+  
   // Determine active tab from URL path
   const getActiveTabFromPath = () => {
     const path = location.pathname;
     if (path.includes('/manage/prizes')) return 'prizes';
     if (path.includes('/manage/pricing')) return 'pricing';
+    if (path.includes('/manage/analytics')) return 'analytics';
+    if (path.includes('/manage/branding')) return 'branding';
     if (path.includes('/manage/settings')) return 'settings';
     return 'prizes'; // default
   };
   
   const activeTab = getActiveTabFromPath();
 
+  // Build tabs array based on user's plan
   const tabs = [
-    { id: "prizes", label: t("manage.prizes") || "Prizes" },
-    { id: "pricing", label: t("manage.pricing") || "Pricing" },
-    { id: "settings", label: t("manage.settings") || "Configuration" }
-  ];
+    { id: "prizes", label: t("manage.prizes") || "Prizes", show: true },
+    { id: "pricing", label: t("manage.pricing") || "Pricing", show: true },
+    ...(canAccessAnalytics ? [{ id: "analytics", label: "Analytics", show: true }] : []),
+    ...(canAccessBranding ? [{ id: "branding", label: "Branding", show: true }] : []),
+    { id: "settings", label: t("manage.settings") || "Configuration", show: true }
+  ].filter(tab => tab.show);
 
   return (
     <section className="space-y-6">
@@ -62,6 +76,8 @@ export default function Manage() {
       <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg">
         {activeTab === "prizes" && <PrizePoolManager />}
         {activeTab === "pricing" && <PricingManager />}
+        {activeTab === "analytics" && <UserAnalytics />}
+        {activeTab === "branding" && <BrandingManager />}
         {activeTab === "settings" && <Settings />}
       </div>
     </section>
