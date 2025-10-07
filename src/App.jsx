@@ -4,9 +4,8 @@ import Signup from "./pages/Signup.jsx";
 import MainLayout from "./components/MainLayout.jsx";
 import AuthenticatedHome from "./components/AuthenticatedHome.jsx";
 import UserRoutes from "./components/UserRoutes.jsx";
-import AuthDebug from "./components/AuthDebug.jsx";
+import DevDebugPanel from "./components/DevDebugPanel.jsx";
 import Demo from "./pages/Demo.jsx";
-import ApiDebug from "./components/ApiDebug.jsx";
 import { TranslationProvider } from "./utils/TranslationContext.jsx";
 import { AuthProvider } from "./utils/AuthContext.jsx";
 import { ToastProvider } from "./contexts/ToastContext.jsx";
@@ -33,8 +32,7 @@ export default function App() {
                   {/* Username-based routes: /{username}/{page} */}
                   <Route path="/*" element={<UserRoutes />} />
                 </Routes>
-                <AuthDebug />
-                <ApiDebug />
+                <DevDebugPanel />
               </BrowserRouter>
             </TranslationProvider>
           </ToastProvider>

@@ -2,9 +2,7 @@ import axios from 'axios';
 import localforage from 'localforage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-console.log('🌐 VITE_API_URL env var:', import.meta.env.VITE_API_URL);
-console.log('🌐 API Base URL (final):', API_BASE_URL);
-console.log('🌐 Using proxy?', API_BASE_URL === '/api' ? 'YES (via Vite proxy to localhost:3001)' : 'NO (direct connection)');
+console.log('🌐 API Base URL:', API_BASE_URL, API_BASE_URL === '/api' ? '(via proxy)' : '(direct)');
 
 // Create axios instance
 const api = axios.create({
