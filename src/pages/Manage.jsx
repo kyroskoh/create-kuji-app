@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import PrizePoolManager from "../components/Manage/PrizePoolManager.jsx";
 import PricingManager from "../components/Manage/PricingManager.jsx";
 import Settings from "../components/Manage/Settings.jsx";
@@ -6,12 +7,32 @@ import { useTranslation } from "../utils/TranslationContext.jsx";
 
 export default function Manage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("prizes");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { username } = useParams();
+  
+  // Redirect from /manage to /manage/prizes
+  useEffect(() => {
+    if (location.pathname === `/${username}/manage`) {
+      navigate(`/${username}/manage/prizes`, { replace: true });
+    }
+  }, [location.pathname, username, navigate]);
+  
+  // Determine active tab from URL path
+  const getActiveTabFromPath = () => {
+    const path = location.pathname;
+    if (path.includes('/manage/prizes')) return 'prizes';
+    if (path.includes('/manage/pricing')) return 'pricing';
+    if (path.includes('/manage/settings')) return 'settings';
+    return 'prizes'; // default
+  };
+  
+  const activeTab = getActiveTabFromPath();
 
   const tabs = [
     { id: "prizes", label: t("manage.prizes") || "Prizes" },
     { id: "pricing", label: t("manage.pricing") || "Pricing" },
-    { id: "settings", label: t("manage.settings") || "Settings" }
+    { id: "settings", label: t("manage.settings") || "Configuration" }
   ];
 
   return (
@@ -27,7 +48,7 @@ export default function Manage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => navigate(`/${username}/manage/${tab.id}`)}
             className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
               activeTab === tab.id
                 ? "bg-create-primary text-white"

@@ -12,6 +12,22 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
     return index === -1 ? 0 : index;
   };
   
+  // Get plan color based on subscription tier
+  const getPlanColor = (planId) => {
+    switch (planId) {
+      case 'free':
+        return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+      case 'basic':
+        return 'bg-blue-500/20 text-blue-300 border border-blue-500/30';
+      case 'advanced':
+        return 'bg-purple-500/20 text-purple-300 border border-purple-500/30';
+      case 'pro':
+        return 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30';
+      default:
+        return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+    }
+  };
+  
   const currentPlanTier = getPlanTier(currentPlan);
 
   return (
@@ -48,8 +64,12 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
               <div className="space-y-4">
                 {/* Plan header */}
                 <div>
-                  <h4 className="text-lg font-bold text-white">{plan.name}</h4>
-                  <p className="mt-1 text-sm text-slate-400">{plan.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getPlanColor(plan.id)}`}>
+                      {plan.name}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-400">{plan.description}</p>
                 </div>
 
                 {/* Price */}

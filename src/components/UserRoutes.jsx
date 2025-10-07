@@ -5,6 +5,7 @@ import Stock from "../pages/Stock.jsx";
 import Account from "../pages/Account.jsx";
 import Admin from "../pages/Admin.jsx";
 import Manage from "../pages/Manage.jsx";
+import SubscriptionPlanPage from "../pages/SubscriptionPlanPage.jsx";
 import MainLayout from "./MainLayout.jsx";
 import RequireAuth from "../auth/RequireAuth.jsx";
 import RequireSuperAdmin from "../auth/RequireSuperAdmin.jsx";
@@ -39,8 +40,8 @@ function ValidateUserAccess({ children }) {
   }
   
   // Username doesn't match - redirect to user's own space
-  console.log(`❌ Access denied: ${user.username} cannot access ${urlUsername}'s page, redirecting to /${user.username}/manage`);
-  return <Navigate to={`/${user.username}/manage`} replace />;
+  console.log(`❌ Access denied: ${user.username} cannot access ${urlUsername}'s page, redirecting to /${user.username}/manage/prizes`);
+  return <Navigate to={`/${user.username}/manage/prizes`} replace />;
 }
 
 // User-specific routes component
@@ -48,6 +49,7 @@ export default function UserRoutes() {
   return (
     <Routes>
       {/* User-specific routes: /{username}/page */}
+      {/* Draw page - requires authentication and username match */}
       <Route path="/:username/draw" element={
         <ValidateUserAccess>
           <RequireAuth>
@@ -58,14 +60,9 @@ export default function UserRoutes() {
         </ValidateUserAccess>
       } />
       
+      {/* Stock page - publicly accessible for all usernames */}
       <Route path="/:username/stock" element={
-        <ValidateUserAccess>
-          <RequireAuth>
-            <RequireSetup>
-              <MainLayout><Stock /></MainLayout>
-            </RequireSetup>
-          </RequireAuth>
-        </ValidateUserAccess>
+        <MainLayout><Stock /></MainLayout>
       } />
       
       <Route path="/:username/account" element={
@@ -76,12 +73,53 @@ export default function UserRoutes() {
         </ValidateUserAccess>
       } />
       
-      {/* Manage route - accessible to all authenticated users */}
+      {/* Manage routes - accessible to all authenticated users */}
       <Route path="/:username/manage" element={
         <ValidateUserAccess>
           <RequireAuth>
             <RequireSetup>
               <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
+      <Route path="/:username/manage/prizes" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
+      <Route path="/:username/manage/pricing" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
+      <Route path="/:username/manage/settings" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><Manage /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+      
+      {/* Subscription Plan route */}
+      <Route path="/:username/account/plan" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><SubscriptionPlanPage /></MainLayout>
             </RequireSetup>
           </RequireAuth>
         </ValidateUserAccess>
@@ -99,7 +137,7 @@ export default function UserRoutes() {
       } />
       
       {/* Default redirect for user routes */}
-      <Route path="/:username" element={<Navigate to="./manage" replace />} />
+      <Route path="/:username" element={<Navigate to="./manage/settings" replace />} />
     </Routes>
   );
 }

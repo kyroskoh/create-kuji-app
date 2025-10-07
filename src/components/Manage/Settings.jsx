@@ -7,7 +7,6 @@ import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
 import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName } from "../../utils/subscriptionPlans.js";
-import SubscriptionPlan from "./SubscriptionPlan.jsx";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -371,20 +370,10 @@ export default function Settings() {
     updateSettings({ weightMode: mode === "advanced" ? "advanced" : "basic" });
   };
 
-  const handlePlanChange = async (planId) => {
-    await updateSettings({ subscriptionPlan: planId });
-    setStatusMessage(`Plan changed to ${planId}. Features updated.`);
-  };
-
   const activeCountryEmoji = settings.countryEmoji || flagFromCountryCode(settings.countryCode || "");
 
   return (
     <div className="space-y-6">
-      {/* Subscription Plan Section */}
-      <SubscriptionPlan 
-        currentPlan={settings.subscriptionPlan || "free"} 
-        onPlanChange={handlePlanChange}
-      />
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Session Controls</h3>
         <p className="text-sm text-slate-400">

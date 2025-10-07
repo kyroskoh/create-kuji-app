@@ -10,28 +10,31 @@ import AuthDebug from "./components/AuthDebug.jsx";
 import { TranslationProvider } from "./utils/TranslationContext.jsx";
 import { AuthProvider } from "./utils/AuthContext.jsx";
 import { ToastProvider } from "./contexts/ToastContext.jsx";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext.jsx";
 
 export default function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <TranslationProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<MainLayout><AuthenticatedHome /></MainLayout>} />
-              <Route path="/demo" element={<Demo />} />
-              <Route path="/demo/stock" element={<DemoStock />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Username-based routes: /{username}/{page} */}
-              <Route path="/*" element={<UserRoutes />} />
-            </Routes>
-            <AuthDebug />
-          </BrowserRouter>
-        </TranslationProvider>
-      </ToastProvider>
+      <SubscriptionProvider>
+        <ToastProvider>
+          <TranslationProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<MainLayout><AuthenticatedHome /></MainLayout>} />
+                <Route path="/demo" element={<Demo />} />
+                <Route path="/demo/stock" element={<DemoStock />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                
+                {/* Username-based routes: /{username}/{page} */}
+                <Route path="/*" element={<UserRoutes />} />
+              </Routes>
+              <AuthDebug />
+            </BrowserRouter>
+          </TranslationProvider>
+        </ToastProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

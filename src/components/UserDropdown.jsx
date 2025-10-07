@@ -1,31 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext.jsx';
-import useLocalStorageDAO from '../hooks/useLocalStorageDAO.js';
+import { useSubscription } from '../contexts/SubscriptionContext.jsx';
 import { SUBSCRIPTION_PLANS } from '../utils/subscriptionPlans';
 
 export default function UserDropdown() {
   const { user, logout, isAuthenticated } = useAuth();
-  const { getSettings } = useLocalStorageDAO();
+  const { subscriptionPlan } = useSubscription();
   const [isOpen, setIsOpen] = useState(false);
-  const [subscriptionPlan, setSubscriptionPlan] = useState('free');
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-
-  // Load subscription plan
-  useEffect(() => {
-    const loadPlan = async () => {
-      try {
-        const settings = await getSettings();
-        setSubscriptionPlan(settings.subscriptionPlan || 'free');
-      } catch (error) {
-        console.error('Failed to load subscription plan:', error);
-      }
-    };
-    if (isAuthenticated) {
-      loadPlan();
-    }
-  }, [isAuthenticated, getSettings]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -48,6 +32,22 @@ export default function UserDropdown() {
     setIsOpen(false);
     await logout();
     navigate('/');
+  };
+
+  // Get plan color based on subscription tier
+  const getPlanColor = (plan) => {
+    switch (plan) {
+      case 'free':
+        return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+      case 'basic':
+        return 'bg-blue-500/20 text-blue-300 border border-blue-500/30';
+      case 'advanced':
+        return 'bg-purple-500/20 text-purple-300 border border-purple-500/30';
+      case 'pro':
+        return 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border border-yellow-500/30';
+      default:
+        return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+    }
   };
 
   // Don't render if user is not authenticated
@@ -88,20 +88,12 @@ export default function UserDropdown() {
           <div className="py-1">
             {/* Subscription Plan Info */}
             <div className="px-4 py-3 border-b border-slate-700">
-              <p className="text-xs text-slate-400 mb-1">Current Plan</p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-white capitalize">
+              <p className="text-xs text-slate-400 mb-2">Current Plan</p>
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getPlanColor(subscriptionPlan)}`}>
                   {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.name || 'Free'}
                 </span>
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  subscriptionPlan === 'free' 
-                    ? 'bg-slate-600 text-slate-200'
-                    : subscriptionPlan === 'basic'
-                    ? 'bg-blue-500/20 text-blue-300'
-                    : subscriptionPlan === 'advanced'
-                    ? 'bg-purple-500/20 text-purple-300'
-                    : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300'
-                }`}>
+                <span className="text-xs text-slate-400">
                   {SUBSCRIPTION_PLANS[subscriptionPlan.toUpperCase()]?.price || '$0'}
                 </span>
               </div>
@@ -120,7 +112,7 @@ export default function UserDropdown() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                navigate(`/${user.username}/settings`);
+                navigate(`/${user.username}/account/plan`);
               }}
               className="block w-full text-left px-4 py-2 text-sm text-white bg-slate-800 transition hover:bg-purple-600/30"
             >
