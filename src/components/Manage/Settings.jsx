@@ -6,7 +6,7 @@ import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js"
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
-import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan } from "../../utils/subscriptionPlans.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName } from "../../utils/subscriptionPlans.js";
 import SubscriptionPlan from "./SubscriptionPlan.jsx";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
@@ -49,7 +49,9 @@ export default function Settings() {
   const [filteredCountries, setFilteredCountries] = useState(COUNTRIES.slice(0, 20)); // Show first 20 by default
   const [customCurrency, setCustomCurrency] = useState("");
   const [newTierKey, setNewTierKey] = useState("");
+  const [tierNameError, setTierNameError] = useState("");
   const [activeTier, setActiveTier] = useState("S");
+  const [draggedTier, setDraggedTier] = useState(null);
   const fileInputRef = useRef(null);
 
   // Popular countries for sample display (Asia-focused with major global currencies)
@@ -112,6 +114,19 @@ export default function Settings() {
   const canAddMoreTiers = useMemo(() => {
     return canCreateTier(tierList.length, settings.subscriptionPlan || "free");
   }, [tierList.length, settings.subscriptionPlan]);
+
+  // Get max tier name length for current plan
+  const maxTierNameLength = useMemo(() => {
+    return getMaxTierNameLength(settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+
+  // Check if tier sorting is allowed
+  const tierSortingAllowed = useMemo(() => {
+    return isTierSortingAllowed(settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+
+  // Manage custom tier order (only for Advanced & Pro plans)
+  const [customTierOrder, setCustomTierOrder] = useState([]);
 
   useEffect(() => {
     if (!tierList.includes(activeTier) && tierList.length) {
@@ -300,20 +315,36 @@ export default function Settings() {
   };
 
   const handleAddTier = () => {
+    setTierNameError("");
+    
     if (!canAddMoreTiers) {
       setStatusMessage("Tier limit reached for your plan. Upgrade to add more tiers.");
       return;
     }
-    const tier = normalizeTierKey(newTierKey);
-    if (!tier) return;
-    const updatedColors = { ...tierColors };
-    if (!updatedColors[tier]) {
-      const nextPalette = availableColors[Object.keys(updatedColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id;
-      updatedColors[tier] = nextPalette;
+
+    // Validate tier name
+    const validation = validateTierName(newTierKey, settings.subscriptionPlan || "free");
+    if (!validation.valid) {
+      setTierNameError(validation.error);
+      return;
     }
+
+    const tier = validation.value;
+    
+    // Check if tier already exists
+    if (tierColors[tier]) {
+      setTierNameError(`Tier "${tier}" already exists`);
+      return;
+    }
+
+    const updatedColors = { ...tierColors };
+    const nextPalette = availableColors[Object.keys(updatedColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id;
+    updatedColors[tier] = nextPalette;
+    
     updateSettings({ tierColors: updatedColors });
     setActiveTier(tier);
     setNewTierKey("");
+    setTierNameError("");
   };
 
   const handleTierColorChange = (colorId) => {
@@ -497,19 +528,57 @@ export default function Settings() {
           Tier S is the top tier by default. Assign swatches to keep prize lists scannable.
           {!canAddMoreTiers && <span className="text-amber-400"> (Tier limit reached - upgrade to add more)</span>}
         </p>
-        <div className="text-xs text-slate-500">
-          Tiers: {tierList.length} / {canAddMoreTiers ? "more available" : "limit reached"}
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-slate-500">
+            Tiers: {tierList.length} / {canAddMoreTiers ? "more available" : "limit reached"} | Max name length: {maxTierNameLength} char{maxTierNameLength > 1 ? 's' : ''}
+          </div>
+          {tierSortingAllowed && (
+            <div className="text-xs text-emerald-400 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              Drag to reorder
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {tierList.map((tier) => (
+          {tierList.map((tier, index) => (
             <button
               key={tier}
               type="button"
+              draggable={tierSortingAllowed}
+              onDragStart={() => tierSortingAllowed && setDraggedTier(index)}
+              onDragOver={(e) => {
+                if (!tierSortingAllowed) return;
+                e.preventDefault();
+              }}
+              onDrop={(e) => {
+                if (!tierSortingAllowed) return;
+                e.preventDefault();
+                const newList = [...tierList];
+                const draggedItem = newList[draggedTier];
+                newList.splice(draggedTier, 1);
+                newList.splice(index, 0, draggedItem);
+                
+                // Update tier colors with new order
+                const reorderedColors = {};
+                newList.forEach(t => {
+                  reorderedColors[t] = tierColors[t];
+                });
+                updateSettings({ tierColors: reorderedColors });
+                setDraggedTier(null);
+              }}
+              onDragEnd={() => setDraggedTier(null)}
               onClick={() => handleTierSelection(tier)}
               className={`${tierChipClass(tier, tierColors)} ${
                 activeTier === tier ? "ring-2 ring-offset-2 ring-offset-slate-900" : ""
-              }`}
+              } ${tierSortingAllowed ? "cursor-move" : ""} ${draggedTier === index ? "opacity-50" : ""}`}
             >
+              {tierSortingAllowed && (
+                <svg className="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                </svg>
+              )}
               Tier {tier}
             </button>
           ))}
@@ -517,15 +586,26 @@ export default function Settings() {
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-2">
             <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="new-tier">
-              Add tier label
+              Add tier label ({maxTierNameLength} char{maxTierNameLength > 1 ? 's' : ''} max)
             </label>
-            <input
-              id="new-tier"
-              className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
-              value={newTierKey}
-              onChange={(event) => setNewTierKey(event.target.value)}
-              placeholder="E"
-            />
+            <div className="flex flex-col gap-1">
+              <input
+                id="new-tier"
+                maxLength={maxTierNameLength}
+                className={`w-32 rounded-md border ${
+                  tierNameError ? "border-red-500" : "border-slate-700"
+                } bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30`}
+                value={newTierKey}
+                onChange={(event) => {
+                  setNewTierKey(event.target.value);
+                  setTierNameError("");
+                }}
+                placeholder={maxTierNameLength === 1 ? "S" : maxTierNameLength === 2 ? "SS" : "SSR"}
+              />
+              {tierNameError && (
+                <span className="text-xs text-red-400">{tierNameError}</span>
+              )}
+            </div>
           </div>
           <button 
             type="button" 

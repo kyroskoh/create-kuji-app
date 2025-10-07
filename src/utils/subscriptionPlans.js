@@ -24,7 +24,7 @@ export const SUBSCRIPTION_PLANS = {
   BASIC: {
     id: "basic",
     name: "Basic",
-    price: "$9/mo",
+    price: "$3/mo",
     maxTiers: 5,
     maxTierNameLength: 1,
     tierSorting: false,
@@ -48,7 +48,7 @@ export const SUBSCRIPTION_PLANS = {
   ADVANCED: {
     id: "advanced",
     name: "Advanced",
-    price: "$19/mo",
+    price: "$5/mo",
     maxTiers: 10,
     maxTierNameLength: 2,
     tierSorting: true,
@@ -66,7 +66,9 @@ export const SUBSCRIPTION_PLANS = {
       importData: true,
       customCurrency: true,
       advancedWeights: true,
-      tierSorting: true
+      tierSorting: true,
+      prioritySupport: true,
+      apiAccess: true
     },
     description: "For growing businesses",
     badge: "Recommended"
@@ -74,7 +76,7 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: "pro",
     name: "Pro",
-    price: "$39/mo",
+    price: "$10/mo",
     maxTiers: Infinity,
     maxTierNameLength: 3,
     tierSorting: true,
