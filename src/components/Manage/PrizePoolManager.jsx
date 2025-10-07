@@ -31,30 +31,36 @@ const WEIGHT_MODE_LABEL = {
 };
 
 export default function PrizePoolManager() {
-  const { getPrizes, setPrizes, getSettings } = useLocalStorageDAO();
+  const { getPrizes, setPrizes, getSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
   const { user } = useAuth();
   const [prizes, setPrizeRows] = useState([]);
   const [tierColors, setTierColors] = useState({});
   const [weightMode, setWeightMode] = useState("basic");
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [storedPrizes, storedSettings] = await Promise.all([getPrizes(), getSettings()]);
+      const [storedPrizes, storedSettings, dirtyState] = await Promise.all([
+        getPrizes(), 
+        getSettings(), 
+        getDirtyState()
+      ]);
       if (mounted) {
         setPrizeRows(storedPrizes.length ? storedPrizes : []);
         setTierColors(storedSettings.tierColors ?? {});
         setWeightMode(storedSettings.weightMode ?? "basic");
+        setHasUnsavedChanges(dirtyState.prizes === true);
         setLoading(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [getPrizes, getSettings]);
+  }, [getPrizes, getSettings, getDirtyState]);
 
   const tierTotals = useMemo(() => {
     const totals = prizes.reduce((acc, prize) => {
@@ -94,6 +100,8 @@ export default function PrizePoolManager() {
       return;
     }
     setPrizeRows(data);
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
     setStatus({ type: "success", message: `${data.length} prizes imported.` });
   };
 
@@ -106,6 +114,8 @@ export default function PrizePoolManager() {
         return;
       }
       setPrizeRows(data);
+      await setDirtyFlag('prizes', true);
+      setHasUnsavedChanges(true);
       setStatus({ type: "success", message: "Sample prize pool loaded." });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -125,11 +135,13 @@ export default function PrizePoolManager() {
     URL.revokeObjectURL(url);
   };
 
-  const handleAddRow = () => {
+  const handleAddRow = async () => {
     setPrizeRows((rows) => [...rows, { ...EMPTY_PRIZE }]);
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
   };
 
-  const handleCellChange = (index, key, value) => {
+  const handleCellChange = async (index, key, value) => {
     setPrizeRows((rows) =>
       rows.map((row, rowIndex) =>
         rowIndex === index
@@ -140,16 +152,25 @@ export default function PrizePoolManager() {
           : row
       )
     );
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
   };
 
-  const handleDelete = (index) => {
+  const handleDelete = async (index) => {
     setPrizeRows((rows) => rows.filter((_, rowIndex) => rowIndex !== index));
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = async () => {
     try {
       // Save to LocalForage first
       await setPrizes(prizes);
+      
+      // Clear dirty flag - changes are now saved
+      await clearDirtyFlag('prizes');
+      setHasUnsavedChanges(false);
+      
       setStatus({ type: "success", message: "Prize pool saved to storage." });
       
       // Sync to backend if user is authenticated
@@ -170,7 +191,7 @@ export default function PrizePoolManager() {
     }
   };
 
-  const applySuggestedWeights = () => {
+  const applySuggestedWeights = async () => {
     if (weightMode !== "advanced") {
       setStatus({ type: "error", message: "Suggestions only available in advanced weight mode." });
       return;
@@ -184,6 +205,8 @@ export default function PrizePoolManager() {
       };
     });
     setPrizeRows(next);
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
     setStatus({ type: "success", message: "Suggested weights applied for advanced mode." });
   };
 
@@ -351,16 +374,29 @@ export default function PrizePoolManager() {
         </table>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={handleSave}>
-          Save
+        <button 
+          type="button" 
+          onClick={handleSave}
+          className={hasUnsavedChanges ? "bg-amber-600 hover:bg-amber-700" : ""}
+        >
+          Save {hasUnsavedChanges && "*"}
         </button>
         <button
           type="button"
           className="bg-slate-800 text-slate-200"
-          onClick={() => setPrizeRows([])}
+          onClick={async () => {
+            setPrizeRows([]);
+            await setDirtyFlag('prizes', true);
+            setHasUnsavedChanges(true);
+          }}
         >
           Clear
         </button>
+        {hasUnsavedChanges && (
+          <span className="text-sm font-medium text-amber-400">
+            ⚠️ Unsaved changes
+          </span>
+        )}
         {status && (
           <span
             className={`text-sm font-medium ${

@@ -7,7 +7,8 @@ const STORE_KEYS = {
   prizes: "create::prizes",
   pricing: "create::pricing",
   history: "create::history",
-  settings: "create::settings"
+  settings: "create::settings",
+  dirtyState: "create::dirty_state"
 };
 
 localforage.config({
@@ -95,13 +96,31 @@ export default function useLocalStorageDAO() {
     await Promise.all([
       localforage.removeItem(STORE_KEYS.prizes),
       localforage.removeItem(STORE_KEYS.pricing),
-      localforage.removeItem(STORE_KEYS.history)
+      localforage.removeItem(STORE_KEYS.history),
+      localforage.removeItem(STORE_KEYS.dirtyState)
     ]);
     await localforage.setItem(STORE_KEYS.settings, {
       ...DEFAULT_SETTINGS,
       lastReset: new Date().toISOString()
     });
   }, []);
+
+  // Dirty state management - track unsaved changes
+  const getDirtyState = useCallback(async () => {
+    const state = await localforage.getItem(STORE_KEYS.dirtyState);
+    return state || {};
+  }, []);
+
+  const setDirtyFlag = useCallback(async (dataType, isDirty) => {
+    const state = await getDirtyState();
+    state[dataType] = isDirty;
+    await localforage.setItem(STORE_KEYS.dirtyState, state);
+    console.log(`🚩 Dirty flag for ${dataType}: ${isDirty}`);
+  }, [getDirtyState]);
+
+  const clearDirtyFlag = useCallback(async (dataType) => {
+    await setDirtyFlag(dataType, false);
+  }, [setDirtyFlag]);
 
   return {
     getPrizes,
@@ -112,6 +131,9 @@ export default function useLocalStorageDAO() {
     setSettings,
     getHistory,
     saveHistory,
-    resetAll
+    resetAll,
+    getDirtyState,
+    setDirtyFlag,
+    clearDirtyFlag
   };
 }

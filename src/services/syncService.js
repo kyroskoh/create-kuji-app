@@ -7,7 +7,8 @@ const STORE_KEYS = {
   pricing: "create::pricing",
   history: "create::history",
   settings: "create::settings",
-  syncQueue: "create::sync_queue" // New: persistent sync queue
+  syncQueue: "create::sync_queue", // Persistent sync queue
+  dirtyState: "create::dirty_state" // Track unsaved changes
 };
 
 // Configure LocalForage (same as in useLocalStorageDAO)
@@ -106,9 +107,10 @@ class SyncService {
     console.log(`⬇️ Pulling latest data from server for ${username}...`);
 
     try {
-      // Get current local data to check for unsaved changes
+      // Get current local data and dirty state to check for unsaved changes
       const localPrizes = await localforage.getItem(STORE_KEYS.prizes);
       const localHistory = await localforage.getItem(STORE_KEYS.history);
+      const dirtyState = await localforage.getItem(STORE_KEYS.dirtyState) || {};
       
       // Fetch all data from server
       const [prizesResponse, settingsResponse, presetsResponse] = await Promise.allSettled([
@@ -118,25 +120,23 @@ class SyncService {
       ]);
 
       // Update local storage with server data
-      // IMPORTANT: For prizes, only pull if explicitly requested or if no local changes
-      // This prevents overwriting local draw results that haven't synced yet
+      // IMPORTANT: For prizes, only pull if no unsaved local changes
       if (prizesResponse.status === 'fulfilled' && prizesResponse.value.data.prizes) {
         const serverPrizes = prizesResponse.value.data.prizes;
         
+        // Check if prizes have unsaved changes (dirty flag)
+        const hasDirtyPrizes = dirtyState.prizes === true;
+        
         // Only overwrite prizes if:
         // 1. Forced pull (options.forcePrizes === true), OR
-        // 2. No local prizes exist, OR  
-        // 3. Local and server have same length (safe to assume no local-only changes)
-        const shouldPullPrizes = options.forcePrizes || 
-                                 !localPrizes || 
-                                 localPrizes.length === 0 ||
-                                 (Array.isArray(localPrizes) && localPrizes.length === serverPrizes.length);
+        // 2. No unsaved changes (not dirty)
+        const shouldPullPrizes = options.forcePrizes || !hasDirtyPrizes;
         
         if (shouldPullPrizes) {
           await localforage.setItem(STORE_KEYS.prizes, serverPrizes);
           console.log(`✅ Pulled ${serverPrizes.length} prizes from server`);
         } else {
-          console.log(`⚠️ Skipped pulling prizes - local changes detected (local: ${localPrizes.length}, server: ${serverPrizes.length})`);
+          console.log(`⚠️ Skipped pulling prizes - unsaved local changes detected (dirty flag set)`);
         }
       }
 
