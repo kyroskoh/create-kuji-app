@@ -28,10 +28,20 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'http://localhost:5173', // Vite dev server
+      'http://localhost:5173', // Vite dev server (primary)
+      'http://localhost:5174', // Vite dev server (fallback)
       'http://localhost:3000', // Alternative frontend port
       process.env.FRONTEND_URL // Production frontend URL
     ].filter(Boolean);
+    
+    // For development, also allow any localhost port in the 5000-6000 range
+    // This handles Vite's automatic port selection
+    if (process.env.NODE_ENV === 'development' && origin?.startsWith('http://localhost:')) {
+      const port = parseInt(origin.split(':')[2]);
+      if (port >= 5000 && port <= 6000) {
+        return callback(null, true);
+      }
+    }
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
