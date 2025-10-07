@@ -49,22 +49,27 @@ export default function Settings() {
   const [activeTier, setActiveTier] = useState("S");
   const fileInputRef = useRef(null);
 
-  // Popular Asian countries for sample display
-  const popularAsianCountries = useMemo(() => [
-    "Malaysia", "Singapore", "Indonesia", "Thailand", "Philippines",
-    "Vietnam", "Japan", "South Korea", "China", "Hong Kong",
-    "Taiwan", "India", "Australia"
+  // Popular countries for sample display (Asia-focused with major global currencies)
+  const popularCountries = useMemo(() => [
+    // Southeast Asia
+    "Malaysia", "Singapore", "Indonesia", "Thailand", "Philippines", "Vietnam",
+    // East Asia
+    "Japan", "South Korea", "China", "Hong Kong", "Taiwan",
+    // South Asia & Oceania
+    "India", "Australia",
+    // Major global currencies
+    "United States", "United Kingdom", "Germany", "Canada"
   ], []);
 
-  // Get sample countries to display (popular Asian or filtered results)
+  // Get sample countries to display (popular countries or filtered results)
   const sampleCountries = useMemo(() => {
     if (countryQuery.trim() === "" || countryQuery.toLowerCase() === "malaysia") {
-      // Show popular Asian countries by default
-      return COUNTRIES.filter(c => popularAsianCountries.includes(c.name));
+      // Show popular countries by default (Asia-focused + major currencies)
+      return COUNTRIES.filter(c => popularCountries.includes(c.name));
     }
     // Show filtered results when searching
-    return filteredCountries.slice(0, 9);
-  }, [countryQuery, filteredCountries, popularAsianCountries]);
+    return filteredCountries.slice(0, 12);
+  }, [countryQuery, filteredCountries, popularCountries]);
 
   useEffect(() => {
     let mounted = true;
@@ -377,9 +382,15 @@ export default function Settings() {
             Active configuration: {activeCountryEmoji ? `${activeCountryEmoji} ` : ""}
             {settings.country || "Unknown country"} | {settings.currency || "Currency"} | {settings.locale || "Locale"}
           </p>
-          <p className="mt-2">Sample formatting (showing top matches):</p>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-            {filteredCountries.slice(0, 9).map((country) => {
+          <p className="mt-2">
+            Sample formatting
+            {countryQuery.trim() === "" || countryQuery.toLowerCase() === "malaysia" 
+              ? " (Popular in Asia + Major Currencies)" 
+              : " (showing top matches)"}
+            :
+          </p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {sampleCountries.map((country) => {
               const emoji = flagFromCountryCode(country.code);
               return (
                 <li key={country.code} className="flex flex-col text-slate-300">

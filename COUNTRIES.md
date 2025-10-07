@@ -28,7 +28,11 @@ When you select a country, it automatically sets:
 - **Sample currency formatting**
 
 ### 📊 Live Preview
-- Shows currency formatting for top 9 matching countries
+- **Default view**: Shows 17 popular countries (Asia-focused + major currencies)
+  - Southeast Asia: Malaysia, Singapore, Indonesia, Thailand, Philippines, Vietnam
+  - East Asia: Japan, South Korea, China, Hong Kong, Taiwan
+  - Others: India, Australia, United States, United Kingdom, Germany, Canada
+- **Search mode**: Shows top 12 matching results
 - Sample amount: 1234 in local currency format
 - Updates dynamically as you search
 
