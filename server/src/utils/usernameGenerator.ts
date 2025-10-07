@@ -13,6 +13,12 @@ export async function generateTemporaryUsername(email: string): Promise<string> 
   // Extract the part before @ and clean it
   const emailPrefix = email.split('@')[0];
   
+  if (!emailPrefix) {
+    // Fallback if email format is invalid
+    const fallbackId = crypto.randomUUID().split('-')[0];
+    return `user_${fallbackId}`;
+  }
+  
   // Remove special characters and convert to lowercase
   let cleaned = emailPrefix
     .toLowerCase()

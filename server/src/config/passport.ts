@@ -56,7 +56,7 @@ passport.use('local', new LocalStrategy({
 
     // Return user without password
     const { password: _, ...userWithoutPassword } = user;
-    return done(null, userWithoutPassword);
+    return done(null, userWithoutPassword as any);
 
   } catch (error) {
     return done(error);
@@ -89,7 +89,7 @@ passport.use('jwt', new JwtStrategy({
       return done(null, false);
     }
 
-    return done(null, user);
+    return done(null, user as any);
   } catch (error) {
     return done(error, false);
   }
@@ -116,7 +116,7 @@ passport.deserializeUser(async (id: string, done) => {
       }
     });
     
-    done(null, user);
+    done(null, user as any);
   } catch (error) {
     done(error, null);
   }

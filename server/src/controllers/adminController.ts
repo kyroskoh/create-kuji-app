@@ -34,8 +34,8 @@ export async function getUsers(req: Request, res: Response) {
 
     // Build sort configuration
     const validSortFields = ['username', 'createdAt', 'lastLogin', 'displayName'];
-    const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'createdAt';
-    const orderBy = { [sortField]: sortOrder === 'asc' ? 'asc' : 'desc' };
+    const sortField = validSortFields.includes(sortBy as string) ? sortBy as string : 'createdAt';
+    const orderBy: any = { [sortField]: sortOrder === 'asc' ? 'asc' : 'desc' };
 
     // Fetch users and total count
     const [users, totalCount] = await Promise.all([

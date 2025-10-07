@@ -210,14 +210,17 @@ export async function getUserStock(req: Request, res: Response) {
 
     // Second pass: calculate total quantity (remaining + drawn)
     Object.keys(tierGroups).forEach(tier => {
-      const remainingQty = tierGroups[tier].remainingQuantity;
-      const drawnQty = drawnPerTier[tier] || 0;
-      tierGroups[tier].totalQuantity = remainingQty + drawnQty;
-      console.log(`📦 Tier ${tier}: remaining=${remainingQty}, drawn=${drawnQty}, total=${tierGroups[tier].totalQuantity}`);
+      const group = tierGroups[tier];
+      if (group) {
+        const remainingQty = group.remainingQuantity;
+        const drawnQty = drawnPerTier[tier] || 0;
+        group.totalQuantity = remainingQty + drawnQty;
+        console.log(`📦 Tier ${tier}: remaining=${remainingQty}, drawn=${drawnQty}, total=${group.totalQuantity}`);
+      }
     });
 
     // Get tier colors from user settings
-    let tierColors = {};
+    let tierColors: { [key: string]: string } = {};
     try {
       console.log(`🎨 Loading tier colors for ${username}:`, user.userSettings?.tierColors);
       tierColors = user.userSettings?.tierColors ? JSON.parse(user.userSettings.tierColors) : {};
@@ -299,12 +302,35 @@ export async function getUserStock(req: Request, res: Response) {
       };
     });
 
-    // Sort tiers (S tier first, then alphabetically)
-    tiers.sort((a, b) => {
-      if (a.id === 'S' && b.id !== 'S') return -1;
-      if (b.id === 'S' && a.id !== 'S') return 1;
-      return a.id.localeCompare(b.id);
-    });
+    // Sort tiers based on user's custom tier order from settings
+    // Get tier order from tierColors (object key order is preserved in JavaScript)
+    const tierOrder = Object.keys(tierColors);
+    
+    if (tierOrder.length > 0) {
+      // Custom order exists - use it
+      const tierIndexMap = new Map(tierOrder.map((tier, index) => [tier.toUpperCase(), index]));
+      
+      tiers.sort((a, b) => {
+        const indexA = tierIndexMap.has(a.id) ? tierIndexMap.get(a.id)! : Number.MAX_SAFE_INTEGER;
+        const indexB = tierIndexMap.has(b.id) ? tierIndexMap.get(b.id)! : Number.MAX_SAFE_INTEGER;
+        
+        if (indexA !== indexB) {
+          return indexA - indexB;
+        }
+        
+        // Fallback: S tier first, then alphabetically
+        if (a.id === 'S' && b.id !== 'S') return -1;
+        if (b.id === 'S' && a.id !== 'S') return 1;
+        return a.id.localeCompare(b.id);
+      });
+    } else {
+      // No custom order - default sorting (S tier first, then alphabetically)
+      tiers.sort((a, b) => {
+        if (a.id === 'S' && b.id !== 'S') return -1;
+        if (b.id === 'S' && a.id !== 'S') return 1;
+        return a.id.localeCompare(b.id);
+      });
+    }
 
     // Calculate metadata
     const totalDraws = tiers.reduce((sum, tier) => sum + tier.totalStock, 0);

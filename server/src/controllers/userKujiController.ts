@@ -54,7 +54,9 @@ export async function syncPrizes(req: Request, res: Response) {
     });
 
     // Clear the stock cache for this user so fresh data is fetched
-    clearUserStockCache(username);
+    if (username) {
+      clearUserStockCache(username);
+    }
 
     return res.status(200).json({
       message: 'Prizes synced successfully',
@@ -122,7 +124,9 @@ export async function syncSettings(req: Request, res: Response) {
     });
 
     // Clear the stock cache for this user so tier colors are updated
-    clearUserStockCache(username);
+    if (username) {
+      clearUserStockCache(username);
+    }
 
     return res.status(200).json({
       message: 'Settings synced successfully',
