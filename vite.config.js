@@ -42,6 +42,7 @@ export default defineConfig({
       '127.0.0.1',
       'servarica0.layeredserver.com',
       '.layeredserver.com', // Allow all subdomains
+      'createkuji.app',
     ],
     https: getHttpsConfig(),
   },
