@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node src/utils/seed.ts",
     "fix:demo": "ts-node src/utils/fix-demo-username.ts",
+    "demo:permanent": "ts-node src/utils/make-demo-username-permanent.ts",
     "support:change-username": "ts-node src/utils/change-username.ts",
     "support:change-username-email": "ts-node src/utils/change-username-by-email.ts",
     "support:upgrade-to-pro": "ts-node src/utils/upgrade-to-pro.ts",
