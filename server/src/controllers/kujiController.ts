@@ -169,7 +169,28 @@ export async function getUserStock(req: Request, res: Response) {
       });
     }
 
+    // Get draw history to calculate drawn prizes
+    const drawSessions = await prisma.drawSession.findMany({
+      where: { userId: user.id },
+      include: {
+        drawResults: true
+      }
+    });
+
+    // Count total draws per tier from history
+    const drawnPerTier: { [key: string]: number } = {};
+    drawSessions.forEach(session => {
+      session.drawResults.forEach(result => {
+        const tier = result.tier.toUpperCase();
+        drawnPerTier[tier] = (drawnPerTier[tier] || 0) + 1;
+      });
+    });
+
+    console.log(`📊 User ${username} - Drawn per tier from history:`, drawnPerTier);
+
     // Process prizes into tier groups
+    // Note: prize.quantity in the database represents current/remaining quantity after frontend updates
+    // To get the original total, we need to add back the drawn prizes from history
     const tierGroups: { [key: string]: { prizes: any[], totalQuantity: number, remainingQuantity: number } } = {};
     
     user.prizes.forEach(prize => {
@@ -183,8 +204,16 @@ export async function getUserStock(req: Request, res: Response) {
       }
       
       tierGroups[tier].prizes.push(prize);
-      tierGroups[tier].totalQuantity += prize.quantity;
+      // Current quantity from database (this is remaining after frontend draws)
       tierGroups[tier].remainingQuantity += prize.quantity;
+    });
+
+    // Calculate total quantity by adding current + drawn
+    Object.keys(tierGroups).forEach(tier => {
+      const remainingQty = tierGroups[tier].remainingQuantity;
+      const drawnQty = drawnPerTier[tier] || 0;
+      tierGroups[tier].totalQuantity = remainingQty + drawnQty;
+      console.log(`📦 Tier ${tier}: remaining=${remainingQty}, drawn=${drawnQty}, total=${tierGroups[tier].totalQuantity}`);
     });
 
     // Get tier colors from user settings
