@@ -8,6 +8,14 @@ export default defineConfig({
     host: '0.0.0.0', // Listen on all network interfaces
     port: 5173,
     strictPort: false, // Try next port if 5173 is taken
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      'createkuji.app',
+      '.createkuji.app',
+      'servarica0.layeredserver.com',
+      '.layeredserver.com', // Allow all subdomains
+    ],
   },
   resolve: {
     alias: {
