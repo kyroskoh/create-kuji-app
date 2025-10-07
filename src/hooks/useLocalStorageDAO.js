@@ -8,6 +8,7 @@ const STORE_KEYS = {
   pricing: "create::pricing",
   history: "create::history",
   settings: "create::settings",
+  branding: "create::branding",
   dirtyState: "create::dirty_state"
 };
 
@@ -31,6 +32,19 @@ const DEFAULT_SETTINGS = {
   weightMode: "basic",
   subscriptionPlan: "pro", // Demo users get Pro plan to test all features
   stockPagePublished: true // Stock page is published by default for demo
+};
+
+const DEFAULT_BRANDING = {
+  companyName: null,
+  eventName: null,
+  logoUrl: null,
+  primaryColor: "#3b82f6",
+  secondaryColor: "#8b5cf6",
+  accentColor: "#06b6d4",
+  fontFamily: "Inter",
+  backgroundPattern: null,
+  backgroundImage: null,
+  footerText: null
 };
 
 const mergeSettings = (settings) => {
@@ -123,6 +137,21 @@ export default function useLocalStorageDAO() {
     await setDirtyFlag(dataType, false);
   }, [setDirtyFlag]);
 
+  // Branding methods
+  const getBranding = useCallback(async () => {
+    const branding = await localforage.getItem(STORE_KEYS.branding);
+    return branding ? { ...DEFAULT_BRANDING, ...branding } : DEFAULT_BRANDING;
+  }, []);
+
+  const setBranding = useCallback(async (branding) => {
+    const merged = { ...DEFAULT_BRANDING, ...branding };
+    await localforage.setItem(STORE_KEYS.branding, merged);
+  }, []);
+
+  const resetBranding = useCallback(async () => {
+    await localforage.setItem(STORE_KEYS.branding, DEFAULT_BRANDING);
+  }, []);
+
   return {
     getPrizes,
     setPrizes,
@@ -132,6 +161,9 @@ export default function useLocalStorageDAO() {
     setSettings,
     getHistory,
     saveHistory,
+    getBranding,
+    setBranding,
+    resetBranding,
     resetAll,
     getDirtyState,
     setDirtyFlag,
