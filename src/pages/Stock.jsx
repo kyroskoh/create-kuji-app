@@ -39,8 +39,20 @@ export default function Stock() {
         kujiAPI.getUserStock(username),
         kujiAPI.getUserSettings(username)
       ]);
+      
+      const settings = settingsResponse.data;
+      const isOwner = user?.username === username;
+      
+      // Check if stock page is published or if user is the owner
+      if (!settings.stockPagePublished && !isOwner) {
+        setUserSettings(settings);
+        setStockData(null);
+        setLoading(false);
+        return;
+      }
+      
       setStockData(stockResponse.data);
-      setUserSettings(settingsResponse.data);
+      setUserSettings(settings);
       
       if (forceRefresh) {
         toast.success('Stock data refreshed');
@@ -103,6 +115,53 @@ export default function Stock() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className="mt-4 text-slate-400">Loading stock data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isOwner = user?.username === username;
+  const isPublished = userSettings?.stockPagePublished;
+
+  // Show unpublished message for non-owners
+  if (!stockData && !isOwner && userSettings && !isPublished) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-8">
+            <svg className="w-16 h-16 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-white mb-2">Stock Page Unpublished</h2>
+            <p className="text-slate-400 mb-4">
+              The stock page for <span className="text-white font-semibold">{username}</span> is currently not available to the public.
+            </p>
+            <p className="text-sm text-slate-500">
+              The owner has not published their stock page yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show unpublished banner for owners
+  if (!stockData && isOwner && userSettings && !isPublished) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-8">
+            <svg className="w-16 h-16 text-amber-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-white mb-2">Your Stock Page is Unpublished</h2>
+            <p className="text-slate-300 mb-4">
+              Your stock page is currently not visible to the public. 
+            </p>
+            <p className="text-sm text-slate-400">
+              Go to Settings to publish your stock page and make it publicly accessible.
+            </p>
+          </div>
         </div>
       </div>
     );

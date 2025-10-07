@@ -29,7 +29,8 @@ const DEFAULT_SETTINGS = {
   tierColors: DEFAULT_TIER_COLOR_MAP,
   nextSessionNumber: 1,
   weightMode: "basic",
-  subscriptionPlan: "pro" // Demo users get Pro plan to test all features
+  subscriptionPlan: "pro", // Demo users get Pro plan to test all features
+  stockPagePublished: false // Stock page is unpublished by default
 };
 
 const mergeSettings = (settings) => {

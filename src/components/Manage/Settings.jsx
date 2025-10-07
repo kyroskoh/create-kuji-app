@@ -374,6 +374,52 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
+      {/* Stock Page Visibility */}
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">Stock Page Visibility</h3>
+        <p className="text-sm text-slate-400">
+          Control whether your stock page is publicly accessible.
+        </p>
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-white">
+                  {settings.stockPagePublished ? 'Published' : 'Unpublished'}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  settings.stockPagePublished
+                    ? 'bg-green-500/20 text-green-300'
+                    : 'bg-amber-500/20 text-amber-300'
+                }`}>
+                  {settings.stockPagePublished ? '🌐 Public' : '🔒 Private'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                {settings.stockPagePublished
+                  ? 'Anyone can view your stock page'
+                  : 'Only you can view your stock page'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => updateSettings({ stockPagePublished: !settings.stockPagePublished })}
+              className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-create-primary focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                settings.stockPagePublished ? 'bg-green-600' : 'bg-slate-600'
+              }`}
+              role="switch"
+              aria-checked={settings.stockPagePublished}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.stockPagePublished ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Session Controls</h3>
         <p className="text-sm text-slate-400">
