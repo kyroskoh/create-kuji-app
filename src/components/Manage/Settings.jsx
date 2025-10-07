@@ -6,6 +6,8 @@ import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js"
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan } from "../../utils/subscriptionPlans.js";
+import SubscriptionPlan from "./SubscriptionPlan.jsx";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -39,7 +41,8 @@ export default function Settings() {
     locale: "ms-MY",
     tierColors: DEFAULT_TIER_COLOR_MAP,
     nextSessionNumber: 1,
-    weightMode: "basic"
+    weightMode: "basic",
+    subscriptionPlan: "free" // Default plan
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
@@ -95,6 +98,20 @@ export default function Settings() {
     Object.keys(tierColors).forEach((key) => keys.add(key));
     return Array.from(keys).sort(compareTierLabels);
   }, [tierColors]);
+
+  // Get available colors and weight modes based on subscription plan
+  const availableColors = useMemo(() => {
+    return getAvailableColorsForPlan(COLOR_PALETTE, settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+
+  const availableWeightModes = useMemo(() => {
+    return getAvailableWeightModesForPlan(WEIGHT_MODES, settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+
+  // Check if user can create more tiers
+  const canAddMoreTiers = useMemo(() => {
+    return canCreateTier(tierList.length, settings.subscriptionPlan || "free");
+  }, [tierList.length, settings.subscriptionPlan]);
 
   useEffect(() => {
     if (!tierList.includes(activeTier) && tierList.length) {
@@ -283,11 +300,15 @@ export default function Settings() {
   };
 
   const handleAddTier = () => {
+    if (!canAddMoreTiers) {
+      setStatusMessage("Tier limit reached for your plan. Upgrade to add more tiers.");
+      return;
+    }
     const tier = normalizeTierKey(newTierKey);
     if (!tier) return;
     const updatedColors = { ...tierColors };
     if (!updatedColors[tier]) {
-      const nextPalette = COLOR_PALETTE[Object.keys(updatedColors).length % COLOR_PALETTE.length]?.id ?? COLOR_PALETTE[0].id;
+      const nextPalette = availableColors[Object.keys(updatedColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id;
       updatedColors[tier] = nextPalette;
     }
     updateSettings({ tierColors: updatedColors });
@@ -305,10 +326,20 @@ export default function Settings() {
     updateSettings({ weightMode: mode === "advanced" ? "advanced" : "basic" });
   };
 
+  const handlePlanChange = async (planId) => {
+    await updateSettings({ subscriptionPlan: planId });
+    setStatusMessage(`Plan changed to ${planId}. Features updated.`);
+  };
+
   const activeCountryEmoji = settings.countryEmoji || flagFromCountryCode(settings.countryCode || "");
 
   return (
     <div className="space-y-6">
+      {/* Subscription Plan Section */}
+      <SubscriptionPlan 
+        currentPlan={settings.subscriptionPlan || "free"} 
+        onPlanChange={handlePlanChange}
+      />
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Session Controls</h3>
         <div className="flex flex-wrap gap-2">
@@ -429,30 +460,46 @@ export default function Settings() {
           Advanced mode factors in remaining quantity and tier priority so probabilities stay near 100%.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
-          {WEIGHT_MODES.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => handleWeightModeChange(mode.id)}
-              className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
-                settings.weightMode === mode.id
-                  ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
-              }`}
-            >
-              <div className="font-semibold">{mode.label}</div>
-              <div className={`mt-1 text-xs ${
-                settings.weightMode === mode.id ? "text-slate-300" : "text-slate-400 group-hover:text-slate-300"
-              }`}>{mode.description}</div>
-            </button>
-          ))}
+          {WEIGHT_MODES.map((mode) => {
+            const isAvailable = availableWeightModes.some(m => m.id === mode.id);
+            const isSelected = settings.weightMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => isAvailable && handleWeightModeChange(mode.id)}
+                disabled={!isAvailable}
+                className={`relative rounded-xl border px-4 py-3 text-left text-sm transition-all ${
+                  isSelected
+                    ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
+                    : isAvailable
+                    ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
+                    : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                {!isAvailable && (
+                  <span className="absolute top-2 right-2 text-xs rounded-full bg-slate-700 px-2 py-0.5 text-slate-400">
+                    🔒 Upgrade
+                  </span>
+                )}
+                <div className="font-semibold">{mode.label}</div>
+                <div className={`mt-1 text-xs ${
+                  isSelected ? "text-slate-300" : isAvailable ? "text-slate-400 group-hover:text-slate-300" : "text-slate-600"
+                }`}>{mode.description}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Tier Color Palette</h3>
         <p className="text-sm text-slate-400">
           Tier S is the top tier by default. Assign swatches to keep prize lists scannable.
+          {!canAddMoreTiers && <span className="text-amber-400"> (Tier limit reached - upgrade to add more)</span>}
         </p>
+        <div className="text-xs text-slate-500">
+          Tiers: {tierList.length} / {canAddMoreTiers ? "more available" : "limit reached"}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {tierList.map((tier) => (
             <button
@@ -482,28 +529,48 @@ export default function Settings() {
           </div>
           <button 
             type="button" 
-            className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
+            disabled={!canAddMoreTiers}
+            className={`transition-all ${
+              canAddMoreTiers
+                ? "bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md"
+                : "bg-slate-800/50 text-slate-500 cursor-not-allowed"
+            }`}
             onClick={handleAddTier}
           >
-            Add tier
+            {canAddMoreTiers ? "Add tier" : "🔒 Upgrade to add more"}
           </button>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {COLOR_PALETTE.map((palette) => (
-            <button
-              key={palette.id}
-              type="button"
-              onClick={() => handleTierColorChange(palette.id)}
-              className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
-                tierColors[activeTier] === palette.id
-                  ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
-              }`}
-            >
-              <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)}`} />
-              <span>{palette.label}</span>
-            </button>
-          ))}
+          {COLOR_PALETTE.map((palette) => {
+            const isAvailable = availableColors.some(c => c.id === palette.id);
+            const isSelected = tierColors[activeTier] === palette.id;
+            return (
+              <button
+                key={palette.id}
+                type="button"
+                onClick={() => isAvailable && handleTierColorChange(palette.id)}
+                disabled={!isAvailable}
+                className={`relative flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
+                  isSelected
+                    ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
+                    : isAvailable
+                    ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
+                    : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)} ${!isAvailable ? "opacity-40" : ""}`} />
+                <span className="flex flex-col flex-1">
+                  <span>{palette.label}</span>
+                  <span className={`text-xs font-mono ${
+                    isSelected ? "text-slate-300" : isAvailable ? "text-slate-500" : "text-slate-600"
+                  }`}>{palette.hex}</span>
+                </span>
+                {!isAvailable && (
+                  <span className="text-xs text-slate-500">🔒</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
       <div className="space-y-3">

@@ -2,6 +2,7 @@ export const COLOR_PALETTE = [
   {
     id: "amber",
     label: "Amber",
+    hex: "#fbbf24",
     badgeClass: "border border-amber-400 bg-amber-500/20 text-amber-100",
     inputClass: "border border-amber-400 focus:border-amber-300 focus:ring-amber-300/40",
     chipClass: "border border-amber-400 bg-amber-500/10 text-amber-100",
@@ -10,6 +11,7 @@ export const COLOR_PALETTE = [
   {
     id: "sky",
     label: "Sky",
+    hex: "#38bdf8",
     badgeClass: "border border-sky-400 bg-sky-500/20 text-sky-100",
     inputClass: "border border-sky-400 focus:border-sky-300 focus:ring-sky-300/40",
     chipClass: "border border-sky-400 bg-sky-500/10 text-sky-100",
@@ -18,6 +20,7 @@ export const COLOR_PALETTE = [
   {
     id: "emerald",
     label: "Emerald",
+    hex: "#34d399",
     badgeClass: "border border-emerald-400 bg-emerald-500/20 text-emerald-100",
     inputClass: "border border-emerald-400 focus:border-emerald-300 focus:ring-emerald-300/40",
     chipClass: "border border-emerald-400 bg-emerald-500/10 text-emerald-100",
@@ -26,6 +29,7 @@ export const COLOR_PALETTE = [
   {
     id: "purple",
     label: "Purple",
+    hex: "#c084fc",
     badgeClass: "border border-purple-400 bg-purple-500/20 text-purple-100",
     inputClass: "border border-purple-400 focus:border-purple-300 focus:ring-purple-300/40",
     chipClass: "border border-purple-400 bg-purple-500/10 text-purple-100",
@@ -34,6 +38,7 @@ export const COLOR_PALETTE = [
   {
     id: "rose",
     label: "Rose",
+    hex: "#fb7185",
     badgeClass: "border border-rose-400 bg-rose-500/20 text-rose-100",
     inputClass: "border border-rose-400 focus:border-rose-300 focus:ring-rose-300/40",
     chipClass: "border border-rose-400 bg-rose-500/10 text-rose-100",
@@ -42,6 +47,7 @@ export const COLOR_PALETTE = [
   {
     id: "lime",
     label: "Lime",
+    hex: "#a3e635",
     badgeClass: "border border-lime-400 bg-lime-500/20 text-lime-100",
     inputClass: "border border-lime-400 focus:border-lime-300 focus:ring-lime-300/40",
     chipClass: "border border-lime-400 bg-lime-500/10 text-lime-100",
@@ -50,6 +56,7 @@ export const COLOR_PALETTE = [
   {
     id: "teal",
     label: "Teal",
+    hex: "#2dd4bf",
     badgeClass: "border border-teal-400 bg-teal-500/20 text-teal-100",
     inputClass: "border border-teal-400 focus:border-teal-300 focus:ring-teal-300/40",
     chipClass: "border border-teal-400 bg-teal-500/10 text-teal-100",
@@ -58,6 +65,7 @@ export const COLOR_PALETTE = [
   {
     id: "cyan",
     label: "Cyan",
+    hex: "#22d3ee",
     badgeClass: "border border-cyan-400 bg-cyan-500/20 text-cyan-100",
     inputClass: "border border-cyan-400 focus:border-cyan-300 focus:ring-cyan-300/40",
     chipClass: "border border-cyan-400 bg-cyan-500/10 text-cyan-100",
@@ -66,6 +74,7 @@ export const COLOR_PALETTE = [
   {
     id: "violet",
     label: "Violet",
+    hex: "#a78bfa",
     badgeClass: "border border-violet-400 bg-violet-500/20 text-violet-100",
     inputClass: "border border-violet-400 focus:border-violet-300 focus:ring-violet-300/40",
     chipClass: "border border-violet-400 bg-violet-500/10 text-violet-100",
@@ -74,6 +83,7 @@ export const COLOR_PALETTE = [
   {
     id: "fuchsia",
     label: "Fuchsia",
+    hex: "#e879f9",
     badgeClass: "border border-fuchsia-400 bg-fuchsia-500/20 text-fuchsia-100",
     inputClass: "border border-fuchsia-400 focus:border-fuchsia-300 focus:ring-fuchsia-300/40",
     chipClass: "border border-fuchsia-400 bg-fuchsia-500/10 text-fuchsia-100",
@@ -82,6 +92,7 @@ export const COLOR_PALETTE = [
   {
     id: "indigo",
     label: "Indigo",
+    hex: "#818cf8",
     badgeClass: "border border-indigo-400 bg-indigo-500/20 text-indigo-100",
     inputClass: "border border-indigo-400 focus:border-indigo-300 focus:ring-indigo-300/40",
     chipClass: "border border-indigo-400 bg-indigo-500/10 text-indigo-100",
@@ -90,6 +101,7 @@ export const COLOR_PALETTE = [
   {
     id: "orange",
     label: "Orange",
+    hex: "#fb923c",
     badgeClass: "border border-orange-400 bg-orange-500/20 text-orange-100",
     inputClass: "border border-orange-400 focus:border-orange-300 focus:ring-orange-300/40",
     chipClass: "border border-orange-400 bg-orange-500/10 text-orange-100",
@@ -98,6 +110,7 @@ export const COLOR_PALETTE = [
   {
     id: "yellow",
     label: "Yellow",
+    hex: "#facc15",
     badgeClass: "border border-yellow-400 bg-yellow-500/20 text-yellow-900",
     inputClass: "border border-yellow-400 focus:border-yellow-300 focus:ring-yellow-300/40",
     chipClass: "border border-yellow-400 bg-yellow-500/10 text-yellow-900",
@@ -106,6 +119,7 @@ export const COLOR_PALETTE = [
   {
     id: "green",
     label: "Green",
+    hex: "#4ade80",
     badgeClass: "border border-green-400 bg-green-500/20 text-green-100",
     inputClass: "border border-green-400 focus:border-green-300 focus:ring-green-300/40",
     chipClass: "border border-green-400 bg-green-500/10 text-green-100",
@@ -114,6 +128,7 @@ export const COLOR_PALETTE = [
   {
     id: "blue",
     label: "Blue",
+    hex: "#60a5fa",
     badgeClass: "border border-blue-400 bg-blue-500/20 text-blue-100",
     inputClass: "border border-blue-400 focus:border-blue-300 focus:ring-blue-300/40",
     chipClass: "border border-blue-400 bg-blue-500/10 text-blue-100",
@@ -122,6 +137,7 @@ export const COLOR_PALETTE = [
   {
     id: "red",
     label: "Red",
+    hex: "#f87171",
     badgeClass: "border border-red-400 bg-red-500/20 text-red-100",
     inputClass: "border border-red-400 focus:border-red-300 focus:ring-red-300/40",
     chipClass: "border border-red-400 bg-red-500/10 text-red-100",
@@ -130,6 +146,7 @@ export const COLOR_PALETTE = [
   {
     id: "pink",
     label: "Pink",
+    hex: "#f472b6",
     badgeClass: "border border-pink-400 bg-pink-500/20 text-pink-100",
     inputClass: "border border-pink-400 focus:border-pink-300 focus:ring-pink-300/40",
     chipClass: "border border-pink-400 bg-pink-500/10 text-pink-100",
@@ -138,6 +155,7 @@ export const COLOR_PALETTE = [
   {
     id: "stone",
     label: "Stone",
+    hex: "#a8a29e",
     badgeClass: "border border-stone-400 bg-stone-500/20 text-stone-100",
     inputClass: "border border-stone-400 focus:border-stone-300 focus:ring-stone-300/40",
     chipClass: "border border-stone-400 bg-stone-500/10 text-stone-100",
@@ -146,6 +164,7 @@ export const COLOR_PALETTE = [
   {
     id: "slate",
     label: "Slate",
+    hex: "#94a3b8",
     badgeClass: "border border-slate-400 bg-slate-500/20 text-slate-100",
     inputClass: "border border-slate-400 focus:border-slate-300 focus:ring-slate-300/40",
     chipClass: "border border-slate-400 bg-slate-500/10 text-slate-100",
@@ -154,6 +173,7 @@ export const COLOR_PALETTE = [
   {
     id: "amber-dark",
     label: "Amber Dark",
+    hex: "#d97706",
     badgeClass: "border border-amber-600 bg-amber-600/30 text-amber-50",
     inputClass: "border border-amber-600 focus:border-amber-500 focus:ring-amber-500/40",
     chipClass: "border border-amber-600 bg-amber-600/20 text-amber-100",
@@ -162,6 +182,7 @@ export const COLOR_PALETTE = [
   {
     id: "sky-dark",
     label: "Sky Dark",
+    hex: "#0284c7",
     badgeClass: "border border-sky-600 bg-sky-600/30 text-sky-50",
     inputClass: "border border-sky-600 focus:border-sky-500 focus:ring-sky-500/40",
     chipClass: "border border-sky-600 bg-sky-600/20 text-sky-100",
@@ -170,6 +191,7 @@ export const COLOR_PALETTE = [
   {
     id: "emerald-dark",
     label: "Emerald Dark",
+    hex: "#059669",
     badgeClass: "border border-emerald-600 bg-emerald-600/30 text-emerald-50",
     inputClass: "border border-emerald-600 focus:border-emerald-500 focus:ring-emerald-500/40",
     chipClass: "border border-emerald-600 bg-emerald-600/20 text-emerald-100",
@@ -178,6 +200,7 @@ export const COLOR_PALETTE = [
   {
     id: "purple-dark",
     label: "Purple Dark",
+    hex: "#9333ea",
     badgeClass: "border border-purple-600 bg-purple-600/30 text-purple-50",
     inputClass: "border border-purple-600 focus:border-purple-500 focus:ring-purple-500/40",
     chipClass: "border border-purple-600 bg-purple-600/20 text-purple-100",
@@ -186,6 +209,7 @@ export const COLOR_PALETTE = [
   {
     id: "rose-dark",
     label: "Rose Dark",
+    hex: "#e11d48",
     badgeClass: "border border-rose-600 bg-rose-600/30 text-rose-50",
     inputClass: "border border-rose-600 focus:border-rose-500 focus:ring-rose-500/40",
     chipClass: "border border-rose-600 bg-rose-600/20 text-rose-100",
@@ -194,6 +218,7 @@ export const COLOR_PALETTE = [
   {
     id: "orange-dark",
     label: "Orange Dark",
+    hex: "#ea580c",
     badgeClass: "border border-orange-600 bg-orange-600/30 text-orange-50",
     inputClass: "border border-orange-600 focus:border-orange-500 focus:ring-orange-500/40",
     chipClass: "border border-orange-600 bg-orange-600/20 text-orange-100",
@@ -202,6 +227,7 @@ export const COLOR_PALETTE = [
   {
     id: "blue-dark",
     label: "Blue Dark",
+    hex: "#2563eb",
     badgeClass: "border border-blue-600 bg-blue-600/30 text-blue-50",
     inputClass: "border border-blue-600 focus:border-blue-500 focus:ring-blue-500/40",
     chipClass: "border border-blue-600 bg-blue-600/20 text-blue-100",
@@ -210,6 +236,7 @@ export const COLOR_PALETTE = [
   {
     id: "green-dark",
     label: "Green Dark",
+    hex: "#16a34a",
     badgeClass: "border border-green-600 bg-green-600/30 text-green-50",
     inputClass: "border border-green-600 focus:border-green-500 focus:ring-green-500/40",
     chipClass: "border border-green-600 bg-green-600/20 text-green-100",
@@ -218,6 +245,7 @@ export const COLOR_PALETTE = [
   {
     id: "teal-dark",
     label: "Teal Dark",
+    hex: "#0d9488",
     badgeClass: "border border-teal-600 bg-teal-600/30 text-teal-50",
     inputClass: "border border-teal-600 focus:border-teal-500 focus:ring-teal-500/40",
     chipClass: "border border-teal-600 bg-teal-600/20 text-teal-100",
@@ -226,6 +254,7 @@ export const COLOR_PALETTE = [
   {
     id: "cyan-dark",
     label: "Cyan Dark",
+    hex: "#0891b2",
     badgeClass: "border border-cyan-600 bg-cyan-600/30 text-cyan-50",
     inputClass: "border border-cyan-600 focus:border-cyan-500 focus:ring-cyan-500/40",
     chipClass: "border border-cyan-600 bg-cyan-600/20 text-cyan-100",
@@ -234,6 +263,7 @@ export const COLOR_PALETTE = [
   {
     id: "violet-dark",
     label: "Violet Dark",
+    hex: "#7c3aed",
     badgeClass: "border border-violet-600 bg-violet-600/30 text-violet-50",
     inputClass: "border border-violet-600 focus:border-violet-500 focus:ring-violet-500/40",
     chipClass: "border border-violet-600 bg-violet-600/20 text-violet-100",
