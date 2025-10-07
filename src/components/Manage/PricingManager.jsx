@@ -42,31 +42,34 @@ async function fetchSamplePricing() {
 }
 
 export default function PricingManager() {
-  const { getPricing, setPricing, getSettings } = useLocalStorageDAO();
+  const { getPricing, setPricing, getSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
   const { user } = useAuth();
   const [presets, setPresets] = useState([]);
   const [status, setStatus] = useState(null);
   const [currency, setCurrency] = useState("MYR");
   const [locale, setLocale] = useState("ms-MY");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [storedPresets, storedSettings] = await Promise.all([
+      const [storedPresets, storedSettings, dirtyState] = await Promise.all([
         getPricing(),
-        getSettings()
+        getSettings(),
+        getDirtyState()
       ]);
       if (!mounted) return;
       const cleanPresets = storedPresets.length ? normalisePresetList(storedPresets) : [];
       setPresets(cleanPresets);
       setCurrency(storedSettings.currency ?? "MYR");
       setLocale(storedSettings.locale ?? "ms-MY");
+      setHasUnsavedChanges(dirtyState.pricing === true);
     })();
     return () => {
       mounted = false;
     };
-  }, [getPricing, getSettings]);
+  }, [getPricing, getSettings, getDirtyState]);
 
   const currencyFormatter = useMemo(
     () =>
@@ -92,6 +95,8 @@ export default function PricingManager() {
       return;
     }
     setPresets(normalisePresetList(data));
+    await setDirtyFlag('pricing', true);
+    setHasUnsavedChanges(true);
     setStatus({ type: "success", message: `${data.length} pricing presets imported.` });
   };
 
@@ -104,6 +109,8 @@ export default function PricingManager() {
         return;
       }
       setPresets(normalisePresetList(data));
+      await setDirtyFlag('pricing', true);
+      setHasUnsavedChanges(true);
       setStatus({ type: "success", message: "Sample pricing presets loaded." });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -127,6 +134,11 @@ export default function PricingManager() {
     try {
       // Save to LocalForage first
       await setPricing(presets);
+      
+      // Clear dirty flag - changes are now saved
+      await clearDirtyFlag('pricing');
+      setHasUnsavedChanges(false);
+      
       setStatus({ type: "success", message: "Pricing presets saved to storage." });
       
       // Sync to backend if user is authenticated
@@ -147,7 +159,7 @@ export default function PricingManager() {
     }
   };
 
-  const handleChange = (index, key, value) => {
+  const handleChange = async (index, key, value) => {
     setPresets((rows) =>
       rows.map((row, rowIndex) => {
         if (rowIndex !== index) return row;
@@ -161,9 +173,11 @@ export default function PricingManager() {
         return { ...row, [key]: value };
       })
     );
+    await setDirtyFlag('pricing', true);
+    setHasUnsavedChanges(true);
   };
 
-  const toggleActive = (index) => {
+  const toggleActive = async (index) => {
     setPresets((rows) =>
       rows.map((row, rowIndex) =>
         rowIndex === index
@@ -174,9 +188,11 @@ export default function PricingManager() {
           : row
       )
     );
+    await setDirtyFlag('pricing', true);
+    setHasUnsavedChanges(true);
   };
 
-  const handleAddPreset = () => {
+  const handleAddPreset = async () => {
     setPresets((rows) => [
       ...rows,
       {
@@ -184,10 +200,14 @@ export default function PricingManager() {
         preset_id: `p${rows.length + 1}`
       }
     ]);
+    await setDirtyFlag('pricing', true);
+    setHasUnsavedChanges(true);
   };
 
-  const handleDelete = (index) => {
+  const handleDelete = async (index) => {
     setPresets((rows) => rows.filter((_, rowIndex) => rowIndex !== index));
+    await setDirtyFlag('pricing', true);
+    setHasUnsavedChanges(true);
   };
 
   return (
@@ -313,16 +333,29 @@ export default function PricingManager() {
         </table>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={handleSave}>
-          Save
+        <button 
+          type="button" 
+          onClick={handleSave}
+          className={hasUnsavedChanges ? "bg-amber-600 hover:bg-amber-700" : ""}
+        >
+          Save {hasUnsavedChanges && "*"}
         </button>
         <button
           type="button"
           className="bg-slate-800 text-slate-200"
-          onClick={() => setPresets([])}
+          onClick={async () => {
+            setPresets([]);
+            await setDirtyFlag('pricing', true);
+            setHasUnsavedChanges(true);
+          }}
         >
           Clear
         </button>
+        {hasUnsavedChanges && (
+          <span className="text-sm font-medium text-amber-400">
+            ⚠️ Unsaved changes
+          </span>
+        )}
         {status && (
           <span
             className={`text-sm font-medium ${

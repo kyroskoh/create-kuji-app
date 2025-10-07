@@ -140,14 +140,23 @@ class SyncService {
         }
       }
 
+      // Settings - always pull (they sync immediately)
       if (settingsResponse.status === 'fulfilled' && settingsResponse.value.data) {
         await localforage.setItem(STORE_KEYS.settings, settingsResponse.value.data);
         console.log('✅ Pulled settings from server');
       }
 
+      // Pricing presets - check dirty flag
       if (presetsResponse.status === 'fulfilled' && presetsResponse.value.data.presets) {
-        await localforage.setItem(STORE_KEYS.pricing, presetsResponse.value.data.presets);
-        console.log(`✅ Pulled ${presetsResponse.value.data.presets.length} pricing presets from server`);
+        const hasDirtyPricing = dirtyState.pricing === true;
+        const shouldPullPricing = options.forcePricing || !hasDirtyPricing;
+        
+        if (shouldPullPricing) {
+          await localforage.setItem(STORE_KEYS.pricing, presetsResponse.value.data.presets);
+          console.log(`✅ Pulled ${presetsResponse.value.data.presets.length} pricing presets from server`);
+        } else {
+          console.log(`⚠️ Skipped pulling pricing - unsaved local changes detected (dirty flag set)`);
+        }
       }
 
       return { success: true };

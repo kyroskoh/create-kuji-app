@@ -156,7 +156,7 @@ const state = await getDirtyState();   // Get all flags
 ### Modified Files
 1. `src/services/syncService.js`
    - Added `dirtyState` key
-   - Updated `pullDataFromServer()` to check dirty flags
+   - Updated `pullDataFromServer()` to check dirty flags for prizes and pricing
    
 2. `src/hooks/useLocalStorageDAO.js`
    - Added `dirtyState` key
@@ -171,6 +171,16 @@ const state = await getDirtyState();   // Get all flags
    - Updated `handleSave()` to clear dirty flag
    - Added visual indicators for unsaved changes
    - Fixed Clear button to set dirty flag
+
+4. `src/components/Manage/PricingManager.jsx`
+   - Added `hasUnsavedChanges` state
+   - Updated all modification handlers to set dirty flag
+   - Updated `handleSave()` to clear dirty flag
+   - Added visual indicators for unsaved changes
+   - Fixed Clear button to set dirty flag
+
+5. `src/components/Manage/Settings.jsx`
+   - **No changes needed** - Settings save immediately, no dirty tracking required
 
 ## Testing
 
@@ -210,7 +220,7 @@ const state = await getDirtyState();   // Get all flags
 ✅ **Offline Support**: Works seamlessly in offline mode  
 ✅ **Simple Mental Model**: Traditional "edit → save" workflow  
 
-## Future Enhancements
+### Future Enhancements
 
 ### Potential Improvements
 1. **Confirmation Dialog**: Ask before clearing if there are unsaved changes
@@ -218,11 +228,17 @@ const state = await getDirtyState();   // Get all flags
 3. **Undo/Redo**: Track change history for easy rollback
 4. **Conflict Resolution**: Handle cases where server data changes while editing
 5. **Per-Field Dirty Tracking**: Track which specific fields changed
-6. **Dirty State for Other Data**: Apply same pattern to pricing, settings, history
+6. **Dirty State for History**: Apply same pattern to draw history
 
 ## Notes
 
 - Dirty state persists across browser sessions (stored in IndexedDB)
 - Dirty flag is automatically cleared after successful sync
-- Force pull option (`forcePrizes: true`) bypasses dirty check if needed
-- System is extensible to other data types beyond prizes
+- Force pull options (`forcePrizes: true`, `forcePricing: true`) bypass dirty check if needed
+- System is extensible to other data types
+
+### Data Types with Dirty Tracking
+✅ **Prizes** - Full dirty tracking with visual indicators  
+✅ **Pricing Presets** - Full dirty tracking with visual indicators  
+❌ **Settings** - No dirty tracking needed (saves immediately)  
+❌ **History** - No dirty tracking (append-only, no editing)
