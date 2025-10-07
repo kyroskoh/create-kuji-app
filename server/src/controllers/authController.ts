@@ -6,6 +6,7 @@ import { generateAccessToken, createSession, refreshAccessToken, revokeSession }
 import { sendVerificationEmail, sendPasswordResetEmail, verifyToken, sendPasswordChangedEmail } from '../services/emailService';
 import { verifyHCaptcha } from '../utils/hcaptcha';
 import { generateTemporaryUsername } from '../utils/usernameGenerator';
+import { getDefaultUserSettings } from '../utils/defaultSettings';
 
 const prisma = new PrismaClient();
 
@@ -85,10 +86,14 @@ export async function signup(req: Request, res: Response) {
           create: {
             hash: passwordHash
           }
+        },
+        userSettings: {
+          create: getDefaultUserSettings()
         }
       },
       include: {
-        emails: true
+        emails: true,
+        userSettings: true
       }
     });
 

@@ -169,7 +169,27 @@ export async function getUserStock(req: Request, res: Response) {
       });
     }
 
-    // Get draw history to calculate drawn prizes
+    // Process prizes into tier groups
+    // Note: prize.quantity in the database represents REMAINING quantity after frontend syncs
+    // Frontend updates LocalForage after each draw and syncs the remaining quantities to backend
+    const tierGroups: { [key: string]: { prizes: any[], totalQuantity: number, remainingQuantity: number } } = {};
+    
+    // First pass: collect remaining quantities from database
+    user.prizes.forEach(prize => {
+      const tier = prize.tier.toUpperCase();
+      if (!tierGroups[tier]) {
+        tierGroups[tier] = {
+          prizes: [],
+          totalQuantity: 0,
+          remainingQuantity: 0
+        };
+      }
+      
+      tierGroups[tier].prizes.push(prize);
+      tierGroups[tier].remainingQuantity += prize.quantity;
+    });
+
+    // Get draw history to calculate original total quantities
     const drawSessions = await prisma.drawSession.findMany({
       where: { userId: user.id },
       include: {
@@ -188,27 +208,7 @@ export async function getUserStock(req: Request, res: Response) {
 
     console.log(`📊 User ${username} - Drawn per tier from history:`, drawnPerTier);
 
-    // Process prizes into tier groups
-    // Note: prize.quantity in the database represents current/remaining quantity after frontend updates
-    // To get the original total, we need to add back the drawn prizes from history
-    const tierGroups: { [key: string]: { prizes: any[], totalQuantity: number, remainingQuantity: number } } = {};
-    
-    user.prizes.forEach(prize => {
-      const tier = prize.tier.toUpperCase();
-      if (!tierGroups[tier]) {
-        tierGroups[tier] = {
-          prizes: [],
-          totalQuantity: 0,
-          remainingQuantity: 0
-        };
-      }
-      
-      tierGroups[tier].prizes.push(prize);
-      // Current quantity from database (this is remaining after frontend draws)
-      tierGroups[tier].remainingQuantity += prize.quantity;
-    });
-
-    // Calculate total quantity by adding current + drawn
+    // Second pass: calculate total quantity (remaining + drawn)
     Object.keys(tierGroups).forEach(tier => {
       const remainingQty = tierGroups[tier].remainingQuantity;
       const drawnQty = drawnPerTier[tier] || 0;

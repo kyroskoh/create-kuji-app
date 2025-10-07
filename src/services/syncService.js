@@ -97,7 +97,7 @@ class SyncService {
   }
 
   // Pull data from server and update local storage
-  async pullDataFromServer(username) {
+  async pullDataFromServer(username, options = {}) {
     if (!username || !this.isOnline) {
       console.log('Cannot pull data: offline or no username');
       return { success: false };
@@ -106,6 +106,10 @@ class SyncService {
     console.log(`⬇️ Pulling latest data from server for ${username}...`);
 
     try {
+      // Get current local data to check for unsaved changes
+      const localPrizes = await localforage.getItem(STORE_KEYS.prizes);
+      const localHistory = await localforage.getItem(STORE_KEYS.history);
+      
       // Fetch all data from server
       const [prizesResponse, settingsResponse, presetsResponse] = await Promise.allSettled([
         kujiAPI.getUserPrizes(username),
@@ -114,9 +118,26 @@ class SyncService {
       ]);
 
       // Update local storage with server data
+      // IMPORTANT: For prizes, only pull if explicitly requested or if no local changes
+      // This prevents overwriting local draw results that haven't synced yet
       if (prizesResponse.status === 'fulfilled' && prizesResponse.value.data.prizes) {
-        await localforage.setItem(STORE_KEYS.prizes, prizesResponse.value.data.prizes);
-        console.log(`✅ Pulled ${prizesResponse.value.data.prizes.length} prizes from server`);
+        const serverPrizes = prizesResponse.value.data.prizes;
+        
+        // Only overwrite prizes if:
+        // 1. Forced pull (options.forcePrizes === true), OR
+        // 2. No local prizes exist, OR  
+        // 3. Local and server have same length (safe to assume no local-only changes)
+        const shouldPullPrizes = options.forcePrizes || 
+                                 !localPrizes || 
+                                 localPrizes.length === 0 ||
+                                 (Array.isArray(localPrizes) && localPrizes.length === serverPrizes.length);
+        
+        if (shouldPullPrizes) {
+          await localforage.setItem(STORE_KEYS.prizes, serverPrizes);
+          console.log(`✅ Pulled ${serverPrizes.length} prizes from server`);
+        } else {
+          console.log(`⚠️ Skipped pulling prizes - local changes detected (local: ${localPrizes.length}, server: ${serverPrizes.length})`);
+        }
       }
 
       if (settingsResponse.status === 'fulfilled' && settingsResponse.value.data) {

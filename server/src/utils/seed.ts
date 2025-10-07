@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
+import { DEFAULT_TIER_COLOR_MAP } from './defaultSettings';
 
 dotenv.config();
 
@@ -51,6 +52,15 @@ async function main() {
     });
 
     console.log(`✅ Created super admin user: ${superAdmin.username} (${superAdmin.emails[0]?.address})`);
+    
+    // Create user settings with default tier colors
+    await prisma.userSettings.create({
+      data: {
+        userId: superAdmin.id,
+        tierColors: JSON.stringify(DEFAULT_TIER_COLOR_MAP)
+      }
+    });
+    console.log(`🎨 Created user settings with tier colors for ${superAdmin.username}`);
   }
 
   // Create demo user for testing
@@ -96,6 +106,15 @@ async function main() {
     });
 
     console.log(`✅ Created demo user: ${demoUser.username} (${demoUser.emails[0]?.address})`);
+    
+    // Create user settings with default tier colors
+    await prisma.userSettings.create({
+      data: {
+        userId: demoUser.id,
+        tierColors: JSON.stringify(DEFAULT_TIER_COLOR_MAP)
+      }
+    });
+    console.log(`🎨 Created user settings with tier colors for ${demoUser.username}`);
   }
 
   console.log('🎉 Database seeded successfully!');

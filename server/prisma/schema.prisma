@@ -147,22 +147,24 @@ enum TokenType {
 // Kuji system models
 
 model Prize {
-  id          String   @id @default(uuid())
-  prizeName   String   @map("prize_name")
-  tier        String
-  quantity    Int
-  weight      Float    @default(1.0)
-  sku         String?
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  prizeName        String   @map("prize_name")
+  tier             String
+  quantity         Int      // Legacy field - kept for compatibility
+  totalQuantity    Int      @default(0) @map("total_quantity")    // Initial/original quantity
+  remainingQuantity Int     @default(0) @map("remaining_quantity") // Current available quantity
+  weight           Float    @default(1.0)
+  sku              String?
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
   
   // Foreign key
-  userId      String   @map("user_id")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String   @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Relations
-  drawResults DrawResult[]
+  drawResults      DrawResult[]
   
   @@index([userId, tier])
   @@map("prizes")

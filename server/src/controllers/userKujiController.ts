@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { clearUserStockCache } from './kujiController';
+import { getDefaultUserSettings } from '../utils/defaultSettings';
 
 const prisma = new PrismaClient();
 
@@ -336,9 +337,26 @@ export async function getUserSettings(req: Request, res: Response) {
       });
     }
 
-    return res.status(200).json({
-      settings: user.userSettings
-    });
+    // If user doesn't have settings, create default ones
+    let userSettings = user.userSettings;
+    if (!userSettings) {
+      console.log(`📝 Creating default settings for user ${username}`);
+      userSettings = await prisma.userSettings.create({
+        data: {
+          userId: user.id,
+          ...getDefaultUserSettings()
+        }
+      });
+    }
+
+    // Parse tierColors from JSON string and format response for frontend
+    const { tierColors, ...rest } = userSettings;
+    const settings = {
+      ...rest,
+      tierColors: tierColors ? JSON.parse(tierColors) : {}
+    };
+
+    return res.status(200).json(settings);
 
   } catch (error) {
     console.error('Error getting user settings:', error);
