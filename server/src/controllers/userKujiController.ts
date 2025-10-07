@@ -98,6 +98,7 @@ export async function syncSettings(req: Request, res: Response) {
       where: { userId: user.id },
       update: {
         sessionStatus: settings.sessionStatus || 'INACTIVE',
+        stockPagePublished: typeof settings.stockPagePublished === 'boolean' ? settings.stockPagePublished : true,
         lastReset: settings.lastReset ? new Date(settings.lastReset) : null,
         country: settings.country || 'Malaysia',
         countryCode: settings.countryCode || 'MY',
@@ -112,6 +113,7 @@ export async function syncSettings(req: Request, res: Response) {
       create: {
         userId: user.id,
         sessionStatus: settings.sessionStatus || 'INACTIVE',
+        stockPagePublished: typeof settings.stockPagePublished === 'boolean' ? settings.stockPagePublished : true,
         lastReset: settings.lastReset ? new Date(settings.lastReset) : null,
         country: settings.country || 'Malaysia',
         countryCode: settings.countryCode || 'MY',
@@ -343,17 +345,11 @@ export async function getStockPageStatus(req: Request, res: Response) {
       });
     }
 
-    // Return only public information needed for stock page visibility
-    const settings = user.userSettings;
-    const subscriptionPlan = settings?.subscriptionPlan || 'free';
-    const sessionStatus = settings?.sessionStatus || 'INACTIVE';
+    // Return only the bare minimum: is the stock page published?
+    const stockPagePublished = user.userSettings?.stockPagePublished ?? true; // Default true for backward compatibility
     
     return res.status(200).json({
-      subscriptionPlan,
-      sessionStatus,
-      stockPagePublished: sessionStatus === 'PUBLISHED',
-      // Include tier colors for public viewing
-      tierColors: settings?.tierColors ? JSON.parse(settings.tierColors) : {}
+      stockPagePublished
     });
 
   } catch (error) {
@@ -401,13 +397,12 @@ export async function getUserSettings(req: Request, res: Response) {
     }
 
     // Parse tierColors from JSON string and format response for frontend
-    const { tierColors, sessionStatus, ...rest } = userSettings;
+    const { tierColors, sessionStatus, stockPagePublished, ...rest } = userSettings;
     const settings = {
       ...rest,
       sessionStatus,
-      tierColors: tierColors ? JSON.parse(tierColors) : {},
-      // Add computed property for frontend compatibility
-      stockPagePublished: sessionStatus === 'PUBLISHED'
+      stockPagePublished: stockPagePublished ?? true, // Use actual field value, default true
+      tierColors: tierColors ? JSON.parse(tierColors) : {}
     };
 
     return res.status(200).json(settings);

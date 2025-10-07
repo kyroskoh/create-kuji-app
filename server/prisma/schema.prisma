@@ -208,24 +208,25 @@ model DrawResult {
 }
 
 model UserSettings {
-  id               String   @id @default(uuid())
-  sessionStatus    String   @default("INACTIVE") @map("session_status")
-  lastReset        DateTime? @map("last_reset")
-  country          String   @default("Malaysia")
-  countryCode      String   @default("MY") @map("country_code")
-  countryEmoji     String   @default("🇲🇾") @map("country_emoji")
-  currency         String   @default("MYR")
-  locale           String   @default("ms-MY")
-  tierColors       String   @default("{}") @map("tier_colors")
-  nextSessionNumber Int     @default(1) @map("next_session_number")
-  weightMode       String   @default("basic") @map("weight_mode")
-  subscriptionPlan String   @default("free") @map("subscription_plan")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  sessionStatus      String   @default("INACTIVE") @map("session_status")
+  stockPagePublished Boolean  @default(true) @map("stock_page_published")  // Default true for free users
+  lastReset          DateTime? @map("last_reset")
+  country            String   @default("Malaysia")
+  countryCode        String   @default("MY") @map("country_code")
+  countryEmoji       String   @default("🇲🇾") @map("country_emoji")
+  currency           String   @default("MYR")
+  locale             String   @default("ms-MY")
+  tierColors         String   @default("{}") @map("tier_colors")
+  nextSessionNumber  Int      @default(1) @map("next_session_number")
+  weightMode         String   @default("basic") @map("weight_mode")
+  subscriptionPlan   String   @default("free") @map("subscription_plan")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
   
   // Foreign key  
-  userId           String   @unique @map("user_id")
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String   @unique @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("user_settings")
 }

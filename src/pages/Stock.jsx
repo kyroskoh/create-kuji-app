@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { kujiAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../utils/AuthContext';
 import syncService from '../services/syncService';
-import { isTierSortingAllowed } from '../utils/subscriptionPlans';
 
 export default function Stock() {
   const { username } = useParams();
@@ -34,37 +33,30 @@ export default function Stock() {
         }
       }
       
-      // Fetch stock data and public stock page status
-      const [stockResponse, statusResponse] = await Promise.all([
-        kujiAPI.getUserStock(username),
-        kujiAPI.getStockPageStatus(username)
-      ]);
-      
-      const settings = statusResponse.data;
+      // Check if stock page is published
+      const statusResponse = await kujiAPI.getStockPageStatus(username);
+      const { stockPagePublished } = statusResponse.data;
       const isOwner = user?.username === username;
-      const isFree = (settings.subscriptionPlan || 'free') === 'free';
       
       // Debug logging
       console.log('📊 Stock Page Access Check:');
       console.log('   Username:', username);
       console.log('   Is Owner:', isOwner);
-      console.log('   Plan:', settings.subscriptionPlan);
-      console.log('   Is Free Plan:', isFree);
-      console.log('   Session Status:', settings.sessionStatus);
-      console.log('   Stock Page Published:', settings.stockPagePublished);
-      console.log('   Will Block Access:', !isFree && !settings.stockPagePublished && !isOwner);
+      console.log('   Stock Page Published:', stockPagePublished);
+      console.log('   Will Block Access:', !stockPagePublished && !isOwner);
       
-      // Free plan users always have public stock pages
-      // Paid plan users can control visibility
-      if (!isFree && !settings.stockPagePublished && !isOwner) {
-        setUserSettings(settings);
+      // If not published and not owner, block access
+      if (!stockPagePublished && !isOwner) {
+        setUserSettings({ stockPagePublished });
         setStockData(null);
         setLoading(false);
         return;
       }
       
+      // Stock is published or user is owner - fetch stock data
+      const stockResponse = await kujiAPI.getUserStock(username);
       setStockData(stockResponse.data);
-      setUserSettings(settings);
+      setUserSettings({ stockPagePublished });
       
       if (forceRefresh) {
         toast.success('Stock data refreshed');
@@ -77,49 +69,8 @@ export default function Stock() {
     }
   };
 
-  // Sort tiers based on user's custom tier order from settings
-  const sortedTiers = useMemo(() => {
-    if (!stockData?.tiers) {
-      return [];
-    }
-
-    // If settings haven't loaded yet, return unsorted (will sort once settings load)
-    if (!userSettings?.tierColors) {
-      return stockData.tiers;
-    }
-
-    const allowCustomOrder = isTierSortingAllowed(userSettings.subscriptionPlan || 'free');
-    
-    if (!allowCustomOrder) {
-      // For Free/Basic plans, sort alphabetically with S first
-      return [...stockData.tiers].sort((a, b) => {
-        if (a.id === 'S' && b.id !== 'S') return -1;
-        if (b.id === 'S' && a.id !== 'S') return 1;
-        return a.id.localeCompare(b.id);
-      });
-    }
-
-    // For Advanced/Pro plans, use custom order from tierColors (settings order)
-    const tierOrder = Object.keys(userSettings.tierColors);
-    const tierIndexMap = new Map(tierOrder.map((tier, index) => [tier.toUpperCase(), index]));
-
-    return [...stockData.tiers].sort((a, b) => {
-      const upperA = a.id.toUpperCase();
-      const upperB = b.id.toUpperCase();
-      
-      const indexA = tierIndexMap.has(upperA) ? tierIndexMap.get(upperA) : Number.MAX_SAFE_INTEGER;
-      const indexB = tierIndexMap.has(upperB) ? tierIndexMap.get(upperB) : Number.MAX_SAFE_INTEGER;
-      
-      if (indexA !== indexB) {
-        return indexA - indexB;
-      }
-      
-      // Fallback: S first, then alphabetical
-      if (upperA === 'S' && upperB !== 'S') return -1;
-      if (upperB === 'S' && upperA !== 'S') return 1;
-      return a.id.localeCompare(b.id);
-    });
-  }, [stockData, userSettings]);
+  // Backend already sorts tiers based on user's custom order, just use directly
+  const sortedTiers = stockData?.tiers || [];
 
   if (loading) {
     return (

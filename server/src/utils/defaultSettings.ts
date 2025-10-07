@@ -32,6 +32,7 @@ export const DEFAULT_TIER_COLOR_MAP = {
 export function getDefaultUserSettings() {
   return {
     sessionStatus: 'INACTIVE',
+    stockPagePublished: true, // Default to public for free users
     lastReset: null,
     country: 'Malaysia',
     countryCode: 'MY',

@@ -432,7 +432,9 @@ export default function Settings() {
             >
               <span
                 aria-hidden="true"
-                className="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-6"
+                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  (isFree || settings.stockPagePublished) ? 'translate-x-6' : 'translate-x-0'
+                }`}
               />
             </button>
           </div>
