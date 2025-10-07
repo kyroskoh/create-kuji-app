@@ -5,6 +5,7 @@ import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
+import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -21,25 +22,7 @@ const WEIGHT_MODES = [
   }
 ];
 
-const COUNTRY_OPTIONS = [
-  { name: "Malaysia", currency: "MYR", locale: "ms-MY", code: "MY" },
-  { name: "Singapore", currency: "SGD", locale: "en-SG", code: "SG" },
-  { name: "United States", currency: "USD", locale: "en-US", code: "US" },
-  { name: "United Kingdom", currency: "GBP", locale: "en-GB", code: "GB" },
-  { name: "Japan", currency: "JPY", locale: "ja-JP", code: "JP" },
-  { name: "Australia", currency: "AUD", locale: "en-AU", code: "AU" },
-  { name: "Indonesia", currency: "IDR", locale: "id-ID", code: "ID" },
-  { name: "Philippines", currency: "PHP", locale: "en-PH", code: "PH" },
-  { name: "Thailand", currency: "THB", locale: "th-TH", code: "TH" },
-  { name: "Vietnam", currency: "VND", locale: "vi-VN", code: "VN" }
-];
-
-const formatSample = (locale, code) =>
-  new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: code,
-    maximumFractionDigits: 0
-  }).format(1234);
+// Using comprehensive COUNTRIES database from utils/countries.js
 
 const normalizeTierKey = (value) => value.trim().toUpperCase().slice(0, 6);
 
@@ -60,10 +43,28 @@ export default function Settings() {
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
+  const [filteredCountries, setFilteredCountries] = useState(COUNTRIES.slice(0, 20)); // Show first 20 by default
   const [customCurrency, setCustomCurrency] = useState("");
   const [newTierKey, setNewTierKey] = useState("");
   const [activeTier, setActiveTier] = useState("S");
   const fileInputRef = useRef(null);
+
+  // Popular Asian countries for sample display
+  const popularAsianCountries = useMemo(() => [
+    "Malaysia", "Singapore", "Indonesia", "Thailand", "Philippines",
+    "Vietnam", "Japan", "South Korea", "China", "Hong Kong",
+    "Taiwan", "India", "Australia"
+  ], []);
+
+  // Get sample countries to display (popular Asian or filtered results)
+  const sampleCountries = useMemo(() => {
+    if (countryQuery.trim() === "" || countryQuery.toLowerCase() === "malaysia") {
+      // Show popular Asian countries by default
+      return COUNTRIES.filter(c => popularAsianCountries.includes(c.name));
+    }
+    // Show filtered results when searching
+    return filteredCountries.slice(0, 9);
+  }, [countryQuery, filteredCountries, popularAsianCountries]);
 
   useEffect(() => {
     let mounted = true;
@@ -223,13 +224,20 @@ export default function Settings() {
   };
 
   const matchedCountry = useMemo(() => {
-    const query = (countryQuery || "").trim().toLowerCase();
-    return COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === query);
+    const trimmed = countryQuery.trim();
+    if (!trimmed) return null;
+    return COUNTRIES.find((country) => country.name.toLowerCase() === trimmed.toLowerCase());
   }, [countryQuery]);
 
   const handleCountryInput = (value) => {
     setCountryQuery(value);
-    const match = COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === value.trim().toLowerCase());
+    
+    // Update filtered list for dropdown
+    const filtered = searchCountries(value);
+    setFilteredCountries(filtered.slice(0, 50)); // Limit to 50 results
+    
+    // Auto-apply if exact match
+    const match = COUNTRIES.find((country) => country.name.toLowerCase() === value.toLowerCase());
     if (match) {
       updateSettings({
         country: match.name,
@@ -244,7 +252,7 @@ export default function Settings() {
   const applyCountrySelection = () => {
     const trimmed = countryQuery.trim();
     if (!trimmed) return;
-    const match = COUNTRY_OPTIONS.find((option) => option.name.toLowerCase() === trimmed.toLowerCase());
+    const match = COUNTRIES.find((country) => country.name.toLowerCase() === trimmed.toLowerCase());
     if (match) {
       updateSettings({
         country: match.name,
@@ -257,7 +265,6 @@ export default function Settings() {
       updateSettings({ country: trimmed });
     }
   };
-
   const handleCustomCurrency = async (event) => {
     event.preventDefault();
     const value = customCurrency.trim().toUpperCase();
@@ -340,9 +347,9 @@ export default function Settings() {
               </button>
             </div>
             <datalist id="country-options">
-              {COUNTRY_OPTIONS.map((option) => {
-                const emoji = flagFromCountryCode(option.code);
-                return <option key={option.name} value={option.name} label={`${emoji} ${option.name}`} />;
+              {filteredCountries.map((country) => {
+                const emoji = flagFromCountryCode(country.code);
+                return <option key={country.code} value={country.name} label={`${emoji} ${country.name} (${country.currency})`} />;
               })}
             </datalist>
           </div>
@@ -370,17 +377,17 @@ export default function Settings() {
             Active configuration: {activeCountryEmoji ? `${activeCountryEmoji} ` : ""}
             {settings.country || "Unknown country"} | {settings.currency || "Currency"} | {settings.locale || "Locale"}
           </p>
-          <p className="mt-2">Sample formatting:</p>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-            {COUNTRY_OPTIONS.map((option) => {
-              const emoji = flagFromCountryCode(option.code);
+          <p className="mt-2">Sample formatting (showing top matches):</p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+            {filteredCountries.slice(0, 9).map((country) => {
+              const emoji = flagFromCountryCode(country.code);
               return (
-                <li key={option.name} className="flex flex-col text-slate-300">
+                <li key={country.code} className="flex flex-col text-slate-300">
                   <span className="text-xs uppercase tracking-wide text-slate-500">
-                    {emoji} {option.name}
+                    {emoji} {country.name}
                   </span>
                   <span className="font-semibold">
-                    {option.currency} | {formatSample(option.locale, option.currency)}
+                    {country.currency} | {formatCurrencySample(country.locale, country.currency)}
                   </span>
                 </li>
               );
