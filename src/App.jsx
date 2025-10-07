@@ -6,6 +6,7 @@ import AuthenticatedHome from "./components/AuthenticatedHome.jsx";
 import UserRoutes from "./components/UserRoutes.jsx";
 import AuthDebug from "./components/AuthDebug.jsx";
 import Demo from "./pages/Demo.jsx";
+import ApiDebug from "./components/ApiDebug.jsx";
 import { TranslationProvider } from "./utils/TranslationContext.jsx";
 import { AuthProvider } from "./utils/AuthContext.jsx";
 import { ToastProvider } from "./contexts/ToastContext.jsx";
@@ -33,6 +34,7 @@ export default function App() {
                   <Route path="/*" element={<UserRoutes />} />
                 </Routes>
                 <AuthDebug />
+                <ApiDebug />
               </BrowserRouter>
             </TranslationProvider>
           </ToastProvider>
