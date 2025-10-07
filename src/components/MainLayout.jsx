@@ -27,6 +27,22 @@ export default function MainLayout({ children }) {
                 {t("app.title")}
               </Link>
               <nav className="ml-8 hidden space-x-4 md:flex">
+                {!user && (
+                  <>
+                    <Link 
+                      to="/demo-page" 
+                      className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                    >
+                      Try Demo 🎮
+                    </Link>
+                    <Link 
+                      to="/demo/stock" 
+                      className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white"
+                    >
+                      Demo Stock 📦
+                    </Link>
+                  </>
+                )}
                 {user && (
                   <>
                     <Link 

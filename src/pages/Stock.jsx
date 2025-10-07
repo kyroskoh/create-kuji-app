@@ -6,12 +6,9 @@ import { useAuth } from '../utils/AuthContext';
 import syncService from '../services/syncService';
 
 export default function Stock() {
-  const { username: paramUsername } = useParams();
+  const { username } = useParams();
   const location = useLocation();
   const { user } = useAuth();
-  
-  // Handle demo route - use 'demo' as username when no param username
-  const username = paramUsername || 'demo';
   const [stockData, setStockData] = useState(null);
   const [userSettings, setUserSettings] = useState(null);
   const [loading, setLoading] = useState(true);
