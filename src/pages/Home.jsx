@@ -46,7 +46,7 @@ export default function Home() {
         {/* Quick Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <Link to={getUserPageUrl("draw")} className="block">
-            <button className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+            <button className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-700 to-blue-700 hover:from-purple-600 hover:to-blue-600 text-white font-bold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
               🎯 {t("home.startDrawing")}
             </button>
           </Link>
@@ -214,12 +214,12 @@ export default function Home() {
         </p>
         <div className="flex flex-col gap-4 pt-4">
           <Link to="/demo" className="block w-full">
-            <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+            <button className="w-full bg-gradient-to-r from-purple-700 to-blue-700 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
               🎮 Try Live Demo
             </button>
           </Link>
           <Link to="/login" className="block w-full">
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+            <button className="w-full bg-purple-700 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
               Sign In
             </button>
           </Link>

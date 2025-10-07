@@ -266,7 +266,7 @@ export default function DemoStock() {
               </button>
               <Link
                 to="/demo"
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                className="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors"
               >
                 Try Demo Login 🎮
               </Link>
@@ -285,7 +285,7 @@ export default function DemoStock() {
             </p>
             <Link
               to="/demo"
-              className="inline-block px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+              className="inline-block px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors"
             >
               Try Demo Login 🎮
             </Link>

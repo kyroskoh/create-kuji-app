@@ -242,7 +242,7 @@ export default function ScratchCard({
               {scratchedPercentage > 70 && (
                 <button
                   onClick={completeScratching}
-                  className="text-xs bg-purple-600 text-white px-3 py-1 rounded-full hover:bg-purple-700 transition"
+                  className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full hover:bg-purple-600 transition"
                 >
                   Reveal All
                 </button>

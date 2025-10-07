@@ -2,6 +2,17 @@ import { SUBSCRIPTION_PLANS } from "../../utils/subscriptionPlans";
 
 export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
   const plans = Object.values(SUBSCRIPTION_PLANS);
+  
+  // Define plan hierarchy order
+  const planOrder = ['free', 'basic', 'advanced', 'pro'];
+  
+  // Get plan tier index
+  const getPlanTier = (planId) => {
+    const index = planOrder.indexOf(planId.toLowerCase());
+    return index === -1 ? 0 : index;
+  };
+  
+  const currentPlanTier = getPlanTier(currentPlan);
 
   return (
     <div className="space-y-4">
@@ -15,7 +26,9 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => {
           const isCurrentPlan = currentPlan === plan.id;
-          const isFree = plan.id === "free";
+          const planTier = getPlanTier(plan.id);
+          const isUpgrade = planTier > currentPlanTier;
+          const isDowngrade = planTier < currentPlanTier;
           
           return (
             <div
@@ -42,7 +55,7 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
                 {/* Price */}
                 <div className="text-3xl font-bold text-white">
                   {plan.price}
-                  {!isFree && <span className="text-sm font-normal text-slate-400">/month</span>}
+                  {plan.id !== "free" && <span className="text-sm font-normal text-slate-400">/month</span>}
                 </div>
 
                 {/* Features */}
@@ -173,12 +186,12 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
                   className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
                     isCurrentPlan
                       ? "cursor-not-allowed bg-slate-700 text-slate-400"
-                      : isFree
-                      ? "bg-slate-700 text-white hover:bg-slate-600"
-                      : "bg-create-primary text-white hover:bg-create-primary/90 hover:shadow-lg"
+                      : isUpgrade
+                      ? "bg-create-primary text-white hover:bg-create-primary/90 hover:shadow-lg"
+                      : "bg-slate-700 text-white hover:bg-slate-600"
                   }`}
                 >
-                  {isCurrentPlan ? "Current Plan" : isFree ? "Downgrade" : "Upgrade"}
+                  {isCurrentPlan ? "Current Plan" : isUpgrade ? "Upgrade" : "Downgrade"}
                 </button>
               </div>
             </div>

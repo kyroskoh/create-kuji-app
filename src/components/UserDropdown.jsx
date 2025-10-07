@@ -113,7 +113,7 @@ export default function UserDropdown() {
                 setIsOpen(false);
                 navigate(`/${user.username}/account`);
               }}
-              className="block w-full text-left px-4 py-2 text-sm text-white transition hover:bg-slate-700"
+              className="block w-full text-left px-4 py-2 text-sm text-white bg-slate-800 transition hover:bg-purple-600/30"
             >
               Account Settings
             </button>
@@ -122,14 +122,14 @@ export default function UserDropdown() {
                 setIsOpen(false);
                 navigate(`/${user.username}/settings`);
               }}
-              className="block w-full text-left px-4 py-2 text-sm text-white transition hover:bg-slate-700"
+              className="block w-full text-left px-4 py-2 text-sm text-white bg-slate-800 transition hover:bg-purple-600/30"
             >
               Manage Plan
             </button>
             <div className="border-t border-slate-700 mt-1 pt-1">
               <button
                 onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-red-400 transition hover:bg-slate-700"
+                className="block w-full text-left px-4 py-2 text-sm text-red-400 bg-slate-800 transition hover:bg-purple-600/30"
               >
                 Logout
               </button>
