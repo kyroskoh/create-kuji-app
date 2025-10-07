@@ -22,8 +22,21 @@ export default function DemoStock() {
           kujiAPI.getUserStock('demo'),
           kujiAPI.getUserSettings('demo')
         ]);
+        
+        const settings = settingsResponse.data;
+        const isFree = (settings.subscriptionPlan || 'free') === 'free';
+        
+        // Free plan users always have public stock pages
+        // Paid plan users can control visibility
+        if (!isFree && !settings.stockPagePublished) {
+          setUserSettings(settings);
+          setStockData(null);
+          setLoading(false);
+          return;
+        }
+        
         setStockData(stockResponse.data);
-        setUserSettings(settingsResponse.data);
+        setUserSettings(settings);
       } catch (err) {
         console.error('Error loading demo stock:', err);
         setError('Failed to load stock data');
@@ -42,6 +55,19 @@ export default function DemoStock() {
         kujiAPI.getUserStock('demo'),
         kujiAPI.getUserSettings('demo')
       ]);
+      
+      const settings = settingsResponse.data;
+      const isFree = (settings.subscriptionPlan || 'free') === 'free';
+      
+      // Free plan users always have public stock pages
+      // Paid plan users can control visibility
+      if (!isFree && !settings.stockPagePublished) {
+        setUserSettings(settings);
+        setStockData(null);
+        setLoading(false);
+        return;
+      }
+      
       setStockData(stockResponse.data);
       setUserSettings(settingsResponse.data);
     } catch (err) {
@@ -125,6 +151,39 @@ export default function DemoStock() {
           >
             ← Back to Demo
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if stock page is published
+  const isPublished = userSettings?.stockPagePublished;
+  const isFree = (userSettings?.subscriptionPlan || 'free') === 'free';
+
+  // Show unpublished message only for paid plans that haven't published
+  // Free plan users always have public stock pages
+  if (!loading && !error && userSettings && !isFree && !isPublished) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-8">
+            <svg className="w-16 h-16 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-white mb-2">Stock Page Unpublished</h2>
+            <p className="text-slate-400 mb-4">
+              The demo stock page is currently not available to the public.
+            </p>
+            <p className="text-sm text-slate-500 mb-6">
+              The demo user has not published their stock page yet.
+            </p>
+            <Link
+              to="/demo"
+              className="inline-block px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
+            >
+              ← Back to Demo
+            </Link>
+          </div>
         </div>
       </div>
     );

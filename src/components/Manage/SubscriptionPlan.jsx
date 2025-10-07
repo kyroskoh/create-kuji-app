@@ -196,6 +196,32 @@ export default function SubscriptionPlan({ currentPlan, onPlanChange }) {
                       <span>API Access</span>
                     </div>
                   )}
+                  {plan.features.publicStockPage && (
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Public Stock Page</span>
+                    </div>
+                  )}
+                  {plan.features.betaAccess && (
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <svg className="h-4 w-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Beta Access</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">β</span>
+                    </div>
+                  )}
+                  {plan.features.customDrawAnimation && (
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fillRule="evenodd" clipRule="evenodd" />
+                      </svg>
+                      <span>Custom Draw Animations</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">BETA</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* CTA Button */}

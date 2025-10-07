@@ -42,9 +42,11 @@ export default function Stock() {
       
       const settings = settingsResponse.data;
       const isOwner = user?.username === username;
+      const isFree = (settings.subscriptionPlan || 'free') === 'free';
       
-      // Check if stock page is published or if user is the owner
-      if (!settings.stockPagePublished && !isOwner) {
+      // Free plan users always have public stock pages
+      // Paid plan users can control visibility
+      if (!isFree && !settings.stockPagePublished && !isOwner) {
         setUserSettings(settings);
         setStockData(null);
         setLoading(false);

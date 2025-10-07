@@ -20,7 +20,8 @@ export const SUBSCRIPTION_PLANS = {
       tierSorting: false,
       customHexColors: false,
       customColorNaming: false,
-      customPalettePicker: false
+      customPalettePicker: false,
+      publicStockPage: false // Cannot publish stock page
     },
     description: "Perfect for getting started",
     badge: null
@@ -47,7 +48,8 @@ export const SUBSCRIPTION_PLANS = {
       tierSorting: false,
       customHexColors: false,
       customColorNaming: false,
-      customPalettePicker: false
+      customPalettePicker: false,
+      publicStockPage: true // Can publish stock page
     },
     description: "Best for small events",
     badge: "Popular"
@@ -75,7 +77,10 @@ export const SUBSCRIPTION_PLANS = {
       tierSorting: true,
       customHexColors: true, // Can use custom hex codes
       customColorNaming: true, // Can name custom colors
-      customPalettePicker: false
+      customPalettePicker: false,
+      publicStockPage: true, // Can publish stock page
+      apiAccess: true, // API access
+      betaAccess: true // Beta access for future features
     },
     description: "For growing businesses",
     badge: "Recommended"
@@ -103,7 +108,10 @@ export const SUBSCRIPTION_PLANS = {
       customPalettePicker: true, // Full palette picker
       prioritySupport: true,
       customBranding: true,
-      apiAccess: true
+      publicStockPage: true, // Can publish stock page
+      apiAccess: true,
+      betaAccess: true, // Beta access for future features
+      customDrawAnimation: true // Custom draw animations (Beta)
     },
     description: "Unlimited power",
     badge: "Best Value"
@@ -178,6 +186,14 @@ export function isTierSortingAllowed(planId) {
   if (!plan) return false;
   
   return plan.tierSorting === true;
+}
+
+// Check if public stock page is allowed for plan
+export function canPublishStockPage(planId) {
+  const plan = SUBSCRIPTION_PLANS[planId.toUpperCase()];
+  if (!plan) return false;
+  
+  return plan.features.publicStockPage === true;
 }
 
 // Validate tier name based on plan limits

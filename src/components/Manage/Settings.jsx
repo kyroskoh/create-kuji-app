@@ -6,7 +6,7 @@ import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js"
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
-import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName } from "../../utils/subscriptionPlans.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage } from "../../utils/subscriptionPlans.js";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -371,6 +371,10 @@ export default function Settings() {
   };
 
   const activeCountryEmoji = settings.countryEmoji || flagFromCountryCode(settings.countryCode || "");
+  
+  // Check if user can control stock page visibility (paid plans only)
+  const canControlVisibility = canPublishStockPage(settings.subscriptionPlan || "free");
+  const isFree = (settings.subscriptionPlan || "free") === "free";
 
   return (
     <div className="space-y-6">
@@ -378,43 +382,57 @@ export default function Settings() {
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Stock Page Visibility</h3>
         <p className="text-sm text-slate-400">
-          Control whether your stock page is publicly accessible.
+          {isFree 
+            ? 'Your stock page is always public on the free plan.'
+            : 'Control whether your stock page is publicly accessible.'}
+          {isFree && <span className="text-green-400"> (Upgrade for privacy controls)</span>}
         </p>
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+        <div className={`rounded-lg border p-4 ${
+          isFree
+            ? 'border-green-500/30 bg-green-500/5'
+            : 'border-slate-700 bg-slate-800/50'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-semibold text-white">
-                  {settings.stockPagePublished ? 'Published' : 'Unpublished'}
+                  {isFree ? 'Always Published' : (settings.stockPagePublished ? 'Published' : 'Unpublished')}
                 </span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  settings.stockPagePublished
-                    ? 'bg-green-500/20 text-green-300'
-                    : 'bg-amber-500/20 text-amber-300'
-                }`}>
-                  {settings.stockPagePublished ? '🌐 Public' : '🔒 Private'}
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-300">
+                  🌐 Public
                 </span>
+                {isFree && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-400">
+                    🔓 Free Plan
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400">
-                {settings.stockPagePublished
-                  ? 'Anyone can view your stock page'
-                  : 'Only you can view your stock page'}
+                {isFree
+                  ? 'Free plan users have public stock pages by default. Upgrade for privacy options.'
+                  : (settings.stockPagePublished
+                    ? 'Anyone can view your stock page'
+                    : 'Only you can view your stock page')}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => updateSettings({ stockPagePublished: !settings.stockPagePublished })}
-              className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-create-primary focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                settings.stockPagePublished ? 'bg-green-600' : 'bg-slate-600'
+              onClick={() => canControlVisibility && updateSettings({ stockPagePublished: !settings.stockPagePublished })}
+              disabled={!canControlVisibility}
+              className={`relative inline-flex h-8 w-14 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                canControlVisibility
+                  ? 'cursor-pointer focus:ring-2 focus:ring-create-primary focus:ring-offset-2 focus:ring-offset-slate-900'
+                  : 'cursor-not-allowed opacity-50'
+              } ${
+                (isFree || settings.stockPagePublished) ? 'bg-green-600' : 'bg-slate-600'
               }`}
               role="switch"
-              aria-checked={settings.stockPagePublished}
+              aria-checked={isFree || settings.stockPagePublished}
+              aria-disabled={!canControlVisibility}
             >
               <span
                 aria-hidden="true"
-                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  settings.stockPagePublished ? 'translate-x-6' : 'translate-x-0'
-                }`}
+                className="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-6"
               />
             </button>
           </div>

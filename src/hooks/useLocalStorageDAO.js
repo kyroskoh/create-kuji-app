@@ -30,7 +30,7 @@ const DEFAULT_SETTINGS = {
   nextSessionNumber: 1,
   weightMode: "basic",
   subscriptionPlan: "pro", // Demo users get Pro plan to test all features
-  stockPagePublished: false // Stock page is unpublished by default
+  stockPagePublished: true // Stock page is published by default for demo
 };
 
 const mergeSettings = (settings) => {
