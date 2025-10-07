@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import * as kujiController from '../controllers/kujiController';
 import * as userKujiController from '../controllers/userKujiController';
+import * as brandingController from '../controllers/brandingController';
 
 const router = Router();
 
@@ -18,5 +19,10 @@ router.post('/:username/sync-presets', requireAuth, userKujiController.syncPrici
 // Data retrieval endpoints
 router.get('/:username/prizes', requireAuth, userKujiController.getUserPrizes);
 router.get('/:username/settings', requireAuth, userKujiController.getUserSettings);
+
+// Branding endpoints
+router.get('/:username/branding', brandingController.getBranding); // Public endpoint
+router.post('/:username/branding/sync', requireAuth, brandingController.syncBranding); // Authenticated
+router.delete('/:username/branding', requireAuth, brandingController.deleteBrandingController); // Authenticated
 
 export default router;

@@ -7,6 +7,7 @@ const STORE_KEYS = {
   pricing: "create::pricing",
   history: "create::history",
   settings: "create::settings",
+  branding: "create::branding",
   syncQueue: "create::sync_queue", // Persistent sync queue
   dirtyState: "create::dirty_state" // Track unsaved changes
 };
@@ -113,10 +114,11 @@ class SyncService {
       const dirtyState = await localforage.getItem(STORE_KEYS.dirtyState) || {};
       
       // Fetch all data from server
-      const [prizesResponse, settingsResponse, presetsResponse] = await Promise.allSettled([
+      const [prizesResponse, settingsResponse, presetsResponse, brandingResponse] = await Promise.allSettled([
         kujiAPI.getUserPrizes(username),
         kujiAPI.getUserSettings(username),
-        kujiAPI.getUserPresets(username)
+        kujiAPI.getUserPresets(username),
+        kujiAPI.getUserBranding(username)
       ]);
 
       // Update local storage with server data
@@ -159,6 +161,19 @@ class SyncService {
         }
       }
 
+      // Branding - check dirty flag
+      if (brandingResponse.status === 'fulfilled' && brandingResponse.value.data.branding) {
+        const hasDirtyBranding = dirtyState.branding === true;
+        const shouldPullBranding = options.forceBranding || !hasDirtyBranding;
+        
+        if (shouldPullBranding) {
+          await localforage.setItem(STORE_KEYS.branding, brandingResponse.value.data.branding);
+          console.log('✅ Pulled branding from server');
+        } else {
+          console.log('⚠️ Skipped pulling branding - unsaved local changes detected (dirty flag set)');
+        }
+      }
+
       return { success: true };
 
     } catch (error) {
@@ -177,11 +192,12 @@ class SyncService {
 
     try {
       // Load all data from LocalForage
-      const [prizes, settings, history, presets] = await Promise.all([
+      const [prizes, settings, history, presets, branding] = await Promise.all([
         localforage.getItem(STORE_KEYS.prizes).then(data => Array.isArray(data) ? data : []),
         localforage.getItem(STORE_KEYS.settings),
         localforage.getItem(STORE_KEYS.history).then(data => Array.isArray(data) ? data : []),
-        localforage.getItem(STORE_KEYS.pricing).then(data => Array.isArray(data) ? data : [])
+        localforage.getItem(STORE_KEYS.pricing).then(data => Array.isArray(data) ? data : []),
+        localforage.getItem(STORE_KEYS.branding)
       ]);
 
       // Queue each data type for sync
@@ -201,6 +217,10 @@ class SyncService {
 
       if (presets.length > 0) {
         syncOperations.push({ username, dataType: 'presets', data: presets });
+      }
+
+      if (branding) {
+        syncOperations.push({ username, dataType: 'branding', data: branding });
       }
 
       // Add all to queue
@@ -315,6 +335,8 @@ class SyncService {
       case 'pricing':
         // Alias for presets - both refer to pricing data
         return await kujiAPI.syncPresets(username, data);
+      case 'branding':
+        return await kujiAPI.syncBranding(username, data);
       default:
         throw new Error(`Unknown data type for sync: ${dataType}`);
     }

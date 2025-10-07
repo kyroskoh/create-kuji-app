@@ -106,7 +106,8 @@ export async function syncSettings(req: Request, res: Response) {
         locale: settings.locale || 'ms-MY',
         tierColors: JSON.stringify(settings.tierColors || {}),
         nextSessionNumber: parseInt(settings.nextSessionNumber) || 1,
-        weightMode: settings.weightMode || 'basic'
+        weightMode: settings.weightMode || 'basic',
+        subscriptionPlan: settings.subscriptionPlan || 'free'
       },
       create: {
         userId: user.id,
@@ -119,7 +120,8 @@ export async function syncSettings(req: Request, res: Response) {
         locale: settings.locale || 'ms-MY',
         tierColors: JSON.stringify(settings.tierColors || {}),
         nextSessionNumber: parseInt(settings.nextSessionNumber) || 1,
-        weightMode: settings.weightMode || 'basic'
+        weightMode: settings.weightMode || 'basic',
+        subscriptionPlan: settings.subscriptionPlan || 'free'
       }
     });
 

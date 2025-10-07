@@ -131,4 +131,9 @@ export const kujiAPI = {
   getUserPrizes: (username) => api.get(`/users/${username}/prizes`),
   getUserSettings: (username) => api.get(`/users/${username}/settings`),
   getUserPresets: (username) => api.get(`/users/${username}/presets`),
+  
+  // Branding endpoints
+  getUserBranding: (username) => publicApi.get(`/users/${username}/branding`), // Public endpoint
+  syncBranding: (username, branding) => api.post(`/users/${username}/branding/sync`, branding), // Authenticated
+  deleteBranding: (username) => api.delete(`/users/${username}/branding`), // Authenticated
 };
