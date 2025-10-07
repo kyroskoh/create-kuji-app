@@ -316,10 +316,10 @@ export default function Settings() {
             <button
               key={status}
               type="button"
-              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase ${
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase transition-all ${
                 settings.sessionStatus === status
-                  ? "bg-create-primary text-white"
-                  : "bg-slate-800 text-slate-300"
+                  ? "bg-create-primary text-white shadow-lg shadow-create-primary/30"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md"
               }`}
               onClick={() => updateSettings({ sessionStatus: status })}
             >
@@ -347,7 +347,11 @@ export default function Settings() {
                 onChange={(event) => handleCountryInput(event.target.value)}
                 placeholder="Malaysia"
               />
-              <button type="button" className="bg-slate-800 text-slate-200" onClick={applyCountrySelection}>
+              <button 
+                type="button" 
+                className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
+                onClick={applyCountrySelection}
+              >
                 Apply
               </button>
             </div>
@@ -371,7 +375,10 @@ export default function Settings() {
                 onChange={(event) => setCustomCurrency(event.target.value)}
                 placeholder="MYR"
               />
-              <button type="submit">
+              <button 
+                type="submit"
+                className="hover:shadow-md transition-all"
+              >
                 Save
               </button>
             </form>
@@ -393,8 +400,11 @@ export default function Settings() {
             {sampleCountries.map((country) => {
               const emoji = flagFromCountryCode(country.code);
               return (
-                <li key={country.code} className="flex flex-col text-slate-300">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                <li 
+                  key={country.code} 
+                  className="flex flex-col text-slate-300 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-800/60 hover:text-white cursor-default"
+                >
+                  <span className="text-xs uppercase tracking-wide text-slate-500 group-hover:text-slate-400">
                     {emoji} {country.name}
                   </span>
                   <span className="font-semibold">
@@ -424,14 +434,16 @@ export default function Settings() {
               key={mode.id}
               type="button"
               onClick={() => handleWeightModeChange(mode.id)}
-              className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
                 settings.weightMode === mode.id
-                  ? "border-create-primary bg-create-primary/20 text-white"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60"
+                  ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
               }`}
             >
               <div className="font-semibold">{mode.label}</div>
-              <div className="mt-1 text-xs text-slate-400">{mode.description}</div>
+              <div className={`mt-1 text-xs ${
+                settings.weightMode === mode.id ? "text-slate-300" : "text-slate-400 group-hover:text-slate-300"
+              }`}>{mode.description}</div>
             </button>
           ))}
         </div>
@@ -468,7 +480,11 @@ export default function Settings() {
               placeholder="E"
             />
           </div>
-          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleAddTier}>
+          <button 
+            type="button" 
+            className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
+            onClick={handleAddTier}
+          >
             Add tier
           </button>
         </div>
@@ -478,10 +494,10 @@ export default function Settings() {
               key={palette.id}
               type="button"
               onClick={() => handleTierColorChange(palette.id)}
-              className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
                 tierColors[activeTier] === palette.id
-                  ? "border-create-primary bg-create-primary/20 text-white"
-                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60"
+                  ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
+                  : "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
               }`}
             >
               <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)}`} />
@@ -496,16 +512,32 @@ export default function Settings() {
           Export your data regularly so you can restore sessions after resets.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" className="bg-emerald-600/80 text-white" onClick={handleImportAllClick}>
+          <button 
+            type="button" 
+            className="bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 
+            onClick={handleImportAllClick}
+          >
             Import All Data
           </button>
-          <button type="button" className="bg-create-primary/80 text-white" onClick={handleExportAll}>
+          <button 
+            type="button" 
+            className="bg-create-primary/80 text-white hover:bg-create-primary hover:shadow-lg transition-all" 
+            onClick={handleExportAll}
+          >
             Export All Data
           </button>
-          <button type="button" className="bg-red-600/80" onClick={handleResetClick}>
+          <button 
+            type="button" 
+            className="bg-red-600/80 text-white hover:bg-red-600 hover:shadow-lg transition-all" 
+            onClick={handleResetClick}
+          >
             Reset Session Data
           </button>
-          <button type="button" className="bg-slate-800 text-slate-200" onClick={handleResetCounter}>
+          <button 
+            type="button" 
+            className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
+            onClick={handleResetCounter}
+          >
             Reset Session Counter
           </button>
         </div>
