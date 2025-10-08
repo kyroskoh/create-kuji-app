@@ -58,30 +58,74 @@ export function calculateMostDrawnPrizes(history, limit = 10) {
 }
 
 /**
- * Calculate draw frequency - shows draws per session over time
- * This provides insight into session sizes and activity patterns
+ * Calculate draw frequency - bins draws by time periods (hourly or daily)
+ * Dynamically adjusts granularity based on the time range
  * @param {Array} history - Draw history array
- * @param {number} maxSessions - Maximum number of recent sessions to show (default: 30)
- * @returns {Array} Array of { date, count, sessionId } showing draws per session
+ * @param {number} days - Number of days to look back
+ * @returns {Array} Array of { date, count } showing draws per time bin
  */
-export function calculateDrawFrequency(history, maxSessions = 30) {
+export function calculateDrawFrequency(history, days = 30) {
   if (!history.length) return [];
   
-  // Sort sessions by timestamp (most recent first)
-  const sortedSessions = [...history]
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, maxSessions);
+  const now = new Date();
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   
-  // Map each session to its draw count
-  const frequency = sortedSessions.map(session => ({
-    date: new Date(session.timestamp),
-    count: session.draws?.length || 0,
-    sessionId: session.sessionId || 'unknown',
-    eventName: session.eventName || 'No Event'
-  }));
+  // Determine granularity: hourly for <= 7 days, daily for > 7 days
+  const useHourlyBins = days <= 7;
+  const bins = {};
   
-  // Return in chronological order (oldest to newest)
-  return frequency.reverse();
+  if (useHourlyBins) {
+    // Create hourly bins for the last N days
+    const totalHours = days * 24;
+    for (let i = 0; i < totalHours; i++) {
+      const date = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+      const hourKey = `${date.toISOString().split('T')[0]} ${String(date.getHours()).padStart(2, '0')}:00`;
+      bins[hourKey] = 0;
+    }
+    
+    // Fill bins with draw counts
+    history.forEach(session => {
+      const sessionDate = new Date(session.timestamp);
+      if (sessionDate >= startDate && sessionDate <= now) {
+        const hourKey = `${sessionDate.toISOString().split('T')[0]} ${String(sessionDate.getHours()).padStart(2, '0')}:00`;
+        if (bins[hourKey] !== undefined) {
+          bins[hourKey] += (session.draws?.length || 0);
+        }
+      }
+    });
+    
+    return Object.entries(bins)
+      .map(([dateStr, count]) => ({ 
+        date: new Date(dateStr),
+        count 
+      }))
+      .sort((a, b) => a.date - b.date);
+  } else {
+    // Create daily bins for longer periods
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+      const dateKey = date.toISOString().split('T')[0];
+      bins[dateKey] = 0;
+    }
+    
+    // Fill bins with draw counts
+    history.forEach(session => {
+      const sessionDate = new Date(session.timestamp);
+      if (sessionDate >= startDate && sessionDate <= now) {
+        const dateKey = sessionDate.toISOString().split('T')[0];
+        if (bins[dateKey] !== undefined) {
+          bins[dateKey] += (session.draws?.length || 0);
+        }
+      }
+    });
+    
+    return Object.entries(bins)
+      .map(([date, count]) => ({ 
+        date: new Date(date),
+        count 
+      }))
+      .sort((a, b) => a.date - b.date);
+  }
 }
 
 /**
@@ -380,10 +424,16 @@ export function calculateRevenueByEvent(history, presets) {
 
 /**
  * Generate comprehensive analytics summary
- * @param {Object} params - { history, prizes, presets, isFiltered }
+ * @param {Object} params - { history, prizes, presets, isFiltered, timeRangeDays }
  * @returns {Object} Complete analytics summary
  */
-export function generateAnalyticsSummary({ history = [], prizes = [], presets = [], isFiltered = false }) {
+export function generateAnalyticsSummary({ 
+  history = [], 
+  prizes = [], 
+  presets = [], 
+  isFiltered = false, 
+  timeRangeDays = 30 
+}) {
   // If history is filtered (e.g., by event), calculate stock from draws instead of current prizes
   const stockStats = isFiltered 
     ? calculateStockDepletionFromHistory(history)
@@ -393,11 +443,11 @@ export function generateAnalyticsSummary({ history = [], prizes = [], presets = 
     draws: {
       total: calculateTotalDraws(history),
       cumulative: calculateCumulativeDraws(history),
-      frequency: calculateDrawFrequency(history, 30)
+      frequency: calculateDrawFrequency(history, timeRangeDays)
     },
     tiers: {
       distribution: calculateTierDistribution(history),
-      popularity: calculateTierPopularityOverTime(history, 30)
+      popularity: calculateTierPopularityOverTime(history, timeRangeDays)
     },
     prizes: {
       mostDrawn: calculateMostDrawnPrizes(history, 10)

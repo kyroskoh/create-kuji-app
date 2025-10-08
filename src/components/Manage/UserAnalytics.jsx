@@ -59,7 +59,13 @@ export default function UserAnalytics() {
             ? history 
             : history.filter(session => session.eventId === selectedEvent);
           
-          const summary = generateAnalyticsSummary({ history: filteredHistory, prizes, presets });
+          const summary = generateAnalyticsSummary({ 
+            history: filteredHistory, 
+            prizes, 
+            presets,
+            isFiltered: selectedEvent !== 'all',
+            timeRangeDays: selectedPeriod 
+          });
           setAnalytics({ ...summary, settings });
           setLoading(false);
         }
@@ -78,7 +84,7 @@ export default function UserAnalytics() {
     return () => {
       mounted = false;
     };
-  }, [hasAccess, selectedEvent, getHistory, getPrizes, getPricing, getSettings]);
+  }, [hasAccess, selectedEvent, selectedPeriod, getHistory, getPrizes, getPricing, getSettings]);
 
   // Transform tier distribution for pie chart
   const tierDistributionData = useMemo(() => {
@@ -267,6 +273,8 @@ export default function UserAnalytics() {
               onChange={(e) => setSelectedPeriod(Number(e.target.value))}
               className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value={1}>Last 24 Hours</option>
+              <option value={3}>Last 3 Days</option>
               <option value={7}>Last 7 Days</option>
               <option value={30}>Last 30 Days</option>
               <option value={90}>Last 90 Days</option>
@@ -331,11 +339,25 @@ export default function UserAnalytics() {
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm font-medium">Stock Remaining</p>
-              <p className="text-3xl font-bold text-white mt-1">{stock.remainingStock.toLocaleString()}</p>
-              <p className="text-slate-500 text-xs mt-1">
-                {stock.depletionRate}% depleted
-              </p>
+              {selectedEvent === 'all' ? (
+                // Show stock remaining for all events
+                <>
+                  <p className="text-slate-400 text-sm font-medium">Stock Remaining</p>
+                  <p className="text-3xl font-bold text-white mt-1">{stock.remainingStock?.toLocaleString() || 0}</p>
+                  <p className="text-slate-500 text-xs mt-1">
+                    {stock.depletionRate || 0}% depleted
+                  </p>
+                </>
+              ) : (
+                // Show prizes drawn for specific event
+                <>
+                  <p className="text-slate-400 text-sm font-medium">Prizes Drawn</p>
+                  <p className="text-3xl font-bold text-white mt-1">{stock.totalDrawn?.toLocaleString() || 0}</p>
+                  <p className="text-slate-500 text-xs mt-1">
+                    {stock.uniquePrizes || 0} unique prizes
+                  </p>
+                </>
+              )}
             </div>
             <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
               <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,19 +421,21 @@ export default function UserAnalytics() {
           </div>
         )}
 
-        {/* Draw Frequency (Last 30 Days) */}
+        {/* Draw Frequency */}
         {frequencyData.length > 0 && (
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Draw Frequency (Last 30 Days)</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Draw Frequency {selectedPeriod <= 7 ? '(Hourly)' : '(Daily)'} - Last {selectedPeriod} Days
+            </h3>
             <LineChart
               data={frequencyData}
               xKey="date"
               yKey="count"
               color="#8b5cf6"
               height={280}
-              yLabel="Draws per Day"
+              yLabel={selectedPeriod <= 7 ? 'Draws per Hour' : 'Draws per Day'}
               showArea={true}
-              showDots={true}
+              showDots={selectedPeriod <= 7}
             />
           </div>
         )}
