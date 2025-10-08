@@ -264,3 +264,8 @@ export function canUseCustomTierColors(planId) {
 export function canUseCustomPalette(planId) {
   return isFeatureAvailable('customPalettePicker', planId);
 }
+
+// Check if beta access is available for plan
+export function hasBetaAccess(planId) {
+  return isFeatureAvailable('betaAccess', planId);
+}

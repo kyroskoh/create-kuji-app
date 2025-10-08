@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useBranding } from '../../contexts/BrandingContext';
-import { hasCustomBranding } from '../../utils/subscriptionPlans';
+import { hasCustomBranding, hasBetaAccess } from '../../utils/subscriptionPlans';
 import { useAuth } from '../../utils/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -63,6 +63,7 @@ export default function BrandingManager() {
 
   // Check if user has access
   const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+  const userHasBetaAccess = hasBetaAccess(user?.subscriptionPlan || 'free');
 
   if (loading) {
     return (
@@ -260,7 +261,11 @@ export default function BrandingManager() {
       }
 
       await updateBranding(formData);
-      toast.success('Branding saved successfully!');
+      if (userHasBetaAccess) {
+        toast.success('🚀 Beta branding saved successfully! Thanks for testing new features!');
+      } else {
+        toast.success('Branding saved successfully!');
+      }
     } catch (error) {
       console.error('Failed to save branding:', error);
       toast.error('Failed to save branding');
@@ -286,9 +291,24 @@ export default function BrandingManager() {
   return (
     <div className="space-y-6">
       <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Custom Branding</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold text-white">Custom Branding</h2>
+          {userHasBetaAccess && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 border border-purple-500/30">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+              </svg>
+              Beta Access
+            </span>
+          )}
+        </div>
         <p className="text-slate-400 text-sm mb-6">
           Customize your brand identity across all pages and printable materials.
+          {userHasBetaAccess && (
+            <span className="block mt-1 text-purple-300">
+              🚀 You have early access to beta branding features!
+            </span>
+          )}
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -441,9 +461,16 @@ export default function BrandingManager() {
 
             {/* Background Pattern */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Background Pattern
-              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <label className="block text-sm font-medium text-slate-300">
+                  Background Pattern
+                </label>
+                {userHasBetaAccess && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">
+                    Enhanced
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {BG_PATTERNS.map(pattern => (
                   <button
@@ -518,6 +545,66 @@ export default function BrandingManager() {
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {/* Beta-only Advanced Controls */}
+            {userHasBetaAccess && (
+              <div className="border-t border-slate-700 pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold text-white">Advanced Controls</h3>
+                  <span className="px-2.5 py-1 text-xs font-medium bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 rounded-full border border-purple-500/30">
+                    Beta
+                  </span>
+                </div>
+                <p className="text-slate-400 text-sm mb-4">
+                  Experimental branding features available to beta users. These features may change in future updates.
+                </p>
+                
+                {/* Animation Preferences */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Animation Style (Coming Soon)
+                  </label>
+                  <select
+                    disabled
+                    className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-500 cursor-not-allowed"
+                  >
+                    <option>Fade In (Default)</option>
+                    <option>Slide Up</option>
+                    <option>Scale In</option>
+                    <option>Bounce</option>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-1">Custom draw animations will be available in a future update.</p>
+                </div>
+
+                {/* Advanced Typography */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Typography Enhancement (Coming Soon)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Font Weight</label>
+                      <select disabled className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-500 text-sm cursor-not-allowed">
+                        <option>400 (Normal)</option>
+                        <option>500 (Medium)</option>
+                        <option>600 (Semibold)</option>
+                        <option>700 (Bold)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Letter Spacing</label>
+                      <select disabled className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-500 text-sm cursor-not-allowed">
+                        <option>Normal</option>
+                        <option>Tight</option>
+                        <option>Wide</option>
+                        <option>Wider</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Advanced typography controls for fine-tuning text appearance.</p>
+                </div>
+              </div>
+            )}
 
             {/* Contrast Warnings */}
             {contrastWarnings.length > 0 && (
