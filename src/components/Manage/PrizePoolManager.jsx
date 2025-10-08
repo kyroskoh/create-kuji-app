@@ -90,6 +90,32 @@ export default function PrizePoolManager() {
       mounted = false;
     };
   }, [location.pathname, getSettings]); // Re-run when route changes
+  
+  // Real-time sync: Listen for settings changes from Settings page
+  useEffect(() => {
+    const handleSettingsUpdate = async (event) => {
+      const updatedSettings = event.detail?.settings;
+      if (updatedSettings?.tierColors) {
+        const currentTierColorsStr = JSON.stringify(tierColors);
+        const newTierColorsStr = JSON.stringify(updatedSettings.tierColors);
+        
+        if (currentTierColorsStr !== newTierColorsStr) {
+          console.log('✨ Instant sync: Tier colors updated from Settings!');
+          setTierColors(updatedSettings.tierColors);
+          setAvailableTiers(Object.keys(updatedSettings.tierColors));
+          setStatus({ type: "success", message: "Tier colors synced from Settings!" });
+          setTimeout(() => setStatus(null), 2000);
+        }
+      }
+    };
+    
+    // Listen for custom settings-updated event
+    window.addEventListener('settings-updated', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('settings-updated', handleSettingsUpdate);
+    };
+  }, [tierColors]); // Re-run when tierColors change
 
   const tierTotals = useMemo(() => {
     const totals = prizes.reduce((acc, prize) => {

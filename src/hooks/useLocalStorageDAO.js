@@ -96,6 +96,11 @@ export default function useLocalStorageDAO() {
 
   const setSettings = useCallback(async (settings) => {
     await localforage.setItem(STORE_KEYS.settings, mergeSettings(settings));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('settings-updated', { 
+      detail: { settings: mergeSettings(settings) } 
+    }));
   }, []);
 
   const getHistory = useCallback(async () => {

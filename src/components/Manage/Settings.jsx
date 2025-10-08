@@ -152,6 +152,37 @@ export default function Settings() {
       setActiveTier(tierList[0]);
     }
   }, [tierList, activeTier]);
+  
+  // Real-time sync: Listen for tier changes from Prize Page
+  useEffect(() => {
+    const handleSettingsUpdate = (event) => {
+      const updatedSettings = event.detail?.settings;
+      if (updatedSettings?.tierColors) {
+        const currentTierColorsStr = JSON.stringify(tierColors);
+        const newTierColorsStr = JSON.stringify(updatedSettings.tierColors);
+        
+        if (currentTierColorsStr !== newTierColorsStr) {
+          console.log('✨ Settings: Tier colors synced from Prize Page!');
+          setLocalSettings(prevSettings => ({
+            ...prevSettings,
+            tierColors: updatedSettings.tierColors
+          }));
+          
+          // If a new tier was added, set it as active
+          const newTiers = Object.keys(updatedSettings.tierColors);
+          const oldTiers = Object.keys(tierColors);
+          const addedTier = newTiers.find(t => !oldTiers.includes(t));
+          if (addedTier) {
+            setActiveTier(addedTier);
+            setStatusMessage(`New tier "${addedTier}" detected from Prize Page!`);
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('settings-updated', handleSettingsUpdate);
+    return () => window.removeEventListener('settings-updated', handleSettingsUpdate);
+  }, [tierColors]);
 
   const updateSettings = async (next) => {
     // When updating tierColors, preserve the order from next.tierColors if provided
