@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import useLocalStorageDAO from '../hooks/useLocalStorageDAO';
 import { useAuth } from '../utils/AuthContext';
 import { hasCustomBranding } from '../utils/subscriptionPlans';
@@ -16,9 +17,19 @@ export function useBranding() {
 export function BrandingProvider({ children }) {
   const { getBranding, setBranding: saveBranding, resetBranding } = useLocalStorageDAO();
   const { user } = useAuth();
+  const location = useLocation();
   const [branding, setBrandingState] = useState(null);
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Check if current route is a user-specific draw or stock page only
+  const isUserDrawOrStockPage = () => {
+    const path = location.pathname;
+    // Only match /{username}/draw and /{username}/stock pages
+    // Examples: /demo/draw, /demo/stock, /john/draw, /john/stock
+    const drawOrStockPattern = /^\/[^/]+\/(draw|stock)$/;
+    return drawOrStockPattern.test(path);
+  };
 
   // Load branding from LocalForage
   useEffect(() => {
@@ -30,10 +41,21 @@ export function BrandingProvider({ children }) {
         if (mounted) {
           setBrandingState(data);
           
-          // Check if user has access to custom branding
+          // Check if user has access to custom branding AND if we're on draw/stock page
           const plan = user?.subscriptionPlan || 'free';
           const hasBrandingAccess = hasCustomBranding(plan);
-          setIsEnabled(hasBrandingAccess);
+          const isOnDrawOrStockPage = isUserDrawOrStockPage();
+          const shouldApplyBranding = hasBrandingAccess && isOnDrawOrStockPage;
+          
+          console.log('🎨 Branding Context - Route Check:', {
+            path: location.pathname,
+            isDrawOrStockPage: isOnDrawOrStockPage,
+            hasBrandingAccess,
+            shouldApplyBranding,
+            plan
+          });
+          
+          setIsEnabled(shouldApplyBranding);
           
           setLoading(false);
         }
@@ -50,12 +72,13 @@ export function BrandingProvider({ children }) {
     return () => {
       mounted = false;
     };
-  }, [getBranding, user]);
+  }, [getBranding, user, location.pathname]);
 
   // Apply branding to CSS custom properties
   useEffect(() => {
     if (!branding || !isEnabled) {
       // Set default theme values instead of removing properties
+      console.log('🎨 Using default branding colors (draw/stock page:', isUserDrawOrStockPage(), ', enabled:', isEnabled, ')');
       document.documentElement.style.setProperty('--brand-primary', '#3b82f6');
       document.documentElement.style.setProperty('--brand-secondary', '#8b5cf6');
       document.documentElement.style.setProperty('--brand-accent', '#06b6d4');
