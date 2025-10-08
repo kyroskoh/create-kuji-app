@@ -55,15 +55,18 @@ export function BrandingProvider({ children }) {
   // Apply branding to CSS custom properties
   useEffect(() => {
     if (!branding || !isEnabled) {
-      // Reset to default theme
-      document.documentElement.style.removeProperty('--brand-primary');
-      document.documentElement.style.removeProperty('--brand-secondary');
-      document.documentElement.style.removeProperty('--brand-accent');
-      document.documentElement.style.removeProperty('--brand-font-family');
+      // Set default theme values instead of removing properties
+      document.documentElement.style.setProperty('--brand-primary', '#3b82f6');
+      document.documentElement.style.setProperty('--brand-secondary', '#8b5cf6');
+      document.documentElement.style.setProperty('--brand-accent', '#06b6d4');
+      document.documentElement.style.setProperty('--brand-font-family', 'Inter, sans-serif');
+      document.documentElement.style.removeProperty('--brand-bg-pattern');
+      document.documentElement.style.removeProperty('--brand-bg-image');
       return;
     }
 
     // Apply branding colors
+    console.log('🎨 Applying custom branding:', branding);
     if (branding.primaryColor) {
       document.documentElement.style.setProperty('--brand-primary', branding.primaryColor);
     }

@@ -7,9 +7,9 @@ export default {
     extend: {
       colors: {
         create: {
-          primary: "#7c3aed",
-          secondary: "#f472b6",
-          accent: "#0ea5e9"
+          primary: "var(--brand-primary)",
+          secondary: "var(--brand-secondary)",
+          accent: "var(--brand-accent)"
         }
       }
     }
