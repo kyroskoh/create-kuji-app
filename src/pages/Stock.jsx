@@ -4,6 +4,9 @@ import { kujiAPI } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../utils/AuthContext';
 import syncService from '../services/syncService';
+import BrandingHeader from '../components/Branding/BrandingHeader';
+import BrandingFooter from '../components/Branding/BrandingFooter';
+import BrandingWrapper from '../components/Branding/BrandingWrapper';
 
 export default function Stock() {
   const { username } = useParams();
@@ -141,7 +144,11 @@ export default function Stock() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <BrandingWrapper className="min-h-screen">
+      <div className="max-w-6xl mx-auto p-6 space-y-8">
+        {/* Custom Branding Header */}
+        <BrandingHeader />
+      
       <div className="text-center">
         <h1 className="text-4xl font-bold text-white mb-2">{username}'s Kuji Stock</h1>
         <p className="text-slate-400">
@@ -271,6 +278,10 @@ export default function Stock() {
           </p>
         )}
       </div>
-    </div>
+      
+      {/* Custom Branding Footer */}
+      <BrandingFooter />
+      </div>
+    </BrandingWrapper>
   );
 }

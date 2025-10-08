@@ -10,6 +10,9 @@ import HistoryPanel from "./HistoryPanel.jsx";
 import ScratchCard from "./ScratchCard.jsx";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
+import BrandingHeader from "../Branding/BrandingHeader.jsx";
+import BrandingFooter from "../Branding/BrandingFooter.jsx";
+import BrandingWrapper from "../Branding/BrandingWrapper.jsx";
 
 const createId = () => (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
 
@@ -281,7 +284,11 @@ export default function DrawScreen() {
   const tierColors = sessionSettings.tierColors ?? {};
 
   return (
-    <div className="space-y-6">
+    <BrandingWrapper className="min-h-screen">
+      <div className="space-y-6">
+        {/* Custom Branding Header */}
+        <BrandingHeader />
+      
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -492,7 +499,11 @@ export default function DrawScreen() {
       {isHistoryOpen && (
         <HistoryPanel history={history} tierColors={tierColors} onClose={closeHistory} />
       )}
-    </div>
+      
+      {/* Custom Branding Footer */}
+      <BrandingFooter />
+      </div>
+    </BrandingWrapper>
   );
 }
 
