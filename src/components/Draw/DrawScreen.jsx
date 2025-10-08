@@ -141,7 +141,8 @@ export default function DrawScreen() {
   const handlePresetClick = (preset) => {
     const totalDraws = Number(preset.draw_count || 0) + Number(preset.bonus_draws || 0);
     setDrawCount(totalDraws || 1);
-    setDrawLabel(`${preset.label}${preset.bonus_draws ? ` (+${preset.bonus_draws})` : ""}`);
+    // Use exact preset label for revenue tracking (don't add bonus suffix)
+    setDrawLabel(preset.label);
   };
 
   const handleDraw = async () => {

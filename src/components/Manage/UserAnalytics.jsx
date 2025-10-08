@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { hasAnalyticsAccess } from '../../utils/subscriptionPlans';
 import { useAuth } from '../../utils/AuthContext';
 import useLocalStorageDAO from '../../hooks/useLocalStorageDAO';
@@ -10,10 +11,14 @@ import PieChart from '../Analytics/PieChart';
 
 export default function UserAnalytics() {
   const { user } = useAuth();
+  const location = useLocation();
   const { getHistory, getPrizes, getPricing, getSettings } = useLocalStorageDAO();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState(30); // days
+
+  // Get username from URL path (e.g., /demo/manage/analytics -> demo)
+  const username = location.pathname.split('/')[1] || user?.username || 'demo';
 
   // Check if user has access
   const hasAccess = hasAnalyticsAccess(user?.subscriptionPlan || 'free');
@@ -188,18 +193,18 @@ export default function UserAnalytics() {
           </ul>
         </div>
         <div className="mt-6 flex gap-3 justify-center">
-          <a
-            href="#/draw"
+          <Link
+            to={`/${username}/draw`}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
           >
             Go to Draw Page
-          </a>
-          <a
-            href="#/manage/prizes"
+          </Link>
+          <Link
+            to={`/${username}/manage/prizes`}
             className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-colors"
           >
             Setup Prizes
-          </a>
+          </Link>
         </div>
       </div>
     );

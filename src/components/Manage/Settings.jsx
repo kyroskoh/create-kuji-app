@@ -577,78 +577,8 @@ export default function Settings() {
           </div>
         </div>
       </div>
-      <div className="space-y-3">
-        <h3 className="text-xl font-semibold text-white">Session Controls</h3>
-        <p className="text-sm text-slate-400">
-          Control your kuji drawing session state. Use these to manage when prizes can be drawn.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {SESSION_STATUSES.map((status) => {
-            const statusInfo = {
-              INACTIVE: {
-                description: "Drawing disabled - Setup mode",
-                icon: "⏸️"
-              },
-              ACTIVE: {
-                description: "Drawing enabled - Users can draw prizes",
-                icon: "✅"
-              },
-              PAUSED: {
-                description: "Temporarily paused - No draws allowed",
-                icon: "⏯️"
-              }
-            };
-            
-            return (
-              <button
-                key={status}
-                type="button"
-                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase transition-all ${
-                  settings.sessionStatus === status
-                    ? "bg-create-primary text-white shadow-lg shadow-create-primary/30"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-md"
-                }`}
-                onClick={() => updateSettings({ sessionStatus: status })}
-                title={statusInfo[status]?.description || status}
-              >
-                {statusInfo[status]?.icon} {status}
-              </button>
-            );
-          })}
-        </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <h4 className="text-sm font-semibold text-white mb-2">Session Status Guide:</h4>
-          <ul className="space-y-2 text-xs text-slate-300">
-            <li className="flex items-start gap-2">
-              <span className="text-yellow-400 mt-0.5">⏸️</span>
-              <div>
-                <span className="font-semibold text-white">INACTIVE:</span> Use this when setting up your kuji event. 
-                No prizes can be drawn. Perfect for configuring tiers, adding prizes, and testing.
-              </div>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-400 mt-0.5">✅</span>
-              <div>
-                <span className="font-semibold text-white">ACTIVE:</span> Your kuji event is live! 
-                Users can draw prizes. Switch to this when you're ready to start the event.
-              </div>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-0.5">⏯️</span>
-              <div>
-                <span className="font-semibold text-white">PAUSED:</span> Temporarily stop drawing without ending the session. 
-                Use this for breaks, restocking prizes, or when you need to make adjustments.
-              </div>
-            </li>
-          </ul>
-          <div className="mt-3 pt-3 border-t border-slate-700">
-            <p className="text-xs text-slate-400">
-              💡 <span className="font-semibold">Tip:</span> Always start with INACTIVE to set up your event safely. 
-              Switch to ACTIVE when ready, and use PAUSED for temporary breaks.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Event Session Manager */}
+      <SessionManager />
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Region & Currency</h3>
         <p className="text-sm text-slate-400">
