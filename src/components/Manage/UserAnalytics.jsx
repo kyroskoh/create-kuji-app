@@ -15,13 +15,27 @@ export default function UserAnalytics() {
   const { getHistory, getPrizes, getPricing, getSettings } = useLocalStorageDAO();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
+  const [fullHistory, setFullHistory] = useState([]); // Store full history for filtering
   const [selectedPeriod, setSelectedPeriod] = useState(30); // days
+  const [selectedEvent, setSelectedEvent] = useState('all'); // Event session filter
 
   // Get username from URL path (e.g., /demo/manage/analytics -> demo)
   const username = location.pathname.split('/')[1] || user?.username || 'demo';
 
   // Check if user has access
   const hasAccess = hasAnalyticsAccess(user?.subscriptionPlan || 'free');
+
+  // Get unique event sessions from history
+  const uniqueEvents = useMemo(() => {
+    if (!fullHistory.length) return [];
+    const events = new Map();
+    fullHistory.forEach(session => {
+      if (session.eventId && session.eventName) {
+        events.set(session.eventId, session.eventName);
+      }
+    });
+    return Array.from(events.entries()).map(([id, name]) => ({ id, name }));
+  }, [fullHistory]);
 
   // Load data and generate analytics
   useEffect(() => {
@@ -37,7 +51,15 @@ export default function UserAnalytics() {
         ]);
 
         if (mounted) {
-          const summary = generateAnalyticsSummary({ history, prizes, presets });
+          // Store full history for filtering
+          setFullHistory(history);
+          
+          // Filter history by selected event
+          const filteredHistory = selectedEvent === 'all' 
+            ? history 
+            : history.filter(session => session.eventId === selectedEvent);
+          
+          const summary = generateAnalyticsSummary({ history: filteredHistory, prizes, presets });
           setAnalytics({ ...summary, settings });
           setLoading(false);
         }
@@ -56,7 +78,7 @@ export default function UserAnalytics() {
     return () => {
       mounted = false;
     };
-  }, [hasAccess, getHistory, getPrizes, getPricing, getSettings]);
+  }, [hasAccess, selectedEvent, getHistory, getPrizes, getPricing, getSettings]);
 
   // Transform tier distribution for pie chart
   const tierDistributionData = useMemo(() => {
@@ -223,7 +245,23 @@ export default function UserAnalytics() {
               Insights and statistics for your kuji draws
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Event Session Filter */}
+            {uniqueEvents.length > 0 && (
+              <select
+                value={selectedEvent}
+                onChange={(e) => setSelectedEvent(e.target.value)}
+                className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="all">All Events</option>
+                {uniqueEvents.map(event => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {/* Time Period Filter */}
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(Number(e.target.value))}

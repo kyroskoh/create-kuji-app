@@ -177,7 +177,7 @@ export default function useLocalStorageDAO() {
     
     const newSession = {
       eventId: `event-${Date.now()}`,
-      eventName: eventName || `Event ${settings.nextSessionNumber}`,
+      eventName: eventName || `Kuji Event ${new Date().toLocaleDateString()}`,
       startTime: new Date().toISOString(),
       endTime: null,
       status: 'ACTIVE',
