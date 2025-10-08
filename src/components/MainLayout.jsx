@@ -14,6 +14,12 @@ export default function MainLayout({ children }) {
   const isActive = (page) => {
     if (!user) return false;
     const expectedPath = `/${user.username}/${page}`;
+    
+    // For manage page, also match all manage sub-routes
+    if (page === "manage") {
+      return location.pathname.startsWith(`/${user.username}/manage`);
+    }
+    
     return location.pathname === expectedPath;
   };
   
