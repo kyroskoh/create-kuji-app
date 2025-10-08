@@ -2,7 +2,12 @@ import axios from 'axios';
 import localforage from 'localforage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-console.log('🌐 API Base URL:', API_BASE_URL, API_BASE_URL === '/api' ? '(via proxy)' : '(direct)');
+console.log('🌐 Environment variables:');
+console.log('   VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('   MODE:', import.meta.env.MODE);
+console.log('   DEV:', import.meta.env.DEV);
+console.log('🌐 Final API_BASE_URL:', API_BASE_URL);
+console.log('🌐 Using proxy?', API_BASE_URL === '/api' ? 'YES' : 'NO');
 
 // Create axios instance
 const api = axios.create({
