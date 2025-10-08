@@ -22,13 +22,15 @@ export function BrandingProvider({ children }) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Check if current route is a user-specific draw or stock page only
-  const isUserDrawOrStockPage = () => {
+  // Check if current route should apply branding
+  const shouldApplyBrandingOnRoute = () => {
     const path = location.pathname;
-    // Only match /{username}/draw and /{username}/stock pages
-    // Examples: /demo/draw, /demo/stock, /john/draw, /john/stock
-    const drawOrStockPattern = /^\/[^/]+\/(draw|stock)$/;
-    return drawOrStockPattern.test(path);
+    // Apply branding on:
+    // 1. User-specific draw pages: /{username}/draw
+    // 2. User-specific stock pages: /{username}/stock  
+    // 3. Branding management page: /{username}/manage/branding (for live preview)
+    const brandingRoutes = /^\/[^/]+\/(draw|stock)$|^\/[^/]+\/manage\/branding$/;
+    return brandingRoutes.test(path);
   };
 
   // Load branding from LocalForage
@@ -41,15 +43,15 @@ export function BrandingProvider({ children }) {
         if (mounted) {
           setBrandingState(data);
           
-          // Check if user has access to custom branding AND if we're on draw/stock page
+          // Check if user has access to custom branding AND if we're on a branding-enabled page
           const plan = user?.subscriptionPlan || 'free';
           const hasBrandingAccess = hasCustomBranding(plan);
-          const isOnDrawOrStockPage = isUserDrawOrStockPage();
-          const shouldApplyBranding = hasBrandingAccess && isOnDrawOrStockPage;
+          const isOnBrandingEnabledPage = shouldApplyBrandingOnRoute();
+          const shouldApplyBranding = hasBrandingAccess && isOnBrandingEnabledPage;
           
           console.log('🎨 Branding Context - Route Check:', {
             path: location.pathname,
-            isDrawOrStockPage: isOnDrawOrStockPage,
+            isOnBrandingEnabledPage,
             hasBrandingAccess,
             shouldApplyBranding,
             plan
@@ -78,7 +80,7 @@ export function BrandingProvider({ children }) {
   useEffect(() => {
     if (!branding || !isEnabled) {
       // Set default theme values instead of removing properties
-      console.log('🎨 Using default branding colors (draw/stock page:', isUserDrawOrStockPage(), ', enabled:', isEnabled, ')');
+      console.log('🎨 Using default branding colors (branding-enabled page:', shouldApplyBrandingOnRoute(), ', enabled:', isEnabled, ')');
       document.documentElement.style.setProperty('--brand-primary', '#3b82f6');
       document.documentElement.style.setProperty('--brand-secondary', '#8b5cf6');
       document.documentElement.style.setProperty('--brand-accent', '#06b6d4');

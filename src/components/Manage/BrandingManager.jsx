@@ -261,6 +261,15 @@ export default function BrandingManager() {
       }
 
       await updateBranding(formData);
+      
+      // Force a small delay to ensure CSS custom properties are applied
+      setTimeout(() => {
+        console.log('🎨 Branding saved and CSS should be updated. Current CSS vars:');
+        console.log('  --brand-primary:', getComputedStyle(document.documentElement).getPropertyValue('--brand-primary'));
+        console.log('  --brand-secondary:', getComputedStyle(document.documentElement).getPropertyValue('--brand-secondary'));
+        console.log('  --brand-accent:', getComputedStyle(document.documentElement).getPropertyValue('--brand-accent'));
+      }, 100);
+      
       if (userHasBetaAccess) {
         toast.success('🚀 Beta branding saved successfully! Thanks for testing new features!');
       } else {
@@ -680,7 +689,10 @@ export default function BrandingManager() {
 
           {/* Right Column - Live Preview */}
           <div className="bg-slate-900 rounded-lg border border-slate-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Live Preview</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-lg font-semibold text-white">Live Preview</h3>
+              <span className="text-xs text-slate-400">(Form Data)</span>
+            </div>
             <div 
               className="rounded-lg overflow-hidden border border-slate-700"
               style={{
@@ -742,6 +754,40 @@ export default function BrandingManager() {
                   </div>
                 )}
               </div>
+            </div>
+            
+            {/* Applied Branding Preview (CSS Custom Properties) */}
+            <div className="mt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="text-sm font-semibold text-slate-300">Applied Branding</h4>
+                <span className="text-xs text-slate-400">(CSS Variables)</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <button 
+                  className="py-2 px-3 rounded text-white text-sm font-medium transition-colors" 
+                  style={{ backgroundColor: 'var(--brand-primary)' }}
+                  disabled
+                >
+                  Primary
+                </button>
+                <button 
+                  className="py-2 px-3 rounded text-white text-sm font-medium transition-colors" 
+                  style={{ backgroundColor: 'var(--brand-secondary)' }}
+                  disabled
+                >
+                  Secondary
+                </button>
+                <button 
+                  className="py-2 px-3 rounded text-white text-sm font-medium transition-colors" 
+                  style={{ backgroundColor: 'var(--brand-accent)' }}
+                  disabled
+                >
+                  Accent
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                These buttons use CSS custom properties that are applied globally after saving.
+              </p>
             </div>
           </div>
         </div>
