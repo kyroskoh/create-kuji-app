@@ -146,7 +146,7 @@ export default function DemoStock() {
           </button>
           <br />
           <Link
-            to="/demo"
+            to="/demo-page"
             className="inline-block mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
           >
             ← Back to Demo
@@ -199,7 +199,7 @@ export default function DemoStock() {
             View available prizes and their probabilities (Public Demo)
           </p>
           <Link
-            to="/demo"
+            to="/demo-page"
             className="inline-block px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors"
           >
             ← Back to Demo
@@ -324,7 +324,7 @@ export default function DemoStock() {
                 Refresh Stock Data
               </button>
               <Link
-                to="/demo"
+                to="/demo-page"
                 className="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors"
               >
                 Try Demo Login 🎮
@@ -343,7 +343,7 @@ export default function DemoStock() {
               The demo user hasn't set up any prizes yet. Try the demo login to manage prizes!
             </p>
             <Link
-              to="/demo"
+              to="/demo-page"
               className="inline-block px-8 py-3 bg-purple-700 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors"
             >
               Try Demo Login 🎮

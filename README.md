@@ -105,6 +105,18 @@ npm run dev
 
 Then open http://localhost:5173 in your browser.
 
+## Demo Routing Structure
+
+The application provides several demo routes for easy exploration:
+
+- **`/demo-page`** – Main demo landing page with features showcase, tech stack info, and demo login credentials
+- **`/demo`** – Redirects to `/demo/stock` for backward compatibility
+- **`/demo/stock`** – Demo user's public stock page (follows standard `/{username}/stock` pattern)
+- **Home page "🎮 Try Live Demo" button** – Links to `/demo-page`
+- **Navigation bar links** – "Try Demo 🎮" and "Demo Stock 📦" (visible when not logged in)
+
+The demo stock page uses the same routing pattern as regular users (`/{username}/stock`) where "demo" is treated as a username, ensuring consistency across the application.
+
 ### Demo Credentials
 
 - **Demo User**: username `demo`, password `Demo123!`

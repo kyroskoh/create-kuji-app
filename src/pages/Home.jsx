@@ -213,7 +213,7 @@ export default function Home() {
           {t("home.description")}
         </p>
         <div className="flex flex-col gap-4 pt-4">
-          <Link to="/demo" className="block w-full">
+          <Link to="/demo-page" className="block w-full">
             <button className="w-full bg-gradient-to-r from-purple-700 to-blue-700 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
               🎮 Try Live Demo
             </button>
