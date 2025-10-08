@@ -124,16 +124,30 @@ export default function LineChart({
         .text(d => `${d.x.toLocaleDateString()}: ${d.y}`);
     }
 
-    // X axis
+    // X axis with better date formatting
+    const xAxis = d3.axisBottom(x)
+      .ticks(Math.min(6, formattedData.length))
+      .tickFormat(d3.timeFormat('%b %d'));
+    
     svg.append('g')
       .attr('transform', `translate(0,${chartHeight})`)
-      .call(d3.axisBottom(x).ticks(6))
-      .style('color', '#94a3b8');
+      .call(xAxis)
+      .selectAll('text')
+      .style('fill', '#94a3b8')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .attr('dx', '-.8em')
+      .attr('dy', '.15em');
 
-    // Y axis
+    // Y axis with better formatting
+    const yAxis = d3.axisLeft(y)
+      .ticks(5)
+      .tickFormat(d => d % 1 === 0 ? d : ''); // Only show whole numbers
+    
     svg.append('g')
-      .call(d3.axisLeft(y).ticks(5))
-      .style('color', '#94a3b8');
+      .call(yAxis)
+      .selectAll('text')
+      .style('fill', '#94a3b8');
 
     // Y axis label
     if (yLabel) {

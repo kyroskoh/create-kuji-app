@@ -88,6 +88,17 @@ export function tierSwatchStyle(colorId) {
 }
 
 /**
+ * Get the hex color value for a tier
+ * @param {string} tier - The tier identifier
+ * @param {Object} tierColors - The tierColors object from settings
+ * @returns {string} Hex color value
+ */
+export function getTierColorHex(tier, tierColors) {
+  const palette = resolveColor(tier, tierColors);
+  return palette.hex;
+}
+
+/**
  * Get tier order based on settings and subscription plan
  * For Advanced/Pro plans with custom tier order: uses the order from tierColors object
  * For Free/Basic plans or no custom order: uses alphabetical sorting

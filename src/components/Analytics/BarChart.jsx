@@ -11,11 +11,13 @@ export default function BarChart({
   xKey = 'label',
   yKey = 'value',
   color = '#3b82f6',
+  colorKey = null, // Optional: key to get color from data
   height = 300,
   margin = { top: 20, right: 30, bottom: 60, left: 60 },
   xLabel = '',
   yLabel = '',
-  horizontal = false
+  horizontal = false,
+  showLabelsOnHover = false // New option to hide x-axis labels and show on hover
 }) {
   const chartRef = useRef(null);
 
@@ -37,7 +39,10 @@ export default function BarChart({
 
     const formattedData = data.map(d => ({
       label: String(d[xKey] || ''),
-      value: Number(d[yKey]) || 0
+      value: Number(d[yKey]) || 0,
+      color: colorKey && d[colorKey] ? d[colorKey] : color,
+      fullLabel: d.fullLabel || String(d[xKey] || ''),
+      tier: d.tier || null
     }));
 
     if (!horizontal) {
@@ -52,6 +57,12 @@ export default function BarChart({
         .nice()
         .range([chartHeight, 0]);
 
+      // Create tooltip
+      const tooltip = d3.select(chartRef.current)
+        .append('div')
+        .attr('class', 'absolute hidden bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white shadow-lg pointer-events-none z-50')
+        .style('position', 'absolute');
+
       // Add bars
       svg.selectAll('.bar')
         .data(formattedData)
@@ -62,28 +73,41 @@ export default function BarChart({
         .attr('y', d => y(d.value))
         .attr('width', x.bandwidth())
         .attr('height', d => chartHeight - y(d.value))
-        .attr('fill', color)
+        .attr('fill', d => d.color)
         .attr('rx', 4)
         .style('cursor', 'pointer')
-        .on('mouseover', function() {
+        .on('mouseover', function(event, d) {
           d3.select(this).attr('opacity', 0.8);
+          tooltip
+            .style('display', 'block')
+            .html(`<div class="font-semibold">${d.fullLabel || d.label}</div><div class="text-slate-400 text-xs mt-1">Count: ${d.value}${d.tier ? ` • Tier ${d.tier}` : ''}</div>`);
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 10) + 'px');
         })
         .on('mouseout', function() {
           d3.select(this).attr('opacity', 1);
-        })
-        .append('title')
-        .text(d => `${d.label}: ${d.value}`);
+          tooltip.style('display', 'none');
+        });
 
       // X axis
-      svg.append('g')
+      const xAxis = svg.append('g')
         .attr('transform', `translate(0,${chartHeight})`)
-        .call(d3.axisBottom(x))
-        .selectAll('text')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em')
-        .attr('transform', 'rotate(-45)')
-        .style('fill', '#94a3b8');
+        .call(d3.axisBottom(x));
+      
+      if (showLabelsOnHover) {
+        // Hide x-axis labels, they'll show in tooltip
+        xAxis.selectAll('text').remove();
+      } else {
+        xAxis.selectAll('text')
+          .style('text-anchor', 'end')
+          .attr('dx', '-.8em')
+          .attr('dy', '.15em')
+          .attr('transform', 'rotate(-45)')
+          .style('fill', '#94a3b8');
+      }
 
       // Y axis
       svg.append('g')
@@ -114,6 +138,12 @@ export default function BarChart({
         .nice()
         .range([0, width]);
 
+      // Create tooltip for horizontal bars
+      const tooltip = d3.select(chartRef.current)
+        .append('div')
+        .attr('class', 'absolute hidden bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white shadow-lg pointer-events-none z-50')
+        .style('position', 'absolute');
+
       // Add bars
       svg.selectAll('.bar')
         .data(formattedData)
@@ -124,22 +154,35 @@ export default function BarChart({
         .attr('x', 0)
         .attr('height', y.bandwidth())
         .attr('width', d => x(d.value))
-        .attr('fill', color)
+        .attr('fill', d => d.color)
         .attr('rx', 4)
         .style('cursor', 'pointer')
-        .on('mouseover', function() {
+        .on('mouseover', function(event, d) {
           d3.select(this).attr('opacity', 0.8);
+          tooltip
+            .style('display', 'block')
+            .html(`<div class="font-semibold">${d.fullLabel || d.label}</div><div class="text-slate-400 text-xs mt-1">Count: ${d.value}${d.tier ? ` • Tier ${d.tier}` : ''}</div>`);
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 10) + 'px');
         })
         .on('mouseout', function() {
           d3.select(this).attr('opacity', 1);
-        })
-        .append('title')
-        .text(d => `${d.label}: ${d.value}`);
+          tooltip.style('display', 'none');
+        });
 
       // Y axis (labels on left)
-      svg.append('g')
-        .call(d3.axisLeft(y))
-        .style('color', '#94a3b8');
+      const yAxis = svg.append('g')
+        .call(d3.axisLeft(y));
+      
+      if (showLabelsOnHover) {
+        // Hide y-axis labels, they'll show in tooltip
+        yAxis.selectAll('text').remove();
+      } else {
+        yAxis.style('color', '#94a3b8');
+      }
 
       // X axis (values on bottom)
       svg.append('g')
@@ -159,7 +202,7 @@ export default function BarChart({
       }
     }
 
-  }, [data, xKey, yKey, color, height, margin, xLabel, yLabel, horizontal]);
+  }, [data, xKey, yKey, color, colorKey, height, margin, xLabel, yLabel, horizontal, showLabelsOnHover]);
 
   return <div ref={chartRef} className="w-full" style={{ minHeight: height }} />;
 }

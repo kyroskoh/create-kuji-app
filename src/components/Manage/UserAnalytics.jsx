@@ -3,6 +3,7 @@ import { hasAnalyticsAccess } from '../../utils/subscriptionPlans';
 import { useAuth } from '../../utils/AuthContext';
 import useLocalStorageDAO from '../../hooks/useLocalStorageDAO';
 import { generateAnalyticsSummary } from '../../utils/analytics';
+import { getTierColorHex } from '../../utils/tierColors';
 import LineChart from '../Analytics/LineChart';
 import BarChart from '../Analytics/BarChart';
 import PieChart from '../Analytics/PieChart';
@@ -63,13 +64,20 @@ export default function UserAnalytics() {
 
   // Transform most drawn prizes for bar chart
   const mostDrawnPrizesData = useMemo(() => {
-    if (!analytics?.prizes?.mostDrawn) return [];
-    return analytics.prizes.mostDrawn.slice(0, 10).map(item => ({
-      label: `${item.prize.substring(0, 20)}${item.prize.length > 20 ? '...' : ''}`,
-      value: item.count,
-      fullLabel: item.prize,
-      tier: item.tier
-    }));
+    if (!analytics?.prizes?.mostDrawn || !analytics?.settings?.tierColors) return [];
+    return analytics.prizes.mostDrawn
+      .filter(item => item.prize) // Filter out items with undefined prize
+      .slice(0, 10)
+      .map(item => {
+        const tierColor = getTierColorHex(item.tier, analytics.settings.tierColors);
+        return {
+          label: `${item.prize.substring(0, 15)}${item.prize.length > 15 ? '...' : ''}`,
+          value: item.count,
+          fullLabel: item.prize,
+          tier: item.tier,
+          tierColor: tierColor
+        };
+      });
   }, [analytics]);
 
   // Transform frequency data for area chart
@@ -391,10 +399,11 @@ export default function UserAnalytics() {
             data={mostDrawnPrizesData}
             xKey="label"
             yKey="value"
-            color="#06b6d4"
+            colorKey="tierColor"
             height={350}
             yLabel="Draw Count"
             horizontal={true}
+            showLabelsOnHover={true}
           />
         </div>
       )}

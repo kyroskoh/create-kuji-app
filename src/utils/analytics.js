@@ -211,7 +211,7 @@ export function calculateSessionStats(history) {
  * @returns {Object} Revenue stats
  */
 export function calculateRevenueStats(history, presets) {
-  if (!history.length || !presets.length) {
+  if (!history.length) {
     return {
       totalRevenue: 0,
       avgRevenuePerSession: 0,
@@ -220,7 +220,7 @@ export function calculateRevenueStats(history, presets) {
     };
   }
   
-  // Create preset lookup map
+  // Create preset lookup map for sessions that used presets
   const presetMap = {};
   presets.forEach(preset => {
     presetMap[preset.label] = preset.price || 0;
@@ -229,24 +229,42 @@ export function calculateRevenueStats(history, presets) {
   let totalRevenue = 0;
   const presetRevenue = {};
   const revenueOverTime = [];
+  let cumulativeRevenue = 0;
   
   history.forEach(session => {
-    const label = session.label || 'Custom';
-    const price = presetMap[label] || 0;
-    totalRevenue += price;
+    let sessionRevenue = 0;
     
-    // Track revenue by preset
+    // Calculate revenue based on individual draws and their tier pricing
+    if (session.draws && Array.isArray(session.draws)) {
+      session.draws.forEach(draw => {
+        // Check if draw has tier-specific pricing (future enhancement)
+        const drawPrice = draw.price || 0;
+        sessionRevenue += drawPrice;
+      });
+    }
+    
+    // If no per-draw pricing, fall back to preset pricing
+    if (sessionRevenue === 0) {
+      const label = session.label || 'Custom';
+      sessionRevenue = presetMap[label] || 0;
+    }
+    
+    totalRevenue += sessionRevenue;
+    cumulativeRevenue += sessionRevenue;
+    
+    // Track revenue by preset/label
+    const label = session.label || 'Custom';
     if (!presetRevenue[label]) {
       presetRevenue[label] = { label, revenue: 0, count: 0 };
     }
-    presetRevenue[label].revenue += price;
+    presetRevenue[label].revenue += sessionRevenue;
     presetRevenue[label].count++;
     
     // Track revenue over time
     revenueOverTime.push({
       date: new Date(session.timestamp),
-      revenue: price,
-      cumulative: totalRevenue
+      revenue: sessionRevenue,
+      cumulative: cumulativeRevenue
     });
   });
   

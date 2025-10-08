@@ -137,11 +137,31 @@ export async function syncSettings(req: Request, res: Response) {
       settings: userSettings
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error syncing settings:', error);
+    
+    // Check for database permission errors
+    if (error.message && error.message.includes('readonly database')) {
+      return res.status(500).json({
+        error: 'DATABASE_READONLY',
+        message: 'Database is read-only. Please check file permissions.',
+        details: 'The database file does not have write permissions. Contact your system administrator.'
+      });
+    }
+    
+    // Check for connector errors
+    if (error.code === 'P2002' || error.code === 'P2003') {
+      return res.status(409).json({
+        error: 'DATABASE_CONSTRAINT',
+        message: 'Database constraint violation',
+        details: error.message
+      });
+    }
+    
     return res.status(500).json({
       error: 'INTERNAL_ERROR',
-      message: 'Failed to sync settings'
+      message: 'Failed to sync settings',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
