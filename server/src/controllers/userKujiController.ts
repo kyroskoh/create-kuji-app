@@ -362,6 +362,54 @@ export async function getStockPageStatus(req: Request, res: Response) {
 }
 
 /**
+ * Get user's pricing presets from database (authenticated)
+ * GET /api/users/:username/presets
+ */
+export async function getUserPresets(req: Request, res: Response) {
+  try {
+    const { username } = req.params;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username },
+      include: {
+        pricingPresets: {
+          orderBy: {
+            createdAt: 'asc'
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Transform presets to frontend format
+    const presets = user.pricingPresets.map(preset => ({
+      label: preset.label,
+      draw_count: preset.drawCount,
+      bonus_draws: preset.bonusDraws,
+      price: preset.price
+    }));
+
+    return res.status(200).json({
+      presets
+    });
+
+  } catch (error) {
+    console.error('Error getting user presets:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to get user presets'
+    });
+  }
+}
+
+/**
  * Get user's settings from database (authenticated)
  * GET /api/users/:username/settings
  */

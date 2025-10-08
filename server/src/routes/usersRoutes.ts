@@ -23,6 +23,7 @@ router.post('/:username/sync-presets', requireAuth, userKujiController.syncPrici
 // Data retrieval endpoints
 router.get('/:username/prizes', requireAuth, userKujiController.getUserPrizes);
 router.get('/:username/settings', requireAuth, userKujiController.getUserSettings); // Authenticated - full settings
+router.get('/:username/presets', requireAuth, userKujiController.getUserPresets); // Authenticated - pricing presets
 
 // Branding endpoints
 router.get('/:username/branding', brandingController.getBranding); // Public endpoint

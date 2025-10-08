@@ -243,6 +243,96 @@ export default function Settings() {
       event.target.value = "";
     }
   };
+  const handleSyncFromDatabase = async () => {
+    if (!user?.username) {
+      setStatusMessage("❌ You must be logged in to sync from database.");
+      return;
+    }
+
+    if (!window.confirm("This will replace your local data with data from the database. Continue?")) {
+      return;
+    }
+
+    try {
+      setStatusMessage("⏳ Syncing from database...");
+      
+      // Import API functions
+      const { getUserPrizes, getUserSettings, getUserPresets } = await import('../../services/api.js');
+      
+      // Fetch data from backend
+      const [prizesResponse, settingsResponse, presetsResponse] = await Promise.all([
+        getUserPrizes(user.username),
+        getUserSettings(user.username),
+        getUserPresets(user.username).catch(() => ({ data: { presets: [] } })) // Fallback if presets endpoint fails
+      ]);
+
+      // Transform backend prizes format to frontend format
+      const backendPrizes = prizesResponse.data.prizes || [];
+      const transformedPrizes = backendPrizes.map(prize => ({
+        prize_name: prize.prizeName,
+        tier: prize.tier,
+        quantity: prize.remainingQuantity ?? prize.quantity,
+        weight: prize.weight,
+        sku: prize.sku || '',
+        description: prize.description || ''
+      }));
+
+      // Get presets
+      const presets = presetsResponse.data.presets || [];
+
+      // Update local storage
+      await setPrizes(transformedPrizes);
+      await setSettings(settingsResponse.data);
+      await setPricing(presets);
+
+      // Update local state
+      setLocalSettings(settingsResponse.data);
+      setCountryQuery(settingsResponse.data.country ?? "");
+      
+      const tiers = settingsResponse.data.tierColors ? Object.keys(settingsResponse.data.tierColors) : DEFAULT_TIER_SEQUENCE;
+      const shouldSort = !isTierSortingAllowed(settingsResponse.data.subscriptionPlan || "free");
+      const orderedTiers = shouldSort ? tiers.sort(compareTierLabels) : tiers;
+      setActiveTier(orderedTiers[0] ?? "S");
+
+      setStatusMessage("✅ Successfully synced from database! (Prizes, Settings, Presets)");
+    } catch (error) {
+      console.error('Sync from database failed:', error);
+      setStatusMessage("❌ Failed to sync from database. " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleSyncToDatabase = async () => {
+    if (!user?.username) {
+      setStatusMessage("❌ You must be logged in to sync to database.");
+      return;
+    }
+
+    try {
+      setStatusMessage("⏳ Syncing to database...");
+      
+      // Get current local data
+      const [prizeData, currentSettings, pricingData] = await Promise.all([
+        getPrizes(),
+        getSettings(),
+        getPricing()
+      ]);
+
+      // Sync to backend using existing sync service
+      const { syncUserData } = await import('../../services/syncService.js');
+      
+      await Promise.all([
+        syncUserData(user.username, 'prizes', prizeData),
+        syncUserData(user.username, 'settings', currentSettings),
+        syncUserData(user.username, 'presets', pricingData)
+      ]);
+
+      setStatusMessage("✅ Successfully synced to database! (Prizes, Settings, Presets)");
+    } catch (error) {
+      console.error('Sync to database failed:', error);
+      setStatusMessage("❌ Failed to sync to database. " + (error.response?.data?.message || error.message));
+    }
+  };
+
   const handleExportAll = async () => {
     const [prizeData, pricingData, historyData, currentSettings] = await Promise.all([
       getPrizes(),
@@ -790,35 +880,74 @@ export default function Settings() {
         </div>
       </div>
       <div className="space-y-3">
-        <h3 className="text-xl font-semibold text-white">Maintenance</h3>
+        <h3 className="text-xl font-semibold text-white">Data Sync & Maintenance</h3>
         <p className="text-sm text-slate-400">
-          Export your data regularly so you can restore sessions after resets.
+          Sync your data with the cloud database or export/import locally.
         </p>
+        
+        {/* Database Sync Section */}
+        {user?.username && (
+          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+            <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              </svg>
+              Cloud Database Sync
+            </h4>
+            <p className="text-xs text-slate-400 mb-3">
+              Keep your local data in sync with the cloud database. Use "Sync from Database" to pull the latest data from the server.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                type="button" 
+                className="rounded-md px-4 py-2 text-sm font-semibold bg-blue-600/80 text-white hover:bg-blue-600 hover:shadow-lg transition-all flex items-center gap-2" 
+                onClick={handleSyncFromDatabase}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Sync from Database
+              </button>
+              <button 
+                type="button" 
+                className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-700 text-white hover:bg-slate-600 hover:shadow-lg transition-all flex items-center gap-2" 
+                onClick={handleSyncToDatabase}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Sync to Database
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Local Import/Export Section */}
         <div className="flex flex-wrap items-center gap-3">
           <button 
             type="button" 
-            className="bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 
+            className="rounded-md px-4 py-2 text-sm font-semibold bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 
             onClick={handleImportAllClick}
           >
             Import All Data
           </button>
           <button 
             type="button" 
-            className="bg-create-primary/80 text-white hover:bg-create-primary hover:shadow-lg transition-all" 
+            className="rounded-md px-4 py-2 text-sm font-semibold bg-create-primary/80 text-white hover:bg-create-primary hover:shadow-lg transition-all" 
             onClick={handleExportAll}
           >
             Export All Data
           </button>
           <button 
             type="button" 
-            className="bg-red-600/80 text-white hover:bg-red-600 hover:shadow-lg transition-all" 
+            className="rounded-md px-4 py-2 text-sm font-semibold bg-red-600/80 text-white hover:bg-red-600 hover:shadow-lg transition-all" 
             onClick={handleResetClick}
           >
             Reset Session Data
           </button>
           <button 
             type="button" 
-            className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
+            className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
             onClick={handleResetCounter}
           >
             Reset Session Counter
