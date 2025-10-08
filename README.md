@@ -10,7 +10,7 @@ A full-featured kuji drawing application with user authentication, admin dashboa
 - **Prize Drawing System** – Weighted random engine with configurable tiers (Tier S and beyond) plus fan/session metadata.
 - **Advanced Weight Modes** – Switch between basic (weight-only) and advanced (weight × quantity × tier priority) probability calculations.
 - **Admin Probability Guidance** – The Prize Pool tab surfaces advanced suggestions and one-click weight recommendations when the advanced system is enabled.
-- **Customizable Tier Palette** – Choose from 30 curated color swatches per tier, reflected across chips, badges, and tables.
+- **Subscription-Based Tier Colors** – Plan-limited color palette access (Free: 1 color, Basic: 5 colors, Advanced: 10 colors, Pro: unlimited + custom hex picker).
 - **Country & Currency Presets** – Region-aware settings with emoji flags, locale formatting, and custom currency overrides.
 - **History Tracking** – Search, filter, and review draw sessions with fan names, queue numbers, and per-tier tallies.
 - **Sample Data Import** – Built-in CSV samples for prizes and pricing to bootstrap offline events quickly.
@@ -32,6 +32,11 @@ A full-featured kuji drawing application with user authentication, admin dashboa
 - **Protected Routes** – Role-based access control for admin and authenticated areas
 - **Stock Display** – Public prize pool visualization with tier-based styling
 
+### Development Tools
+- **Minimizable Debug Panel** – Collapsible development panel showing API status, authentication state, and environment info
+- **Pro Color Wheel** – Full-featured color picker with hex input, presets, and real-time preview for Pro plan users
+- **Subscription Plan Management** – Feature gating based on user subscription level with clear upgrade prompts
+
 ## Technology Stack
 
 ### Frontend
@@ -45,6 +50,7 @@ A full-featured kuji drawing application with user authentication, admin dashboa
 - **3D Graphics** – Three.js for animations
 - **HTTP Client** – Axios with automatic token refresh
 - **CSV Handling** – PapaParse
+- **Color Picker** – react-colorful for Pro plan custom color selection
 
 ### Backend
 - **Runtime** – Node.js 18+ with Express.js
@@ -138,7 +144,7 @@ The Settings page is grouped into four cards:
 
 1. **Region & Currency** – Search for a country (emoji flag included), auto-fill locale and currency, or override with a custom 3–5 letter code.
 2. **Weight Engine** – Toggle between basic (weight only) and advanced (weight × quantity × tier priority). The active mode is displayed across the admin tabs.
-3. **Tier Color Palette** – Select Tier S through Tier L (and beyond), assign one of 30 swatches, or add custom tier codes.
+3. **Tier Color Palette** – Select from plan-limited color swatches (Free: 1, Basic: 5, Advanced: 10, Pro: unlimited + custom hex picker). Pro users can access a full color wheel with hex input and preset colors.
 4. **Maintenance** – Import & Export everything, reset session data, or reset the counter—confirmation dialogs remind you to back up first.
 
 When advanced weighting is enabled, the **Prize Pool** tab displays probability guidance and offers one-click weight recommendations.
@@ -174,9 +180,15 @@ When advanced weighting is enabled, the **Prize Pool** tab displays probability 
 
 - **CSV Format** – Pricing uses whole-dollar amounts (price column). Legacy price_minor columns are still parsed and converted.
 - **Tier Ordering** – Tier S is preconfigured as the top tier; additional tiers follow the custom ordering helper.
-- **Tier Colors** – Choose from 19 color palettes (amber, purple, emerald, etc.) with automatic conversion to hex codes for consistent display.
+- **Subscription Plans** – Four tiers available (Free, Basic $3, Advanced $5, Pro $10) with different feature limits:
+  - Free: 3 tiers max, 1 color, 1-char tier names
+  - Basic: 5 tiers max, 5 colors, 1-char tier names  
+  - Advanced: 10 tiers max, 10 colors, 2-char tier names, tier sorting
+  - Pro: Unlimited tiers/colors, 3-char tier names, custom hex picker, branding
+- **Tier Colors** – Plan-limited access to color palettes with Pro users getting unlimited custom hex colors via color wheel picker.
 - **Emoji Flags** – Flags are derived from ISO country codes to avoid mojibake (for example, MY → 🇲🇾, SG → 🇸🇬).
 - **Username Generation** – Auto-generated usernames follow the format: `{adjective}-{noun}-{4-digit-number}` (e.g., "swift-falcon-4521").
+- **Development Debug Panel** – In development mode, a collapsible debug panel shows API configuration and auth status (minimize with the button in the header).
 
 ## License
 

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **DevDebugPanel Minimization**: Added minimize/restore functionality to the development debug panel with floating icon mode and status indicator
+- **Subscription-Based Tier Colors**: Implemented plan-limited color palette access based on user subscription (Free: 1 color, Basic: 5 colors, Advanced: 10 colors, Pro: unlimited)
+- **Pro Color Wheel**: Full-featured color picker for Pro users with hex input, color wheel, preset colors, and real-time preview
+- **Enhanced Tier Color Management**: Updated tier color utilities to support custom hex colors alongside predefined palette colors
+- **Plan Enforcement**: Added visual feedback and upgrade prompts when users try to access locked colors or features
+
+### Enhanced
+- Updated subscription plans configuration with `tierColorLimit` and `customTierColors` feature flags
+- Improved tier color rendering to support both palette-based and custom hex colors
+- Added helper functions for checking Pro plan access and color limits
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

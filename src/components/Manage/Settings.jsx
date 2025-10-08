@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass } from "../../utils/tierColors.js";
+import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass, tierSwatchStyle } from "../../utils/tierColors.js";
 import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
-import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync } from "../../utils/subscriptionPlans.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync, canUseCustomTierColors } from "../../utils/subscriptionPlans.js";
+import ProColorWheel from '../ProColorWheel.jsx';
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -51,6 +52,7 @@ export default function Settings() {
   const [tierNameError, setTierNameError] = useState("");
   const [activeTier, setActiveTier] = useState("S");
   const [draggedTier, setDraggedTier] = useState(null);
+  const [customColors, setCustomColors] = useState({}); // Custom hex colors for tiers
   const fileInputRef = useRef(null);
 
   // Popular countries for sample display (Asia-focused with major global currencies)
@@ -115,6 +117,11 @@ export default function Settings() {
     Object.keys(tierColors).forEach((key) => keys.add(key));
     return Array.from(keys).sort(compareTierLabels);
   }, [tierColors, tierSortingAllowed]);
+
+  // Check if user has Pro access for custom tier colors
+  const hasCustomTierColors = useMemo(() => {
+    return canUseCustomTierColors(settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
 
   // Get available colors and weight modes based on subscription plan
   const availableColors = useMemo(() => {
@@ -452,8 +459,20 @@ export default function Settings() {
 
   const handleTierColorChange = (colorId) => {
     if (!activeTier) return;
+    
+    // Check if it's a custom hex color (starts with #)
+    if (colorId.startsWith('#')) {
+      // For custom colors, store the hex value directly in tierColors
+      // and also track it separately for the Pro color picker
+      setCustomColors(prev => ({ ...prev, [activeTier]: colorId }));
+    }
+    
     const updatedColors = { ...tierColors, [activeTier]: colorId };
     updateSettings({ tierColors: updatedColors });
+  };
+
+  const handleCustomColorChange = (hexColor) => {
+    handleTierColorChange(hexColor);
   };
 
   const handleWeightModeChange = (mode) => {
@@ -857,17 +876,25 @@ export default function Settings() {
               <button
                 key={palette.id}
                 type="button"
-                onClick={() => isAvailable && handleTierColorChange(palette.id)}
-                disabled={!isAvailable}
+                onClick={() => {
+                  if (isAvailable) {
+                    handleTierColorChange(palette.id);
+                  } else {
+                    setStatusMessage("Upgrade to unlock more colors for your tier customization.");
+                  }
+                }}
                 className={`relative flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
                   isSelected
                     ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
                     : isAvailable
                     ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
-                    : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-not-allowed"
+                    : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-pointer opacity-60 hover:opacity-80"
                 }`}
               >
-                <span className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)} ${!isAvailable ? "opacity-40" : ""}`} />
+                <span 
+                  className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)} ${!isAvailable ? "opacity-40" : ""}`}
+                  style={tierSwatchStyle(palette.id)}
+                />
                 <span className="flex flex-col flex-1">
                   <span>{palette.label}</span>
                   <span className={`text-xs font-mono ${
@@ -881,6 +908,17 @@ export default function Settings() {
             );
           })}
         </div>
+        
+        {/* Pro Color Wheel for Custom Colors */}
+        {hasCustomTierColors && activeTier && (
+          <div className="mt-6">
+            <ProColorWheel
+              value={tierColors[activeTier]?.startsWith('#') ? tierColors[activeTier] : '#3b82f6'}
+              onChange={handleCustomColorChange}
+              label={`Custom Color for Tier ${activeTier}`}
+            />
+          </div>
+        )}
       </div>
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Data Sync & Maintenance</h3>

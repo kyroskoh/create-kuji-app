@@ -7,6 +7,7 @@ export const SUBSCRIPTION_PLANS = {
     maxTiers: 3,
     maxTierNameLength: 1,
     maxColors: 1,
+    tierColorLimit: 1,
     tierSorting: false,
     allowedColors: ["amber"], // Only 1 color
     allowedWeightModes: ["basic"],
@@ -21,6 +22,7 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: false,
       customColorNaming: false,
       customPalettePicker: false,
+      customTierColors: false,
       publicStockPage: false, // Cannot publish stock page
       databaseSync: false // No cloud sync
     },
@@ -34,6 +36,7 @@ export const SUBSCRIPTION_PLANS = {
     maxTiers: 5,
     maxTierNameLength: 1,
     maxColors: 5,
+    tierColorLimit: 5,
     tierSorting: false,
     allowedColors: [
       "amber", "sky", "emerald", "purple", "rose"
@@ -50,6 +53,7 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: false,
       customColorNaming: false,
       customPalettePicker: false,
+      customTierColors: false,
       publicStockPage: true, // Can publish stock page
       databaseSync: true // Cloud sync enabled
     },
@@ -63,6 +67,7 @@ export const SUBSCRIPTION_PLANS = {
     maxTiers: 10,
     maxTierNameLength: 2,
     maxColors: 10,
+    tierColorLimit: 10,
     tierSorting: true,
     allowedColors: [
       "amber", "sky", "emerald", "purple", "rose",
@@ -80,6 +85,7 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: true, // Can use custom hex codes
       customColorNaming: true, // Can name custom colors
       customPalettePicker: false,
+      customTierColors: false,
       publicStockPage: true, // Can publish stock page
       customBranding: false, // No custom branding
       databaseSync: true, // Cloud sync enabled
@@ -96,6 +102,7 @@ export const SUBSCRIPTION_PLANS = {
     maxTiers: Infinity,
     maxTierNameLength: 3,
     maxColors: Infinity, // Unlimited colors
+    tierColorLimit: Infinity,
     tierSorting: true,
     allowedColors: null, // null means all colors
     allowedWeightModes: ["basic", "advanced"],
@@ -110,6 +117,7 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: true, // Can use custom hex codes
       customColorNaming: true, // Can name custom colors
       customPalettePicker: true, // Full palette picker
+      customTierColors: true, // Can use custom tier colors
       prioritySupport: true,
       customBranding: true, // Full branding customization
       publicStockPage: true, // Can publish stock page
@@ -237,4 +245,22 @@ export function hasCustomBranding(planId) {
 // Check if database sync is available for plan
 export function hasDatabaseSync(planId) {
   return isFeatureAvailable('databaseSync', planId);
+}
+
+// Get tier color limit for a plan
+export function getTierColorLimit(planId) {
+  const plan = SUBSCRIPTION_PLANS[planId.toUpperCase()];
+  if (!plan) return 1; // Default to 1 color
+  
+  return plan.tierColorLimit || 1;
+}
+
+// Check if custom tier colors are available for plan
+export function canUseCustomTierColors(planId) {
+  return isFeatureAvailable('customTierColors', planId);
+}
+
+// Check if custom palette picker is available for plan
+export function canUseCustomPalette(planId) {
+  return isFeatureAvailable('customPalettePicker', planId);
 }

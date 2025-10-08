@@ -13,7 +13,23 @@ export const DEFAULT_TIER_COLOR_MAP = DEFAULT_TIER_SEQUENCE.reduce((acc, tier, i
 
 const FALLBACK_PALETTE = COLOR_PALETTE[0];
 
-const getPaletteById = (id) => COLOR_PALETTE.find((palette) => palette.id === id) || FALLBACK_PALETTE;
+const getPaletteById = (id) => {
+  // Check if it's a custom hex color
+  if (typeof id === 'string' && id.startsWith('#')) {
+    // Create a dynamic palette for custom hex colors
+    return {
+      id: id,
+      label: 'Custom',
+      hex: id,
+      badgeClass: `border border-slate-400 text-slate-100`,
+      inputClass: `border border-slate-400 focus:border-slate-300 focus:ring-slate-300/40`,
+      chipClass: `border border-slate-400 text-slate-100`,
+      swatchClass: ''
+    };
+  }
+  
+  return COLOR_PALETTE.find((palette) => palette.id === id) || FALLBACK_PALETTE;
+};
 
 const tierPriority = (tier) => {
   const upper = String(tier || "").trim().toUpperCase();
@@ -54,7 +70,21 @@ export function tierChipClass(tier, tierColors) {
 
 export function tierSwatchClass(colorId) {
   const palette = getPaletteById(colorId);
+  
+  // For custom hex colors, return an empty class since we'll use inline styles
+  if (typeof colorId === 'string' && colorId.startsWith('#')) {
+    return '';
+  }
+  
   return palette.swatchClass;
+}
+
+// Helper function to get inline style for custom colors
+export function tierSwatchStyle(colorId) {
+  if (typeof colorId === 'string' && colorId.startsWith('#')) {
+    return { backgroundColor: colorId };
+  }
+  return {};
 }
 
 /**
