@@ -868,6 +868,18 @@ export default function Settings() {
             {canAddMoreTiers ? "Add tier" : "🔒 Upgrade to add more"}
           </button>
         </div>
+        
+        {/* Pro Color Wheel for Custom Colors - Moved to top */}
+        {hasCustomTierColors && activeTier && (
+          <div className="mb-6">
+            <ProColorWheel
+              value={tierColors[activeTier]?.startsWith('#') ? tierColors[activeTier] : '#3b82f6'}
+              onChange={handleCustomColorChange}
+              label={`Custom Color for Tier ${activeTier}`}
+            />
+          </div>
+        )}
+        
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {COLOR_PALETTE.map((palette) => {
             const isAvailable = availableColors.some(c => c.id === palette.id);
@@ -908,17 +920,6 @@ export default function Settings() {
             );
           })}
         </div>
-        
-        {/* Pro Color Wheel for Custom Colors */}
-        {hasCustomTierColors && activeTier && (
-          <div className="mt-6">
-            <ProColorWheel
-              value={tierColors[activeTier]?.startsWith('#') ? tierColors[activeTier] : '#3b82f6'}
-              onChange={handleCustomColorChange}
-              label={`Custom Color for Tier ${activeTier}`}
-            />
-          </div>
-        )}
       </div>
       <div className="space-y-3">
         <h3 className="text-xl font-semibold text-white">Data Sync & Maintenance</h3>
