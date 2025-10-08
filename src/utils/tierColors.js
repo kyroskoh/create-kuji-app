@@ -17,13 +17,14 @@ const getPaletteById = (id) => {
   // Check if it's a custom hex color
   if (typeof id === 'string' && id.startsWith('#')) {
     // Create a dynamic palette for custom hex colors
+    // Use minimal CSS classes - inline styles will handle colors
     return {
       id: id,
       label: 'Custom',
       hex: id,
-      badgeClass: `border border-slate-400 text-slate-100`,
-      inputClass: `border border-slate-400 focus:border-slate-300 focus:ring-slate-300/40`,
-      chipClass: `border border-slate-400 text-slate-100`,
+      badgeClass: `border text-white`,
+      inputClass: `border focus:ring-2`,
+      chipClass: `border text-white`,
       swatchClass: ''
     };
   }

@@ -35,7 +35,7 @@ const WEIGHT_MODE_LABEL = {
 
 export default function PrizePoolManager() {
   const location = useLocation();
-  const { getPrizes, setPrizes, getSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
+  const { getPrizes, setPrizes, getSettings, setSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
   const { user } = useAuth();
   
   // Get username from URL path (e.g., /demo/manage/prizes -> demo)
@@ -340,26 +340,34 @@ export default function PrizePoolManager() {
   // Create a new tier with default color
   const createNewTier = async (tierName) => {
     try {
+      console.log('🎯 Starting tier creation for:', tierName);
+      
       // Get current settings
       const currentSettings = await getSettings();
       const currentTierColors = currentSettings.tierColors || {};
+      console.log('📋 Current tier colors:', currentTierColors);
       
       // Assign next available color from palette (cycle through colors)
       const existingTierCount = Object.keys(currentTierColors).length;
       const defaultColor = COLOR_PALETTE[existingTierCount % COLOR_PALETTE.length].id;
+      console.log('🎨 Assigned color:', defaultColor, 'to tier:', tierName);
       
       // Add new tier
       const updatedTierColors = {
         ...currentTierColors,
         [tierName]: defaultColor
       };
+      console.log('✅ Updated tier colors:', updatedTierColors);
       
-      // Save to settings
-      await setSettings({ ...currentSettings, tierColors: updatedTierColors });
+      // Save to settings (setSettings will automatically dispatch event)
+      const updatedSettings = { ...currentSettings, tierColors: updatedTierColors };
+      await setSettings(updatedSettings);
       
       // Update local state
       setTierColors(updatedTierColors);
       setAvailableTiers(Object.keys(updatedTierColors));
+      
+      console.log('✨ New tier created:', tierName, '- Event auto-dispatched by setSettings');
       
       // Show success message with link to customize
       const colorLabel = COLOR_PALETTE.find(p => p.id === defaultColor)?.label || defaultColor;
@@ -455,11 +463,19 @@ export default function PrizePoolManager() {
             <div className="flex-1">
               <span className="font-semibold text-white">Available Tiers:</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {availableTiers.map(tier => (
-                  <span key={tier} className={tierChipClass(tier, tierColors)}>
-                    {tier}
-                  </span>
-                ))}
+                {availableTiers.map(tier => {
+                  const hex = getTierColorHex(tier, tierColors);
+                  const isCustomHex = typeof (tierColors?.[tier]) === 'string' && tierColors[tier]?.startsWith('#');
+                  return (
+                    <span 
+                      key={tier} 
+                      className={tierChipClass(tier, tierColors)}
+                      style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                    >
+                      {tier}
+                    </span>
+                  );
+                })}
               </div>
               <div className="mt-2 space-y-1">
                 <p className="text-slate-400">• Type these tier names in the tier column - they'll auto-suggest</p>
@@ -580,23 +596,30 @@ export default function PrizePoolManager() {
               const tierValue = row.tier;
               const isNewTier = tierValue && !availableTiers.includes(tierValue.toUpperCase());
               const validation = tierValue ? validateTierName(tierValue, subscriptionPlan) : { valid: true };
+              
+              // Calculate tier color for this row
+              const hex = getTierColorHex(tierValue, tierColors);
+              const key = String(tierValue || '').toUpperCase();
+              const isCustomHex = typeof (tierColors?.[key]) === 'string' && tierColors[key]?.startsWith('#');
+              const rowBorderStyle = (tierValue && validation.valid && !isNewTier) ? (
+                isCustomHex ? {
+                  borderColor: hex,
+                  boxShadow: `0 0 0 1px ${hex}`
+                } : {
+                  borderColor: hex
+                }
+              ) : undefined;
+              
               return (
                 <tr key={`${row.sku || "row"}-${originalIndex}`} className="hover:bg-slate-900/40">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      {(() => {
-                        const hex = getTierColorHex(tierValue, tierColors);
-                        const key = String(tierValue || '').toUpperCase();
-                        const isCustomHex = typeof (tierColors?.[key]) === 'string' && tierColors[key]?.startsWith('#');
-                        return (
-                          <span
-                            className={tierBadgeClass(tierValue, tierColors)}
-                            style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
-                          >
-                            {(tierValue || "?").toString().toUpperCase()}
-                          </span>
-                        );
-                      })()}
+                      <span
+                        className={tierBadgeClass(tierValue, tierColors)}
+                        style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                      >
+                        {(tierValue || "?").toString().toUpperCase()}
+                      </span>
                       <div className="relative flex-1">
                         <input
                           list={`tier-suggestions-${originalIndex}`}
@@ -605,8 +628,11 @@ export default function PrizePoolManager() {
                               ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20'
                               : !validation.valid && tierValue
                               ? 'border-2 border-red-500 ring-2 ring-red-500/20'
+                              : rowBorderStyle
+                              ? 'border'
                               : tierInputClass(tierValue, tierColors)
                           }`}
+                          style={(!isNewTier && validation.valid) ? rowBorderStyle : undefined}
                           value={tierValue}
                           onChange={(event) => handleCellChange(originalIndex, "tier", event.target.value)}
                           onBlur={(event) => handleTierBlur(originalIndex, event.target.value)}
@@ -630,7 +656,10 @@ export default function PrizePoolManager() {
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                      className={`w-full rounded-md bg-slate-900 px-2 py-1 text-slate-100 focus:outline-none focus:ring-2 ${
+                        rowBorderStyle ? 'border' : 'border border-slate-700 focus:border-create-primary/70 focus:ring-create-primary/30'
+                      }`}
+                      style={rowBorderStyle}
                       value={row.prize_name}
                       onChange={(event) => handleCellChange(originalIndex, "prize_name", event.target.value)}
                     />
@@ -639,7 +668,10 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="0"
-                      className="w-20 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                      className={`w-20 rounded-md bg-slate-900 px-2 py-1 text-right text-slate-100 focus:outline-none focus:ring-2 ${
+                        rowBorderStyle ? 'border' : 'border border-slate-700 focus:border-create-primary/70 focus:ring-create-primary/30'
+                      }`}
+                      style={rowBorderStyle}
                       value={row.quantity}
                       onChange={(event) => handleCellChange(originalIndex, "quantity", event.target.value)}
                     />
@@ -648,14 +680,20 @@ export default function PrizePoolManager() {
                     <input
                       type="number"
                       min="1"
-                      className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                      className={`w-16 rounded-md bg-slate-900 px-2 py-1 text-right text-slate-100 focus:outline-none focus:ring-2 ${
+                        rowBorderStyle ? 'border' : 'border border-slate-700 focus:border-create-primary/70 focus:ring-create-primary/30'
+                      }`}
+                      style={rowBorderStyle}
                       value={row.weight}
                       onChange={(event) => handleCellChange(originalIndex, "weight", event.target.value)}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-28 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                      className={`w-28 rounded-md bg-slate-900 px-2 py-1 text-slate-100 focus:outline-none focus:ring-2 ${
+                        rowBorderStyle ? 'border' : 'border border-slate-700 focus:border-create-primary/70 focus:ring-create-primary/30'
+                      }`}
+                      style={rowBorderStyle}
                       value={row.sku}
                       placeholder="Optional"
                       onChange={(event) => handleCellChange(originalIndex, "sku", event.target.value)}
@@ -663,7 +701,10 @@ export default function PrizePoolManager() {
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100 focus;border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                      className={`w-full rounded-md bg-slate-900 px-2 py-1 text-slate-100 focus:outline-none focus:ring-2 ${
+                        rowBorderStyle ? 'border' : 'border border-slate-700 focus:border-create-primary/70 focus:ring-create-primary/30'
+                      }`}
+                      style={rowBorderStyle}
                       value={row.notes}
                       onChange={(event) => handleCellChange(originalIndex, "notes", event.target.value)}
                     />
