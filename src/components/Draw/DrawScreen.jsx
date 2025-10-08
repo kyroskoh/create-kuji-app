@@ -158,6 +158,17 @@ export default function DrawScreen() {
       setError("No prizes available. Load prize pool in admin first.");
       return;
     }
+    
+    // Check event session status
+    const eventStatus = sessionSettings.sessionStatus || 'INACTIVE';
+    if (eventStatus === 'INACTIVE') {
+      setError("No active event session. Start an event in Settings to accept draws.");
+      return;
+    }
+    if (eventStatus === 'PAUSED') {
+      setError("Event is paused. Resume the event in Settings to continue draws.");
+      return;
+    }
 
     setIsDrawing(true);
     setError(null);
@@ -177,7 +188,9 @@ export default function DrawScreen() {
       fanName: trimmedName,
       queueNumber: queueNumber.trim() || null,
       timestamp: new Date().toISOString(),
-      label: drawLabel
+      label: drawLabel,
+      eventId: sessionSettings.activeEventId, // Link to active event session
+      eventName: sessionSettings.activeEventName
     };
 
     const resultItems = pulled.map((prize, index) => ({

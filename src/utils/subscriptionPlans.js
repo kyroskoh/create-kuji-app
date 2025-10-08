@@ -24,7 +24,8 @@ export const SUBSCRIPTION_PLANS = {
       customPalettePicker: false,
       customTierColors: false,
       publicStockPage: false, // Cannot publish stock page
-      databaseSync: false // No cloud sync
+      databaseSync: false, // No cloud sync
+      eventManagement: false // No event session management
     },
     description: "Perfect for getting started",
     badge: null
@@ -55,7 +56,8 @@ export const SUBSCRIPTION_PLANS = {
       customPalettePicker: false,
       customTierColors: false,
       publicStockPage: true, // Can publish stock page
-      databaseSync: true // Cloud sync enabled
+      databaseSync: true, // Cloud sync enabled
+      eventManagement: false // No event management
     },
     description: "Best for small events",
     badge: "Popular"
@@ -90,7 +92,8 @@ export const SUBSCRIPTION_PLANS = {
       customBranding: false, // No custom branding
       databaseSync: true, // Cloud sync enabled
       apiAccess: true, // API access
-      betaAccess: true // Beta access for future features
+      betaAccess: true, // Beta access for future features
+      eventManagement: true // Event session management
     },
     description: "For growing businesses",
     badge: "Recommended"
@@ -124,7 +127,8 @@ export const SUBSCRIPTION_PLANS = {
       databaseSync: true, // Cloud sync enabled
       apiAccess: true,
       betaAccess: true, // Beta access for future features
-      customDrawAnimation: true // Custom draw animations (Beta)
+      customDrawAnimation: true, // Custom draw animations (Beta)
+      eventManagement: true // Event session management
     },
     description: "Unlimited power",
     badge: "Best Value"
@@ -268,4 +272,9 @@ export function canUseCustomPalette(planId) {
 // Check if beta access is available for plan
 export function hasBetaAccess(planId) {
   return isFeatureAvailable('betaAccess', planId);
+}
+
+// Check if event management is available for plan
+export function hasEventManagement(planId) {
+  return isFeatureAvailable('eventManagement', planId);
 }

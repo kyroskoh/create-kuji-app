@@ -9,7 +9,8 @@ const STORE_KEYS = {
   history: "create::history",
   settings: "create::settings",
   branding: "create::branding",
-  dirtyState: "create::dirty_state"
+  dirtyState: "create::dirty_state",
+  eventSessions: "create::event_sessions" // Track event sessions with start/end times
 };
 
 localforage.config({
@@ -21,6 +22,9 @@ const DEFAULT_COUNTRY_CODE = "MY";
 
 const DEFAULT_SETTINGS = {
   sessionStatus: "INACTIVE",
+  activeEventId: null, // Current active event session ID
+  activeEventStartTime: null, // When the current event started
+  activeEventName: null, // Name of the active event
   lastReset: null,
   country: "Malaysia",
   countryCode: DEFAULT_COUNTRY_CODE,
@@ -157,6 +161,45 @@ export default function useLocalStorageDAO() {
     await localforage.setItem(STORE_KEYS.branding, DEFAULT_BRANDING);
   }, []);
 
+  // Event session management
+  const getEventSessions = useCallback(async () => {
+    const sessions = await localforage.getItem(STORE_KEYS.eventSessions);
+    return Array.isArray(sessions) ? sessions : [];
+  }, []);
+
+  const saveEventSessions = useCallback(async (sessions) => {
+    await localforage.setItem(STORE_KEYS.eventSessions, sessions);
+  }, []);
+
+  const createEventSession = useCallback(async (eventName) => {
+    const sessions = await getEventSessions();
+    const settings = await getSettings();
+    
+    const newSession = {
+      eventId: `event-${Date.now()}`,
+      eventName: eventName || `Event ${settings.nextSessionNumber}`,
+      startTime: new Date().toISOString(),
+      endTime: null,
+      status: 'ACTIVE',
+      totalDraws: 0,
+      totalRevenue: 0,
+      drawRecords: [] // Array of draw session IDs that belong to this event
+    };
+    
+    await saveEventSessions([...sessions, newSession]);
+    return newSession;
+  }, [getEventSessions, getSettings]);
+
+  const endEventSession = useCallback(async (eventId) => {
+    const sessions = await getEventSessions();
+    const updated = sessions.map(session => 
+      session.eventId === eventId
+        ? { ...session, endTime: new Date().toISOString(), status: 'ENDED' }
+        : session
+    );
+    await saveEventSessions(updated);
+  }, [getEventSessions]);
+
   return {
     getPrizes,
     setPrizes,
@@ -172,6 +215,10 @@ export default function useLocalStorageDAO() {
     resetAll,
     getDirtyState,
     setDirtyFlag,
-    clearDirtyFlag
+    clearDirtyFlag,
+    getEventSessions,
+    saveEventSessions,
+    createEventSession,
+    endEventSession
   };
 }

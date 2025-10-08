@@ -9,6 +9,7 @@ import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/co
 import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync, canUseCustomTierColors } from "../../utils/subscriptionPlans.js";
 import ProColorWheel from '../ProColorWheel.jsx';
 import AddTierModal from './AddTierModal.jsx';
+import SessionManager from './SessionManager.jsx';
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 

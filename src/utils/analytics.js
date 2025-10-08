@@ -232,28 +232,21 @@ export function calculateRevenueStats(history, presets) {
   let cumulativeRevenue = 0;
   
   history.forEach(session => {
-    let sessionRevenue = 0;
+    // Calculate revenue based on the pricing preset used for this session
+    const label = session.label || 'Custom';
     
-    // Calculate revenue based on individual draws and their tier pricing
-    if (session.draws && Array.isArray(session.draws)) {
-      session.draws.forEach(draw => {
-        // Check if draw has tier-specific pricing (future enhancement)
-        const drawPrice = draw.price || 0;
-        sessionRevenue += drawPrice;
-      });
-    }
+    // Get the preset price - this is the price for the entire draw session
+    let sessionRevenue = presetMap[label] || 0;
     
-    // If no per-draw pricing, fall back to preset pricing
-    if (sessionRevenue === 0) {
-      const label = session.label || 'Custom';
-      sessionRevenue = presetMap[label] || 0;
+    // For custom sessions without preset, revenue is 0
+    if (label === 'Custom' && !presetMap[label]) {
+      sessionRevenue = 0;
     }
     
     totalRevenue += sessionRevenue;
     cumulativeRevenue += sessionRevenue;
     
-    // Track revenue by preset/label
-    const label = session.label || 'Custom';
+    // Track revenue by preset/label (label already declared above)
     if (!presetRevenue[label]) {
       presetRevenue[label] = { label, revenue: 0, count: 0 };
     }
@@ -313,6 +306,47 @@ export function calculateTierPopularityOverTime(history, days = 30) {
 }
 
 /**
+ * Calculate revenue by event session
+ * @param {Array} history - Draw history array
+ * @param {Array} presets - Pricing presets array
+ * @returns {Array} Array of { eventId, eventName, revenue, drawCount, sessions }
+ */
+export function calculateRevenueByEvent(history, presets) {
+  // Create preset lookup map
+  const presetMap = {};
+  presets.forEach(preset => {
+    presetMap[preset.label] = preset.price || 0;
+  });
+  
+  // Group draw sessions by event
+  const eventStats = {};
+  
+  history.forEach(session => {
+    const eventId = session.eventId || 'no-event';
+    const eventName = session.eventName || 'Legacy Draws';
+    const label = session.label || 'Custom';
+    const sessionRevenue = presetMap[label] || 0;
+    
+    if (!eventStats[eventId]) {
+      eventStats[eventId] = {
+        eventId,
+        eventName,
+        revenue: 0,
+        drawCount: 0,
+        sessionCount: 0
+      };
+    }
+    
+    eventStats[eventId].revenue += sessionRevenue;
+    eventStats[eventId].drawCount += (session.draws?.length || 0);
+    eventStats[eventId].sessionCount++;
+  });
+  
+  return Object.values(eventStats)
+    .sort((a, b) => b.revenue - a.revenue);
+}
+
+/**
  * Generate comprehensive analytics summary
  * @param {Object} params - { history, prizes, presets }
  * @returns {Object} Complete analytics summary
@@ -333,6 +367,7 @@ export function generateAnalyticsSummary({ history = [], prizes = [], presets = 
     },
     stock: calculateStockDepletion(prizes),
     sessions: calculateSessionStats(history),
-    revenue: calculateRevenueStats(history, presets)
+    revenue: calculateRevenueStats(history, presets),
+    revenueByEvent: calculateRevenueByEvent(history, presets)
   };
 }
