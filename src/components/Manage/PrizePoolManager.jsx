@@ -43,6 +43,7 @@ export default function PrizePoolManager() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [availableTiers, setAvailableTiers] = useState([]);
   const fileInputRef = useRef(null);
 
   // Load initial data
@@ -59,6 +60,7 @@ export default function PrizePoolManager() {
         setTierColors(storedSettings.tierColors ?? {});
         setWeightMode(storedSettings.weightMode ?? "basic");
         setSubscriptionPlan(storedSettings.subscriptionPlan ?? "free");
+        setAvailableTiers(Object.keys(storedSettings.tierColors ?? {}));
         setHasUnsavedChanges(dirtyState.prizes === true);
         setLoading(false);
       }
@@ -77,6 +79,7 @@ export default function PrizePoolManager() {
         setTierColors(storedSettings.tierColors ?? {});
         setWeightMode(storedSettings.weightMode ?? "basic");
         setSubscriptionPlan(storedSettings.subscriptionPlan ?? "free");
+        setAvailableTiers(Object.keys(storedSettings.tierColors ?? {}));
       }
     })();
     return () => {
@@ -186,17 +189,73 @@ export default function PrizePoolManager() {
 
   const handleCellChange = async (index, key, value) => {
     setPrizeRows((rows) =>
-      rows.map((row, rowIndex) =>
-        rowIndex === index
-          ? {
-              ...row,
-              [key]: key === "quantity" || key === "weight" ? Number.parseInt(value, 10) || 0 : value
-            }
-          : row
-      )
+      rows.map((row, rowIndex) => {
+        if (rowIndex !== index) return row;
+        
+        // Special handling for tier field to validate against available tiers
+        if (key === "tier") {
+          const normalizedInput = value.trim().toUpperCase();
+          
+          // If input matches an available tier exactly, use it
+          if (availableTiers.includes(normalizedInput)) {
+            return { ...row, tier: normalizedInput };
+          }
+          
+          // If input is empty, allow it
+          if (normalizedInput === "") {
+            return { ...row, tier: "" };
+          }
+          
+          // Check if input partially matches any available tier (for autocomplete)
+          const partialMatch = availableTiers.find(tier => 
+            tier.toUpperCase().startsWith(normalizedInput)
+          );
+          
+          if (partialMatch && normalizedInput.length === partialMatch.length) {
+            // Complete match found
+            return { ...row, tier: partialMatch };
+          }
+          
+          // Allow partial input for typing (will be normalized on blur/save)
+          return { ...row, tier: normalizedInput };
+        }
+        
+        // Handle other fields
+        if (key === "quantity" || key === "weight") {
+          return { ...row, [key]: Number.parseInt(value, 10) || 0 };
+        }
+        
+        return { ...row, [key]: value };
+      })
     );
     await setDirtyFlag('prizes', true);
     setHasUnsavedChanges(true);
+  };
+  
+  // Handle tier input blur to validate/normalize
+  const handleTierBlur = async (index, currentValue) => {
+    const normalizedInput = currentValue.trim().toUpperCase();
+    
+    // If empty or already valid, do nothing
+    if (normalizedInput === "" || availableTiers.includes(normalizedInput)) {
+      return;
+    }
+    
+    // Try to find closest match
+    const match = availableTiers.find(tier => 
+      tier.toUpperCase() === normalizedInput
+    );
+    
+    if (match) {
+      // Update to exact match
+      setPrizeRows((rows) =>
+        rows.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, tier: match } : row
+        )
+      );
+      await setDirtyFlag('prizes', true);
+      setHasUnsavedChanges(true);
+    }
   };
 
   const handleDelete = async (index) => {
@@ -259,6 +318,40 @@ export default function PrizePoolManager() {
 
   return (
     <div className="space-y-4">
+      {/* Available Tiers Info */}
+      {availableTiers.length > 0 ? (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 px-4 py-3 text-xs text-slate-300">
+          <div className="flex items-start gap-2">
+            <svg className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <span className="font-semibold text-white">Available Tiers:</span>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {availableTiers.map(tier => (
+                  <span key={tier} className={tierChipClass(tier, tierColors)}>
+                    {tier}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1 text-slate-400">Type these tier names in the tier column. The input will auto-suggest and validate.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs text-slate-300">
+          <div className="flex items-start gap-2">
+            <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <span className="font-semibold text-amber-400">No tiers defined yet</span>
+              <p className="mt-1 text-slate-400">Go to <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a> to create tier names with colors before adding prizes.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-xs text-slate-300">
         <span className="font-semibold text-white">Weight system:</span> {WEIGHT_MODE_LABEL[weightMode]}
       </div>
@@ -348,10 +441,19 @@ export default function PrizePoolManager() {
                     <div className="flex items-center gap-2">
                       <span className={tierBadgeClass(tierValue, tierColors)}>{(tierValue || "?").toString().toUpperCase()}</span>
                       <input
-                        className={`w-16 rounded-md bg-slate-900 px-2 py-1 text-slate-100 ${tierInputClass(tierValue, tierColors)}`}
+                        list={`tier-suggestions-${originalIndex}`}
+                        className={`w-16 rounded-md bg-slate-900 px-2 py-1 text-slate-100 uppercase ${tierInputClass(tierValue, tierColors)}`}
                         value={tierValue}
                         onChange={(event) => handleCellChange(originalIndex, "tier", event.target.value)}
+                        onBlur={(event) => handleTierBlur(originalIndex, event.target.value)}
+                        placeholder={availableTiers[0] || "?"}
+                        title={`Available tiers: ${availableTiers.join(', ') || 'Create tiers in Settings first'}`}
                       />
+                      <datalist id={`tier-suggestions-${originalIndex}`}>
+                        {availableTiers.map(tier => (
+                          <option key={tier} value={tier} />
+                        ))}
+                      </datalist>
                     </div>
                   </td>
                   <td className="px-3 py-2">

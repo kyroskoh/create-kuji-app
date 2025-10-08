@@ -8,6 +8,7 @@ import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
 import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync, canUseCustomTierColors } from "../../utils/subscriptionPlans.js";
 import ProColorWheel from '../ProColorWheel.jsx';
+import AddTierModal from './AddTierModal.jsx';
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -53,6 +54,7 @@ export default function Settings() {
   const [activeTier, setActiveTier] = useState("S");
   const [draggedTier, setDraggedTier] = useState(null);
   const [customColors, setCustomColors] = useState({}); // Custom hex colors for tiers
+  const [isAddTierModalOpen, setIsAddTierModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   // Popular countries for sample display (Asia-focused with major global currencies)
@@ -426,35 +428,22 @@ export default function Settings() {
   };
 
   const handleAddTier = () => {
-    setTierNameError("");
-    
     if (!canAddMoreTiers) {
       setStatusMessage("Tier limit reached for your plan. Upgrade to add more tiers.");
       return;
     }
-
-    // Validate tier name
-    const validation = validateTierName(newTierKey, settings.subscriptionPlan || "free");
-    if (!validation.valid) {
-      setTierNameError(validation.error);
-      return;
-    }
-
-    const tier = validation.value;
     
-    // Check if tier already exists
-    if (tierColors[tier]) {
-      setTierNameError(`Tier "${tier}" already exists`);
-      return;
-    }
+    setIsAddTierModalOpen(true);
+  };
 
-    // Preserve existing tier order and add new tier at the end
-    const updatedColors = { ...tierColors, [tier]: availableColors[Object.keys(tierColors).length % availableColors.length]?.id ?? availableColors[0]?.id ?? COLOR_PALETTE[0].id };
+  const handleAddTierConfirm = ({ tier, color }) => {
+    // Preserve existing tier order and add new tier at the end with selected color
+    const updatedColors = { ...tierColors, [tier]: color };
     
     updateSettings({ tierColors: updatedColors });
     setActiveTier(tier);
-    setNewTierKey("");
-    setTierNameError("");
+    setIsAddTierModalOpen(false);
+    setStatusMessage(`Tier "${tier}" created successfully!`);
   };
 
   const handleTierColorChange = (colorId) => {
@@ -831,43 +820,21 @@ export default function Settings() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="new-tier">
-              Add tier label ({maxTierNameLength} char{maxTierNameLength > 1 ? 's' : ''} max)
-            </label>
-            <div className="flex flex-col gap-1">
-              <input
-                id="new-tier"
-                maxLength={maxTierNameLength}
-                className={`w-32 rounded-md border ${
-                  tierNameError ? "border-red-500" : "border-slate-700"
-                } bg-slate-900 px-3 py-2 text-sm uppercase text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30`}
-                value={newTierKey}
-                onChange={(event) => {
-                  setNewTierKey(event.target.value);
-                  setTierNameError("");
-                }}
-                placeholder={maxTierNameLength === 1 ? "S" : maxTierNameLength === 2 ? "SS" : "SSR"}
-              />
-              {tierNameError && (
-                <span className="text-xs text-red-400">{tierNameError}</span>
-              )}
-            </div>
-          </div>
-          <button 
-            type="button" 
-            disabled={!canAddMoreTiers}
-            className={`transition-all ${
-              canAddMoreTiers
-                ? "bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md"
-                : "bg-slate-800/50 text-slate-500 cursor-not-allowed"
-            }`}
-            onClick={handleAddTier}
-          >
-            {canAddMoreTiers ? "Add tier" : "🔒 Upgrade to add more"}
-          </button>
-        </div>
+        <button 
+          type="button" 
+          disabled={!canAddMoreTiers}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all ${
+            canAddMoreTiers
+              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+              : "bg-slate-800/50 text-slate-500 cursor-not-allowed"
+          }`}
+          onClick={handleAddTier}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          {canAddMoreTiers ? "Add New Tier" : "🔒 Upgrade to add more tiers"}
+        </button>
         
         {/* Pro Color Wheel for Custom Colors - Moved to top */}
         {hasCustomTierColors && activeTier && (
@@ -1059,6 +1026,15 @@ export default function Settings() {
         )}
       </div>
       {statusMessage && <p className="text-sm text-emerald-400">{statusMessage}</p>}
+      {/* Add Tier Modal */}
+      <AddTierModal
+        isOpen={isAddTierModalOpen}
+        onClose={() => setIsAddTierModalOpen(false)}
+        onConfirm={handleAddTierConfirm}
+        existingTiers={tierList}
+        subscriptionPlan={settings.subscriptionPlan || 'free'}
+        maxTierNameLength={maxTierNameLength}
+      />
     </div>
   );
 }
