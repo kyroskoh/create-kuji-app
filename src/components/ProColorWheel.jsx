@@ -5,6 +5,7 @@ export default function ProColorWheel({ value = '#ffffff', onChange, label = 'Cu
   const [localColor, setLocalColor] = useState(value);
   const [showPicker, setShowPicker] = useState(false);
   const [hexInput, setHexInput] = useState(value);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Sync with external value changes
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function ProColorWheel({ value = '#ffffff', onChange, label = 'Cu
     setLocalColor(newColor);
     setHexInput(newColor);
     onChange?.(newColor);
+    setJustSaved(false); // Reset saved state when color changes
   };
 
   const handleHexInputChange = (event) => {
@@ -67,8 +69,15 @@ export default function ProColorWheel({ value = '#ffffff', onChange, label = 'Cu
         <button
           type="button"
           onClick={() => setShowPicker(!showPicker)}
-          className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-700 rounded-lg hover:border-purple-500/50 transition-colors group"
+          className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-700 rounded-lg hover:border-purple-500/50 transition-colors group relative"
         >
+          {justSaved && (
+            <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 animate-bounce">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          )}
           <div 
             className="w-8 h-8 rounded-lg border-2 border-slate-600 group-hover:border-purple-500/50 transition-colors flex-shrink-0"
             style={{ backgroundColor: localColor }}
@@ -118,10 +127,23 @@ export default function ProColorWheel({ value = '#ffffff', onChange, label = 'Cu
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPicker(false)}
-                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded font-medium"
+                  onClick={() => {
+                    setShowPicker(false);
+                    setJustSaved(true);
+                    setTimeout(() => setJustSaved(false), 2000); // Show checkmark for 2 seconds
+                  }}
+                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded font-medium flex items-center gap-1.5"
                 >
-                  Done
+                  {justSaved ? (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Applied
+                    </>
+                  ) : (
+                    'Done'
+                  )}
                 </button>
               </div>
               {!isValidHex(hexInput) && hexInput && (

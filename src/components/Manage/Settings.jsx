@@ -458,6 +458,10 @@ export default function Settings() {
     
     const updatedColors = { ...tierColors, [activeTier]: colorId };
     updateSettings({ tierColors: updatedColors });
+    
+    // Show feedback that color was saved
+    const colorLabel = colorId.startsWith('#') ? colorId : COLOR_PALETTE.find(p => p.id === colorId)?.label || colorId;
+    setStatusMessage(`Tier "${activeTier}" color updated to ${colorLabel}`);
   };
 
   const handleCustomColorChange = (hexColor) => {
