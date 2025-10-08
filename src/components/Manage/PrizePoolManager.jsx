@@ -6,7 +6,8 @@ import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass } from "
 import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
-import { isTierSortingAllowed } from "../../utils/subscriptionPlans.js";
+import { isTierSortingAllowed, validateTierName, canCreateTier } from "../../utils/subscriptionPlans.js";
+import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 
 const EMPTY_PRIZE = {
   tier: "",
@@ -29,7 +30,7 @@ const toPercent = (value) => `${(Math.round(value * 1000) / 10).toFixed(1)}%`;
 
 const WEIGHT_MODE_LABEL = {
   basic: "Basic weight system (weight only)",
-  advanced: "Advanced weight system (weight � quantity � tier priority)"
+  advanced: "Advanced weight system (weight × quantity × tier priority)"
 };
 
 export default function PrizePoolManager() {
@@ -232,12 +233,17 @@ export default function PrizePoolManager() {
     setHasUnsavedChanges(true);
   };
   
-  // Handle tier input blur to validate/normalize
+  // Handle tier input blur to validate/normalize and auto-create if needed
   const handleTierBlur = async (index, currentValue) => {
     const normalizedInput = currentValue.trim().toUpperCase();
     
-    // If empty or already valid, do nothing
-    if (normalizedInput === "" || availableTiers.includes(normalizedInput)) {
+    // If empty, do nothing
+    if (normalizedInput === "") {
+      return;
+    }
+    
+    // If already valid, do nothing
+    if (availableTiers.includes(normalizedInput)) {
       return;
     }
     
@@ -255,6 +261,98 @@ export default function PrizePoolManager() {
       );
       await setDirtyFlag('prizes', true);
       setHasUnsavedChanges(true);
+      return;
+    }
+    
+    // New tier - validate and auto-create
+    const validation = validateTierName(normalizedInput, subscriptionPlan);
+    
+    if (!validation.valid) {
+      // Show error and revert
+      setStatus({ type: "error", message: `Invalid tier name: ${validation.error}` });
+      setPrizeRows((rows) =>
+        rows.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, tier: "" } : row
+        )
+      );
+      return;
+    }
+    
+    // Check if we can create more tiers
+    const canCreate = canCreateTier(availableTiers.length, subscriptionPlan);
+    
+    if (!canCreate) {
+      setStatus({ 
+        type: "error", 
+        message: `Tier limit reached for your plan. Upgrade to add more tiers or use existing tiers: ${availableTiers.join(', ')}` 
+      });
+      setPrizeRows((rows) =>
+        rows.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, tier: "" } : row
+        )
+      );
+      return;
+    }
+    
+    // Auto-create the tier with a default color
+    const newTier = validation.value;
+    await createNewTier(newTier);
+    
+    // Update the prize row with normalized tier name
+    setPrizeRows((rows) =>
+      rows.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, tier: newTier } : row
+      )
+    );
+    await setDirtyFlag('prizes', true);
+    setHasUnsavedChanges(true);
+  };
+  
+  // Create a new tier with default color
+  const createNewTier = async (tierName) => {
+    try {
+      // Get current settings
+      const currentSettings = await getSettings();
+      const currentTierColors = currentSettings.tierColors || {};
+      
+      // Assign next available color from palette (cycle through colors)
+      const existingTierCount = Object.keys(currentTierColors).length;
+      const defaultColor = COLOR_PALETTE[existingTierCount % COLOR_PALETTE.length].id;
+      
+      // Add new tier
+      const updatedTierColors = {
+        ...currentTierColors,
+        [tierName]: defaultColor
+      };
+      
+      // Save to settings
+      await setSettings({ ...currentSettings, tierColors: updatedTierColors });
+      
+      // Update local state
+      setTierColors(updatedTierColors);
+      setAvailableTiers(Object.keys(updatedTierColors));
+      
+      // Show success message with link to customize
+      const colorLabel = COLOR_PALETTE.find(p => p.id === defaultColor)?.label || defaultColor;
+      setStatus({ 
+        type: "success", 
+        message: `✨ New tier "${tierName}" created with ${colorLabel} color! Customize it in Settings.` 
+      });
+      
+      // Sync to backend if authenticated
+      if (user?.username) {
+        setTimeout(async () => {
+          try {
+            await syncUserData(user.username, 'settings', { ...currentSettings, tierColors: updatedTierColors });
+            console.log('✅ Tier colors synced to backend');
+          } catch (syncError) {
+            console.warn('⚠️ Failed to sync tier colors:', syncError);
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Failed to create tier:', error);
+      setStatus({ type: "error", message: "Failed to create new tier. Please try again." });
     }
   };
 
@@ -334,19 +432,27 @@ export default function PrizePoolManager() {
                   </span>
                 ))}
               </div>
-              <p className="mt-1 text-slate-400">Type these tier names in the tier column. The input will auto-suggest and validate.</p>
+              <div className="mt-2 space-y-1">
+                <p className="text-slate-400">• Type these tier names in the tier column - they'll auto-suggest</p>
+                <p className="text-slate-400">• Type a <span className="text-white font-semibold">new tier name</span> and press Tab/Enter to <span className="text-emerald-400 font-semibold">create it instantly!</span></p>
+                <p className="text-slate-500 text-[10px]">→ New tiers get default colors. Customize in <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a>.</p>
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs text-slate-300">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-xs text-slate-300">
           <div className="flex items-start gap-2">
-            <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            <svg className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <div className="flex-1">
-              <span className="font-semibold text-amber-400">No tiers defined yet</span>
-              <p className="mt-1 text-slate-400">Go to <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a> to create tier names with colors before adding prizes.</p>
+              <span className="font-semibold text-emerald-400">Ready to create tiers!</span>
+              <div className="mt-2 space-y-1.5">
+                <p className="text-slate-300">✨ <span className="font-semibold">Quick Start:</span> Just type a tier name (like "S", "SS", "SSR") in the tier column below!</p>
+                <p className="text-slate-400">• Tiers will be created automatically with default colors</p>
+                <p className="text-slate-400">• Customize colors anytime in <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a></p>
+              </div>
             </div>
           </div>
         </div>
@@ -435,20 +541,37 @@ export default function PrizePoolManager() {
           <tbody className="divide-y divide-slate-800">
             {sortedPrizesWithIndices.map(({ prize: row, originalIndex }) => {
               const tierValue = row.tier;
+              const isNewTier = tierValue && !availableTiers.includes(tierValue.toUpperCase());
+              const validation = tierValue ? validateTierName(tierValue, subscriptionPlan) : { valid: true };
               return (
                 <tr key={`${row.sku || "row"}-${originalIndex}`} className="hover:bg-slate-900/40">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className={tierBadgeClass(tierValue, tierColors)}>{(tierValue || "?").toString().toUpperCase()}</span>
-                      <input
-                        list={`tier-suggestions-${originalIndex}`}
-                        className={`w-16 rounded-md bg-slate-900 px-2 py-1 text-slate-100 uppercase ${tierInputClass(tierValue, tierColors)}`}
-                        value={tierValue}
-                        onChange={(event) => handleCellChange(originalIndex, "tier", event.target.value)}
-                        onBlur={(event) => handleTierBlur(originalIndex, event.target.value)}
-                        placeholder={availableTiers[0] || "?"}
-                        title={`Available tiers: ${availableTiers.join(', ') || 'Create tiers in Settings first'}`}
-                      />
+                      <div className="relative flex-1">
+                        <input
+                          list={`tier-suggestions-${originalIndex}`}
+                          className={`w-full rounded-md bg-slate-900 px-2 py-1 text-slate-100 uppercase ${
+                            isNewTier && validation.valid
+                              ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20'
+                              : !validation.valid && tierValue
+                              ? 'border-2 border-red-500 ring-2 ring-red-500/20'
+                              : tierInputClass(tierValue, tierColors)
+                          }`}
+                          value={tierValue}
+                          onChange={(event) => handleCellChange(originalIndex, "tier", event.target.value)}
+                          onBlur={(event) => handleTierBlur(originalIndex, event.target.value)}
+                          placeholder={availableTiers[0] || "S"}
+                          title={`Available tiers: ${availableTiers.join(', ') || 'Type to create new tier'}`}
+                        />
+                        {isNewTier && validation.valid && (
+                          <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+                            <svg className="w-4 h-4 text-emerald-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                       <datalist id={`tier-suggestions-${originalIndex}`}>
                         {availableTiers.map(tier => (
                           <option key={tier} value={tier} />
