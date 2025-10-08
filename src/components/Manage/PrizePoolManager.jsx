@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
 import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
@@ -37,6 +37,9 @@ export default function PrizePoolManager() {
   const location = useLocation();
   const { getPrizes, setPrizes, getSettings, setDirtyFlag, clearDirtyFlag, getDirtyState } = useLocalStorageDAO();
   const { user } = useAuth();
+  
+  // Get username from URL path (e.g., /demo/manage/prizes -> demo)
+  const username = location.pathname.split('/')[1] || user?.username || 'demo';
   const [prizes, setPrizeRows] = useState([]);
   const [tierColors, setTierColors] = useState({});
   const [weightMode, setWeightMode] = useState("basic");
@@ -435,7 +438,7 @@ export default function PrizePoolManager() {
               <div className="mt-2 space-y-1">
                 <p className="text-slate-400">• Type these tier names in the tier column - they'll auto-suggest</p>
                 <p className="text-slate-400">• Type a <span className="text-white font-semibold">new tier name</span> and press Tab/Enter to <span className="text-emerald-400 font-semibold">create it instantly!</span></p>
-                <p className="text-slate-500 text-[10px]">→ New tiers get default colors. Customize in <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a>.</p>
+                <p className="text-slate-500 text-[10px]">→ New tiers get default colors. Customize in <Link to={`/${username}/manage/settings`} className="text-blue-400 hover:text-blue-300 underline">Settings</Link>.</p>
               </div>
             </div>
           </div>
@@ -451,7 +454,7 @@ export default function PrizePoolManager() {
               <div className="mt-2 space-y-1.5">
                 <p className="text-slate-300">✨ <span className="font-semibold">Quick Start:</span> Just type a tier name (like "S", "SS", "SSR") in the tier column below!</p>
                 <p className="text-slate-400">• Tiers will be created automatically with default colors</p>
-                <p className="text-slate-400">• Customize colors anytime in <a href="#/manage/settings" className="text-blue-400 hover:text-blue-300 underline">Settings</a></p>
+                <p className="text-slate-400">• Customize colors anytime in <Link to={`/${username}/manage/settings`} className="text-blue-400 hover:text-blue-300 underline">Settings</Link></p>
               </div>
             </div>
           </div>
