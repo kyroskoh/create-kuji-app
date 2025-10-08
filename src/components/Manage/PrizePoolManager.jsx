@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
-import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass } from "../../utils/tierColors.js";
+import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass, getTierColorHex } from "../../utils/tierColors.js";
 import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
@@ -512,11 +512,19 @@ export default function PrizePoolManager() {
         </button>
         <div className="ml-auto flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400">
           {tierTotals.length ? (
-            tierTotals.map(([tier, qty]) => (
-              <span key={tier} className={tierChipClass(tier, tierColors)}>
-                {tier}:{qty}
-              </span>
-            ))
+            tierTotals.map(([tier, qty]) => {
+              const hex = getTierColorHex(tier, tierColors);
+              const isCustomHex = typeof (tierColors?.[String(tier).toUpperCase()]) === 'string' && tierColors[String(tier).toUpperCase()].startsWith('#');
+              return (
+                <span
+                  key={tier}
+                  className={tierChipClass(tier, tierColors)}
+                  style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                >
+                  {tier}:{qty}
+                </span>
+              );
+            })
           ) : (
             <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-slate-300">
               No stock
@@ -576,7 +584,19 @@ export default function PrizePoolManager() {
                 <tr key={`${row.sku || "row"}-${originalIndex}`} className="hover:bg-slate-900/40">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className={tierBadgeClass(tierValue, tierColors)}>{(tierValue || "?").toString().toUpperCase()}</span>
+                      {(() => {
+                        const hex = getTierColorHex(tierValue, tierColors);
+                        const key = String(tierValue || '').toUpperCase();
+                        const isCustomHex = typeof (tierColors?.[key]) === 'string' && tierColors[key]?.startsWith('#');
+                        return (
+                          <span
+                            className={tierBadgeClass(tierValue, tierColors)}
+                            style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                          >
+                            {(tierValue || "?").toString().toUpperCase()}
+                          </span>
+                        );
+                      })()}
                       <div className="relative flex-1">
                         <input
                           list={`tier-suggestions-${originalIndex}`}
