@@ -6,7 +6,7 @@ import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js"
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
-import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage } from "../../utils/subscriptionPlans.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync } from "../../utils/subscriptionPlans.js";
 
 const SESSION_STATUSES = ["INACTIVE", "ACTIVE", "PAUSED"];
 
@@ -465,6 +465,9 @@ export default function Settings() {
   // Check if user can control stock page visibility (paid plans only)
   const canControlVisibility = canPublishStockPage(settings.subscriptionPlan || "free");
   const isFree = (settings.subscriptionPlan || "free") === "free";
+  
+  // Check if user has database sync feature (paid plans only)
+  const canUseDBSync = hasDatabaseSync(settings.subscriptionPlan || "free");
 
   return (
     <div className="space-y-6">
@@ -887,38 +890,87 @@ export default function Settings() {
         
         {/* Database Sync Section */}
         {user?.username && (
-          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+          <div className={`rounded-lg border p-4 ${
+            canUseDBSync 
+              ? 'border-blue-500/30 bg-blue-500/5' 
+              : 'border-amber-500/30 bg-amber-500/5'
+          }`}>
             <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
               </svg>
               Cloud Database Sync
+              {!canUseDBSync && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                  🔒 Premium Feature
+                </span>
+              )}
             </h4>
-            <p className="text-xs text-slate-400 mb-3">
-              Keep your local data in sync with the cloud database. Use "Sync from Database" to pull the latest data from the server.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button 
-                type="button" 
-                className="rounded-md px-4 py-2 text-sm font-semibold bg-blue-600/80 text-white hover:bg-blue-600 hover:shadow-lg transition-all flex items-center gap-2" 
-                onClick={handleSyncFromDatabase}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Sync from Database
-              </button>
-              <button 
-                type="button" 
-                className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-700 text-white hover:bg-slate-600 hover:shadow-lg transition-all flex items-center gap-2" 
-                onClick={handleSyncToDatabase}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Sync to Database
-              </button>
-            </div>
+            {canUseDBSync ? (
+              <>
+                <p className="text-xs text-slate-400 mb-3">
+                  Keep your local data in sync with the cloud database. Use "Sync from Database" to pull the latest data from the server.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    type="button" 
+                    className="rounded-md px-4 py-2 text-sm font-semibold bg-blue-600/80 text-white hover:bg-blue-600 hover:shadow-lg transition-all flex items-center gap-2" 
+                    onClick={handleSyncFromDatabase}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Sync from Database
+                  </button>
+                  <button 
+                    type="button" 
+                    className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-700 text-white hover:bg-slate-600 hover:shadow-lg transition-all flex items-center gap-2" 
+                    onClick={handleSyncToDatabase}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Sync to Database
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-amber-200/90 mb-3">
+                  ✨ Upgrade to a paid plan to enable cloud database sync! Keep your data synchronized across devices and never lose your configuration.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start gap-2 text-xs text-slate-300">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Sync prizes, settings, and pricing presets to the cloud</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs text-slate-300">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Access your data from any browser or device</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs text-slate-300">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Automatic backup and restore with one click</span>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  className="mt-3 rounded-md px-4 py-2 text-sm font-semibold bg-amber-600 text-white hover:bg-amber-500 hover:shadow-lg transition-all flex items-center gap-2"
+                  onClick={() => window.alert('Upgrade feature coming soon! Contact support for early access.')}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Upgrade to Enable Sync
+                </button>
+              </>
+            )}
           </div>
         )}
         

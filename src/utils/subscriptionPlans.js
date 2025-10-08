@@ -21,7 +21,8 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: false,
       customColorNaming: false,
       customPalettePicker: false,
-      publicStockPage: false // Cannot publish stock page
+      publicStockPage: false, // Cannot publish stock page
+      databaseSync: false // No cloud sync
     },
     description: "Perfect for getting started",
     badge: null
@@ -49,7 +50,8 @@ export const SUBSCRIPTION_PLANS = {
       customHexColors: false,
       customColorNaming: false,
       customPalettePicker: false,
-      publicStockPage: true // Can publish stock page
+      publicStockPage: true, // Can publish stock page
+      databaseSync: true // Cloud sync enabled
     },
     description: "Best for small events",
     badge: "Popular"
@@ -80,6 +82,7 @@ export const SUBSCRIPTION_PLANS = {
       customPalettePicker: false,
       publicStockPage: true, // Can publish stock page
       customBranding: false, // No custom branding
+      databaseSync: true, // Cloud sync enabled
       apiAccess: true, // API access
       betaAccess: true // Beta access for future features
     },
@@ -110,6 +113,7 @@ export const SUBSCRIPTION_PLANS = {
       prioritySupport: true,
       customBranding: true, // Full branding customization
       publicStockPage: true, // Can publish stock page
+      databaseSync: true, // Cloud sync enabled
       apiAccess: true,
       betaAccess: true, // Beta access for future features
       customDrawAnimation: true // Custom draw animations (Beta)
@@ -228,4 +232,9 @@ export function hasAnalyticsAccess(planId) {
 // Check if custom branding is available for plan
 export function hasCustomBranding(planId) {
   return isFeatureAvailable('customBranding', planId);
+}
+
+// Check if database sync is available for plan
+export function hasDatabaseSync(planId) {
+  return isFeatureAvailable('databaseSync', planId);
 }
