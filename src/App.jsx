@@ -16,10 +16,10 @@ export default function App() {
   return (
     <AuthProvider>
       <SubscriptionProvider>
-        <BrandingProvider>
-          <ToastProvider>
-            <TranslationProvider>
-              <BrowserRouter>
+        <ToastProvider>
+          <TranslationProvider>
+            <BrowserRouter>
+              <BrandingProvider>
                 <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<MainLayout><AuthenticatedHome /></MainLayout>} />
@@ -33,10 +33,10 @@ export default function App() {
                   <Route path="/*" element={<UserRoutes />} />
                 </Routes>
                 <DevDebugPanel />
-              </BrowserRouter>
-            </TranslationProvider>
-          </ToastProvider>
-        </BrandingProvider>
+              </BrandingProvider>
+            </BrowserRouter>
+          </TranslationProvider>
+        </ToastProvider>
       </SubscriptionProvider>
     </AuthProvider>
   );
