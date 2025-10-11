@@ -4,71 +4,13 @@ import { tierChipClass } from "../../utils/tierColors.js";
 const formatTimestamp = (timestamp) =>
   timestamp ? new Date(timestamp).toLocaleString() : "";
 
-const openEntryInNewTab = (entry) => {
-  const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Session #${entry.sessionNumber ?? "?"} � ${entry.fanName || "Fan"}</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" />
-        <style>
-          body { background: #0f172a; color: #e2e8f0; }
-          .tier-badge {
-            display: inline-flex;
-            align-items: center;
-            border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border: 1px solid #38bdf8;
-            background: rgba(56, 189, 248, 0.16);
-            color: #bae6fd;
-          }
-        </style>
-      </head>
-      <body class="p-6">
-        <main class="mx-auto max-w-3xl space-y-6">
-          <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg">
-            <header class="space-y-1">
-              <h1 class="text-2xl font-bold">Session #${entry.sessionNumber ?? "?"}</h1>
-              <p class="text-lg text-slate-200">${entry.fanName || "Unknown fan"}${
-                entry.queueNumber ? ` (Queue ${entry.queueNumber})` : ""
-              }</p>
-              <p class="text-sm text-slate-400">${entry.label || "Custom"} � ${formatTimestamp(entry.timestamp)}</p>
-            </header>
-          </section>
-          <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg">
-            <h2 class="text-xl font-semibold">Draws (${entry.draws?.length || 0})</h2>
-            <div class="mt-4 grid gap-4 md:grid-cols-2">
-              ${(entry.draws || [])
-                .map((draw, index) => `
-                  <article class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 shadow">
-                    <header class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-400">
-                      <span>Draw #${index + 1}</span>
-                      <span class="tier-badge">Tier ${String(draw.tier || "?").toUpperCase()}</span>
-                    </header>
-                    <h3 class="mt-3 text-lg font-semibold text-white">${draw.prize || "Unknown prize"}</h3>
-                    ${draw.sku ? `<p class="mt-2 text-xs text-slate-500">SKU: ${draw.sku}</p>` : ""}
-                  </article>
-                `)
-                .join("")}
-            </div>
-          </section>
-        </main>
-      </body>
-    </html>
-  `;
-
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
+const openEntryInNewTab = (username, entry) => {
+  // Open an in-app route so the same CSS, branding, and tier colors apply
+  const url = `/${encodeURIComponent(username)}/draw/history/${encodeURIComponent(entry.id)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
-export default function HistoryPanel({ history, tierColors, onClose }) {
+export default function HistoryPanel({ history, tierColors, onClose, username }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState("all");
 
@@ -168,7 +110,7 @@ export default function HistoryPanel({ history, tierColors, onClose }) {
                       <time className="text-xs text-slate-500">{formatTimestamp(entry.timestamp)}</time>
                       <button
                         type="button"
-                        onClick={() => openEntryInNewTab(entry)}
+onClick={() => openEntryInNewTab(username, entry)}
                         className="ml-2 rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700"
                       >
                         Open

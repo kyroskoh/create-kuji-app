@@ -511,7 +511,7 @@ export default function DrawScreen() {
       </section>
 
       {isHistoryOpen && (
-        <HistoryPanel history={history} tierColors={tierColors} onClose={closeHistory} />
+        <HistoryPanel history={history} tierColors={tierColors} onClose={closeHistory} username={user?.username || ""} />
       )}
       
       {/* Custom Branding Footer */}

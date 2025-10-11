@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../utils/AuthContext";
 import Draw from "../pages/Draw.jsx";
+import DrawHistory from "../pages/DrawHistory.jsx";
 import Stock from "../pages/Stock.jsx";
 import Account from "../pages/Account.jsx";
 import Admin from "../pages/Admin.jsx";
@@ -55,6 +56,17 @@ export default function UserRoutes() {
           <RequireAuth>
             <RequireSetup>
               <MainLayout><Draw /></MainLayout>
+            </RequireSetup>
+          </RequireAuth>
+        </ValidateUserAccess>
+      } />
+
+      {/* Draw History detail page - reuse full app branding and styles */}
+      <Route path="/:username/draw/history/:entryId" element={
+        <ValidateUserAccess>
+          <RequireAuth>
+            <RequireSetup>
+              <MainLayout><DrawHistory /></MainLayout>
             </RequireSetup>
           </RequireAuth>
         </ValidateUserAccess>
