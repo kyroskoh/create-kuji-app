@@ -378,6 +378,11 @@ export function clearStockCache() {
 export function clearUserStockCache(username: string) {
   const cacheKey = `kuji_stock_${username}`;
   const deleted = cache.delete(cacheKey);
-  console.log(`Cache cleared for ${username}:`, deleted ? 'success' : 'not found');
+  
+  // Only log in development mode, and only log successful clears to reduce noise
+  if (process.env.NODE_ENV === 'development' && deleted) {
+    console.log(`✓ Stock cache cleared for user: ${username}`);
+  }
+  
   return deleted;
 }
