@@ -150,6 +150,17 @@ export default function FanDrawSession() {
     markAsRevealed();
   };
 
+  // Convert draws to prize objects for card pack animation
+  // MUST be before early returns to follow React hooks rules
+  const prizeObjects = useMemo(() => {
+    if (!entry?.draws) return [];
+    return entry.draws.map(draw => ({
+      prize_name: draw.prize,
+      tier: draw.tier,
+      sku: draw.sku
+    }));
+  }, [entry]);
+
   if (loading) {
     return (
       <BrandingWrapper className="min-h-screen">
@@ -183,16 +194,6 @@ export default function FanDrawSession() {
       </BrandingWrapper>
     );
   }
-
-  // Convert draws to prize objects for card pack animation
-  const prizeObjects = useMemo(() => {
-    if (!entry?.draws) return [];
-    return entry.draws.map(draw => ({
-      prize_name: draw.prize,
-      tier: draw.tier,
-      sku: draw.sku
-    }));
-  }, [entry]);
 
   return (
     <BrandingWrapper className="min-h-screen">
