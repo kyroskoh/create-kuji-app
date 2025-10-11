@@ -55,6 +55,7 @@ export default function Settings() {
   const [tierNameError, setTierNameError] = useState("");
   const [activeTier, setActiveTier] = useState("S");
   const [draggedTier, setDraggedTier] = useState(null);
+  const [dropTargetTier, setDropTargetTier] = useState(null);
   const [customColors, setCustomColors] = useState({}); // Custom hex colors for tiers
   const [isAddTierModalOpen, setIsAddTierModalOpen] = useState(false);
   const fileInputRef = useRef(null);
@@ -852,60 +853,81 @@ export default function Settings() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {tierList.map((tier, index) => (
-            <button
-              key={tier}
-              type="button"
-              draggable={tierSortingAllowed}
-              onDragStart={(e) => {
-                if (!tierSortingAllowed) return;
-                setDraggedTier(index);
-                e.dataTransfer.effectAllowed = 'move';
-              }}
-              onDragOver={(e) => {
-                if (!tierSortingAllowed) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-              }}
-              onDrop={(e) => {
-                if (!tierSortingAllowed || draggedTier === null) return;
-                e.preventDefault();
+          {tierList.map((tier, index) => {
+            const isBeingDragged = draggedTier === index;
+            const showDropIndicator = dropTargetTier === index && draggedTier !== null && draggedTier !== index;
+            
+            return (
+              <div key={tier} className="relative flex items-center gap-1">
+                {/* Drop indicator line - shows before this tier */}
+                {showDropIndicator && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-create-primary rounded-full shadow-lg shadow-create-primary/50 -ml-1.5 z-10 animate-pulse" />
+                )}
                 
-                // Don't do anything if dropped on same position
-                if (draggedTier === index) {
-                  setDraggedTier(null);
-                  return;
-                }
-                
-                const newList = [...tierList];
-                const draggedItem = newList[draggedTier];
-                newList.splice(draggedTier, 1);
-                newList.splice(index, 0, draggedItem);
-                
-                // Update tier colors with new order - order matters in objects!
-                const reorderedColors = {};
-                newList.forEach(t => {
-                  reorderedColors[t] = tierColors[t];
-                });
-                
-                console.log('Reordering tiers:', tierList, '→', newList);
-                updateSettings({ tierColors: reorderedColors });
-                setDraggedTier(null);
-              }}
-              onDragEnd={() => setDraggedTier(null)}
-              onClick={() => handleTierSelection(tier)}
-              className={`${tierChipClass(tier, tierColors)} ${
-                activeTier === tier ? "ring-2 ring-offset-2 ring-offset-slate-900" : ""
-              } ${tierSortingAllowed ? "cursor-move" : ""} ${draggedTier === index ? "opacity-50" : ""}`}
-            >
-              {tierSortingAllowed && (
-                <svg className="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
-                </svg>
-              )}
-              Tier {tier}
-            </button>
-          ))}
+                <button
+                  type="button"
+                  draggable={tierSortingAllowed}
+                  onDragStart={(e) => {
+                    if (!tierSortingAllowed) return;
+                    setDraggedTier(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    if (!tierSortingAllowed || draggedTier === null) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDropTargetTier(index);
+                  }}
+                  onDragLeave={(e) => {
+                    if (!tierSortingAllowed) return;
+                    setDropTargetTier(null);
+                  }}
+                  onDrop={(e) => {
+                    if (!tierSortingAllowed || draggedTier === null) return;
+                    e.preventDefault();
+                    
+                    // Don't do anything if dropped on same position
+                    if (draggedTier === index) {
+                      setDraggedTier(null);
+                      setDropTargetTier(null);
+                      return;
+                    }
+                    
+                    const newList = [...tierList];
+                    const draggedItem = newList[draggedTier];
+                    newList.splice(draggedTier, 1);
+                    newList.splice(index, 0, draggedItem);
+                    
+                    // Update tier colors with new order - order matters in objects!
+                    const reorderedColors = {};
+                    newList.forEach(t => {
+                      reorderedColors[t] = tierColors[t];
+                    });
+                    
+                    console.log('Reordering tiers:', tierList, '→', newList);
+                    updateSettings({ tierColors: reorderedColors });
+                    setDraggedTier(null);
+                    setDropTargetTier(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedTier(null);
+                    setDropTargetTier(null);
+                  }}
+                  onClick={() => handleTierSelection(tier)}
+                  className={`${tierChipClass(tier, tierColors)} ${
+                    activeTier === tier ? "ring-2 ring-offset-2 ring-offset-slate-900" : ""
+                  } ${tierSortingAllowed ? "cursor-move" : ""} ${isBeingDragged ? "opacity-30 scale-95" : ""} transition-all duration-150`}
+                >
+                  {tierSortingAllowed && (
+                    <svg className="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                    </svg>
+                  )}
+                  Tier {tier}
+                </button>
+              </div>
+            );
+          })}
         </div>
         <button 
           type="button" 

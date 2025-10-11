@@ -48,6 +48,8 @@ export default function PrizePoolManager() {
   const [loading, setLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [availableTiers, setAvailableTiers] = useState([]);
+  const [draggedTierIndex, setDraggedTierIndex] = useState(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState(null);
   const fileInputRef = useRef(null);
 
   // Load initial data
@@ -447,6 +449,54 @@ export default function PrizePoolManager() {
     setStatus({ type: "success", message: "Suggested weights applied for advanced mode." });
   };
 
+  const handleTierReorder = async (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    
+    // Get current tier order
+    const currentTierOrder = tierTotals.map(([tier]) => tier);
+    
+    // Reorder
+    const newOrder = [...currentTierOrder];
+    const [movedTier] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, movedTier);
+    
+    // Update tierColors object with new order
+    const reorderedColors = {};
+    newOrder.forEach(tier => {
+      reorderedColors[tier] = tierColors[tier];
+    });
+    
+    // Update settings
+    const currentSettings = await getSettings();
+    const updatedSettings = {
+      ...currentSettings,
+      tierColors: reorderedColors
+    };
+    
+    await setSettings(updatedSettings);
+    setTierColors(reorderedColors);
+    setAvailableTiers(Object.keys(reorderedColors));
+    
+    setStatus({ type: "success", message: "Tier order updated!" });
+    
+    // Dispatch event for Settings page sync
+    window.dispatchEvent(new CustomEvent('settings-updated', { 
+      detail: { settings: updatedSettings } 
+    }));
+    
+    // Sync to backend if user is authenticated
+    if (user?.username) {
+      setTimeout(async () => {
+        try {
+          await syncUserData(user.username, 'settings', updatedSettings);
+          console.log('✅ Tier order synced to backend');
+        } catch (syncError) {
+          console.warn('⚠️ Failed to sync tier order to backend:', syncError);
+        }
+      }, 500);
+    }
+  };
+
   if (loading) {
     return <p className="text-sm text-slate-400">Loading prize pool...</p>;
   }
@@ -526,26 +576,81 @@ export default function PrizePoolManager() {
         <button type="button" onClick={handleExport} className="bg-slate-800 text-slate-200">
           Export CSV
         </button>
-        <div className="ml-auto flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400">
-          {tierTotals.length ? (
-            tierTotals.map(([tier, qty]) => {
-              const hex = getTierColorHex(tier, tierColors);
-              const isCustomHex = typeof (tierColors?.[String(tier).toUpperCase()]) === 'string' && tierColors[String(tier).toUpperCase()].startsWith('#');
-              return (
-                <span
-                  key={tier}
-                  className={tierChipClass(tier, tierColors)}
-                  style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
-                >
-                  {tier}:{qty}
-                </span>
-              );
-            })
-          ) : (
-            <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-slate-300">
-              No stock
-            </span>
+        <div className="ml-auto flex items-center gap-2">
+          {isTierSortingAllowed(subscriptionPlan) && tierTotals.length > 1 && (
+            <div className="text-[10px] uppercase tracking-wide text-emerald-400 flex items-center gap-1 mr-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              Drag
+            </div>
           )}
+          <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-400">
+            {tierTotals.length ? (
+              tierTotals.map(([tier, qty], index) => {
+                const hex = getTierColorHex(tier, tierColors);
+                const isCustomHex = typeof (tierColors?.[String(tier).toUpperCase()]) === 'string' && tierColors[String(tier).toUpperCase()].startsWith('#');
+                const canDrag = isTierSortingAllowed(subscriptionPlan);
+                const isBeingDragged = draggedTierIndex === index;
+                const showDropIndicator = dropTargetIndex === index && draggedTierIndex !== null && draggedTierIndex !== index;
+                
+                return (
+                  <div key={tier} className="relative flex items-center gap-1">
+                    {/* Drop indicator line - shows before this tier */}
+                    {showDropIndicator && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-create-primary rounded-full shadow-lg shadow-create-primary/50 -ml-1.5 z-10 animate-pulse" />
+                    )}
+                    
+                    <span
+                      draggable={canDrag}
+                      onDragStart={(e) => {
+                        if (!canDrag) return;
+                        setDraggedTierIndex(index);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragOver={(e) => {
+                        if (!canDrag || draggedTierIndex === null) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        setDropTargetIndex(index);
+                      }}
+                      onDragLeave={(e) => {
+                        if (!canDrag) return;
+                        setDropTargetIndex(null);
+                      }}
+                      onDrop={(e) => {
+                        if (!canDrag || draggedTierIndex === null) return;
+                        e.preventDefault();
+                        handleTierReorder(draggedTierIndex, index);
+                        setDraggedTierIndex(null);
+                        setDropTargetIndex(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedTierIndex(null);
+                        setDropTargetIndex(null);
+                      }}
+                      className={`${tierChipClass(tier, tierColors)} ${
+                        canDrag ? 'cursor-move' : ''
+                      } ${isBeingDragged ? 'opacity-30 scale-95' : ''} transition-all duration-150`}
+                      style={isCustomHex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                      title={canDrag ? 'Drag to reorder' : undefined}
+                    >
+                      {canDrag && (
+                        <svg className="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                        </svg>
+                      )}
+                      {tier}:{qty}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-slate-300">
+                No stock
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {weightMode === "advanced" && (
