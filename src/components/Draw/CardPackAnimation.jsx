@@ -32,10 +32,10 @@ export default function CardPackAnimation({
   };
   
   // Handle drag move (pack stage)
-  const handlePeelMove = (clientY) => {
+  const handlePeelMove = (clientX) => {
     if (isDragging && stage === 'pack') {
-      const deltaY = startY - clientY;
-      const progress = Math.min(Math.max((deltaY / 200) * 100, 0), 100);
+      const deltaX = clientX - startY; // Using startY variable for X position
+      const progress = Math.min(Math.max((deltaX / 300) * 100, 0), 100);
       setPeelProgress(progress);
       
       // Auto-complete if dragged far enough
@@ -95,114 +95,240 @@ export default function CardPackAnimation({
       {stage === 'pack' && (
         <div
           className="relative touch-none animate-scale-in"
-          style={{ width: '500px', height: '350px' }}
-          onMouseDown={(e) => handlePeelStart(e.clientY)}
-          onMouseMove={(e) => handlePeelMove(e.clientY)}
+          style={{ width: '350px', height: '500px' }}
+          onMouseDown={(e) => handlePeelStart(e.clientX)}
+          onMouseMove={(e) => handlePeelMove(e.clientX)}
           onMouseUp={handlePeelEnd}
           onMouseLeave={handlePeelEnd}
-          onTouchStart={(e) => handlePeelStart(e.touches[0].clientY)}
-          onTouchMove={(e) => handlePeelMove(e.touches[0].clientY)}
+          onTouchStart={(e) => handlePeelStart(e.touches[0].clientX)}
+          onTouchMove={(e) => handlePeelMove(e.touches[0].clientX)}
           onTouchEnd={handlePeelEnd}
         >
           {/* Instructions */}
           <div className="absolute -top-16 left-0 right-0 text-center z-10">
             <p className="text-white text-lg font-semibold animate-pulse">
-              👆 Drag to tear open the pack
+              👉 Drag right to peel open the pack
             </p>
           </div>
           
-          {/* Glow effect behind pack (revealed as it tears) */}
+          {/* Glow/sparkle effect behind pack (revealed as wrapper peels) */}
           <div 
-            className="absolute inset-0 rounded-2xl overflow-hidden"
+            className="absolute rounded-3xl overflow-hidden pointer-events-none transition-all duration-200"
             style={{
+              inset: `${-peelProgress * 0.4}px`,
               opacity: peelProgress / 100,
-              filter: 'blur(20px)',
+              filter: `blur(${20 + peelProgress * 0.3}px)`,
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 via-orange-400 to-pink-500 animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-radial from-yellow-200 via-orange-300 to-pink-400 animate-pulse" />
           </div>
           
-          {/* Pack wrapper (landscape orientation like Pokemon pack) */}
+          {/* Base pack body (stays in place, visible through tear) */}
           <div 
-            className="relative w-full h-full rounded-2xl shadow-2xl overflow-hidden"
-            style={{ transform: 'perspective(1000px) rotateY(0deg)' }}
+            className="absolute inset-0 rounded-3xl shadow-2xl overflow-hidden"
           >
-              {/* Custom pack image or gradient background */}
+            {/* Pack artwork */}
+            {customPackImage ? (
+              <img 
+                src={customPackImage} 
+                alt="Card pack" 
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700" />
+            )}
+            
+            {/* Guiding tear line (horizontal zigzag seam at top) */}
+            <svg 
+              className="absolute pointer-events-none"
+              style={{
+                left: 0,
+                top: '20%',
+                width: '100%',
+                height: '40px',
+                opacity: peelProgress < 5 ? 0.5 : 0,
+                transition: 'opacity 0.3s',
+              }}
+              viewBox="0 0 350 40"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M 0 20 L 15 20 L 20 16 L 25 20 L 35 20 L 40 16 L 45 20 L 55 20 L 60 16 L 65 20 L 75 20 L 80 16 L 85 20 L 95 20 L 100 16 L 105 20 L 115 20 L 120 16 L 125 20 L 135 20 L 140 16 L 145 20 L 155 20 L 160 16 L 165 20 L 175 20 L 180 16 L 185 20 L 195 20 L 200 16 L 205 20 L 215 20 L 220 16 L 225 20 L 235 20 L 240 16 L 245 20 L 255 20 L 260 16 L 265 20 L 275 20 L 280 16 L 285 20 L 295 20 L 300 16 L 305 20 L 315 20 L 320 16 L 325 20 L 335 20 L 340 16 L 345 20 L 350 20"
+                stroke="rgba(255,255,255,0.4)"
+                strokeWidth="1.5"
+                fill="none"
+                strokeDasharray="4,4"
+                strokeLinecap="round"
+              />
+            </svg>
+            
+            {/* Pack content */}
+            <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
+              {/* Card count badge */}
+              <div className="absolute top-4 right-4 px-3 py-2 rounded-lg bg-yellow-400 text-yellow-900 font-bold text-base shadow-lg border-2 border-yellow-600">
+                ×{cardCount}
+              </div>
+
+              {/* Pack logo/icon */}
+              <div className="w-48 h-48 mb-6 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
+                {showLogo && logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt="Logo" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg className="w-28 h-28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Pack title */}
+              <h2 className="text-5xl font-bold mb-3 text-center drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+                Prize Pack
+              </h2>
+              <p className="text-2xl text-white font-semibold drop-shadow-md">
+                {cardCount} {cardCount === 1 ? 'Card' : 'Cards'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Wrapper back part (inside) - ONLY the top strip's back side */}
+          <div
+            className="absolute rounded-3xl overflow-hidden pointer-events-none transition-all duration-100"
+            style={{
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '20%',
+              zIndex: 10,
+              // Top strip back with matching zigzag on top edge
+              clipPath: `polygon(
+                ${peelProgress * 0.8 + 1}% ${2.5}%,
+                ${peelProgress * 0.8}% 0,
+                ${peelProgress * 0.8 + 3}% 0,
+                ${peelProgress * 0.8 + 4}% ${2.5}%,
+                ${peelProgress * 0.8 + 6}% 0,
+                ${peelProgress * 0.8 + 7}% ${2.5}%,
+                ${peelProgress * 0.8 + 9}% 0,
+                ${peelProgress * 0.8 + 10}% ${2.5}%,
+                ${peelProgress * 0.8 + 12}% 0,
+                ${peelProgress * 0.8 + 13}% ${2.5}%,
+                ${peelProgress * 0.8 + 15}% 0,
+                ${peelProgress * 0.8 + 16}% ${2.5}%,
+                ${peelProgress * 0.8 + 18}% 0,
+                ${peelProgress * 0.8 + 19}% ${2.5}%,
+                ${peelProgress * 0.8 + 21}% 0,
+                ${peelProgress * 0.8 + 22}% ${2.5}%,
+                ${peelProgress * 0.8 + 24}% 0,
+                ${peelProgress * 0.8 + 25}% ${2.5}%,
+                ${peelProgress * 0.8 + 27}% 0,
+                100% 0,
+                100% 100%,
+                0 100%,
+                0 0
+              )`,
+              transform: `perspective(1500px) translateX(${peelProgress * 4}px) translateZ(${peelProgress * 1.5}px) rotateY(${peelProgress * 1.5}deg) rotateZ(${peelProgress * -0.3}deg)`,
+              transformOrigin: 'left center',
+            }}
+          >
+            {/* Inner/back side - darker color */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
+            
+            {/* Texture/grain on inside */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)',
+                opacity: 0.3,
+              }}
+            />
+            
+            {/* Shadow at torn edge on back */}
+            <div 
+              className="absolute left-0 right-0 top-0 h-8"
+              style={{
+                background: 'linear-gradient(to top, transparent, rgba(0,0,0,0.9))',
+                opacity: peelProgress > 5 ? 1 : 0,
+              }}
+            />
+          </div>
+          
+          {/* Wrapper top part (front) - ONLY the top strip peels */}
+          <div
+            className="absolute rounded-3xl shadow-2xl overflow-hidden pointer-events-none transition-all duration-100"
+            style={{
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '20%',
+              zIndex: 11,
+              // Top strip with zigzag on bottom edge
+              clipPath: `polygon(
+                0 0,
+                ${peelProgress * 0.8}% 0,
+                ${peelProgress * 0.8}% 100%,
+                ${peelProgress * 0.8 + 1}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 3}% 100%,
+                ${peelProgress * 0.8 + 4}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 6}% 100%,
+                ${peelProgress * 0.8 + 7}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 9}% 100%,
+                ${peelProgress * 0.8 + 10}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 12}% 100%,
+                ${peelProgress * 0.8 + 13}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 15}% 100%,
+                ${peelProgress * 0.8 + 16}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 18}% 100%,
+                ${peelProgress * 0.8 + 19}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 21}% 100%,
+                ${peelProgress * 0.8 + 22}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 24}% 100%,
+                ${peelProgress * 0.8 + 25}% ${100 - 2.5}%,
+                ${peelProgress * 0.8 + 27}% 100%,
+                100% 100%,
+                100% 0
+              )`,
+              transform: `perspective(1500px) translateX(${peelProgress * 4}px) translateZ(${peelProgress * 2}px) rotateY(${peelProgress * 1.5}deg) rotateZ(${peelProgress * -0.3}deg)`,
+              transformOrigin: 'left center',
+            }}
+          >
+            {/* Outer wrapper - matches main pack color */}
+            <div className="absolute inset-0">
               {customPackImage ? (
                 <img 
                   src={customPackImage} 
-                  alt="Card pack" 
+                  alt="Card pack wrapper" 
                   className="absolute inset-0 w-full h-full object-cover"
+                  style={{ objectPosition: 'top' }}
                 />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700" />
               )}
               
-              {/* Foil shine overlay (holographic effect) */}
-              <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+              {/* Metallic/foil effect on outer wrapper */}
+              <div className="absolute inset-0 opacity-70 pointer-events-none">
                 <div 
-                  className="absolute inset-0 opacity-60"
+                  className="absolute inset-0"
                   style={{
-                    background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+                    background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.6) 50%, transparent 70%)',
                     animation: 'shimmer 3s ease-in-out infinite',
                   }}
                 />
               </div>
-
-              {/* Pack content */}
-              <div className="relative h-full flex flex-col items-center justify-center p-6 text-white">
-                {/* Card count badge - top right corner */}
-                <div className="absolute top-4 right-4 px-3 py-2 rounded-lg bg-yellow-400 text-yellow-900 font-bold text-base shadow-lg border-2 border-yellow-600">
-                  ×{cardCount}
-                </div>
-
-                {/* Pack logo/icon */}
-                <div className="w-40 h-40 mb-4 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
-                  {showLogo && logoUrl ? (
-                    <img 
-                      src={logoUrl} 
-                      alt="Logo" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                    </svg>
-                  )}
-                </div>
-
-                {/* Pack title */}
-                <h2 className="text-4xl font-bold mb-2 text-center drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
-                  Prize Pack
-                </h2>
-                <p className="text-xl text-white font-semibold mb-2 drop-shadow-md">
-                  {cardCount} {cardCount === 1 ? 'Card' : 'Cards'}
-                </p>
-              </div>
-              
-              {/* Tear effect overlay (splits pack open) */}
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  clipPath: peelProgress > 0 
-                    ? `polygon(
-                        0 0, 
-                        ${50 - peelProgress/2}% 0, 
-                        ${50 - peelProgress/2}% 100%, 
-                        0 100%, 
-                        0 0,
-                        ${50 + peelProgress/2}% 0,
-                        100% 0,
-                        100% 100%,
-                        ${50 + peelProgress/2}% 100%
-                      )`
-                    : 'none',
-                  transition: 'clip-path 0.1s ease-out',
-                }}
-              >
-                <div className="absolute inset-0 bg-black/50" />
-              </div>
             </div>
+            
+            {/* Shadow at torn edge */}
+            <div 
+              className="absolute left-0 right-0 bottom-0 h-8"
+              style={{
+                background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.8))',
+                opacity: peelProgress > 5 ? 1 : 0,
+              }}
+            />
+          </div>
+          
           
           {/* Progress indicator */}
           <div className="absolute -bottom-20 left-0 right-0">
@@ -218,10 +344,10 @@ export default function CardPackAnimation({
             <p className="text-center text-white text-sm mt-3 font-semibold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
               {peelProgress > 0 ? (
                 <span>
-                  ✨ {Math.round(peelProgress)}% torn open ✨
+                  ✨ {Math.round(peelProgress)}% peeled open ✨
                 </span>
               ) : (
-                'Drag up to tear open'
+                'Drag right to peel open'
               )}
             </p>
           </div>
