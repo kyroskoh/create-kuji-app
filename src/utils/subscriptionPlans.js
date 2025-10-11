@@ -278,3 +278,12 @@ export function hasBetaAccess(planId) {
 export function hasEventManagement(planId) {
   return isFeatureAvailable('eventManagement', planId);
 }
+
+// Check if QR code color customization is available (all paid plans)
+export function canCustomizeQRCodeColor(planId) {
+  const plan = SUBSCRIPTION_PLANS[planId.toUpperCase()];
+  if (!plan) return false;
+  
+  // All paid plans (basic, advanced, pro) have QR code customization
+  return plan.id !== 'free';
+}

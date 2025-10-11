@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { tierChipClass } from "../../utils/tierColors.js";
-import { isFeatureAvailable } from "../../utils/subscriptionPlans.js";
+import { isFeatureAvailable, hasCustomBranding } from "../../utils/subscriptionPlans.js";
+import { useBranding } from "../../contexts/BrandingContext.jsx";
+import { useAuth } from "../../utils/AuthContext.jsx";
 
 const formatTimestamp = (timestamp) =>
   timestamp ? new Date(timestamp).toLocaleString() : "";
@@ -11,10 +14,84 @@ const openEntryInNewTab = (username, entry) => {
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
-export default function HistoryPanel({ history, tierColors, onClose, username, subscriptionPlan }) {
+// Helper function to generate QR code with embedded logo (same as DrawScreen)
+const generateQRCodeWithLogo = async (url, logoDataUrl, brandColors) => {
+  try {
+    const canvas = document.createElement('canvas');
+    const primaryColor = brandColors?.primaryColor || '#1e293b';
+    
+    await QRCode.toCanvas(canvas, url, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: primaryColor,
+        light: '#ffffff'
+      },
+      errorCorrectionLevel: 'H'
+    });
+    
+    if (!logoDataUrl) {
+      return canvas.toDataURL('image/png');
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const logoImage = new Image();
+    
+    return new Promise((resolve, reject) => {
+      logoImage.onload = () => {
+        const logoSize = canvas.width * 0.2;
+        const logoX = (canvas.width - logoSize) / 2;
+        const logoY = (canvas.height - logoSize) / 2;
+        
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.save();
+        const radius = 8;
+        ctx.beginPath();
+        ctx.moveTo(logoX + radius, logoY);
+        ctx.lineTo(logoX + logoSize - radius, logoY);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + radius);
+        ctx.lineTo(logoX + logoSize, logoY + logoSize - radius);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - radius, logoY + logoSize);
+        ctx.lineTo(logoX + radius, logoY + logoSize);
+        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - radius);
+        ctx.lineTo(logoX, logoY + radius);
+        ctx.quadraticCurveTo(logoX, logoY, logoX + radius, logoY);
+        ctx.closePath();
+        ctx.clip();
+        
+        ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      logoImage.onerror = () => {
+        console.warn('Failed to load logo for QR code');
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      logoImage.src = logoDataUrl;
+    });
+  } catch (err) {
+    console.error('Failed to generate QR code with logo:', err);
+    throw err;
+  }
+};
+
+export default function HistoryPanel({ history, tierColors, onClose, username, subscriptionPlan, settings }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState("all");
   const [copiedEntryId, setCopiedEntryId] = useState(null);
+  const [qrModalEntry, setQrModalEntry] = useState(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
+  const [generatingQR, setGeneratingQR] = useState(false);
+  
+  const { user } = useAuth();
+  const { branding } = useBranding();
 
   // Check if scratch cards are enabled for sharing
   const hasScratchCards = isFeatureAvailable('scratchCards', subscriptionPlan || 'free');
@@ -28,6 +105,60 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
       console.error('Failed to copy link:', err);
       alert('Failed to copy link to clipboard');
     });
+  };
+  
+  const showQRCode = async (entry) => {
+    setQrModalEntry(entry);
+    setGeneratingQR(true);
+    setQrCodeDataUrl(null);
+    
+    try {
+      const shareUrl = `${window.location.origin}/${encodeURIComponent(username)}/fan/draw/${encodeURIComponent(entry.id)}`;
+      
+      // Check if user has Pro plan with custom branding
+      const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+      const logoUrl = hasBrandingAccess && branding?.logoUrl ? branding.logoUrl : null;
+      
+      // Get custom QR code color from settings (if available)
+      const qrCodeColor = settings?.qrCodeColor || branding?.primaryColor || '#1e293b';
+      
+      let qrDataUrl;
+      if (logoUrl) {
+        qrDataUrl = await generateQRCodeWithLogo(shareUrl, logoUrl, {
+          primaryColor: qrCodeColor
+        });
+      } else {
+        qrDataUrl = await QRCode.toDataURL(shareUrl, {
+          width: 400,
+          margin: 2,
+          color: {
+            dark: qrCodeColor,
+            light: '#ffffff'
+          }
+        });
+      }
+      
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+      alert('Failed to generate QR code');
+    } finally {
+      setGeneratingQR(false);
+    }
+  };
+  
+  const downloadQRCode = () => {
+    if (!qrCodeDataUrl || !qrModalEntry) return;
+    
+    const link = document.createElement('a');
+    link.download = `kuji-session-${qrModalEntry.sessionNumber}-${qrModalEntry.fanName.replace(/\s+/g, '-')}.png`;
+    link.href = qrCodeDataUrl;
+    link.click();
+  };
+  
+  const closeQRModal = () => {
+    setQrModalEntry(null);
+    setQrCodeDataUrl(null);
   };
 
   const filteredHistory = useMemo(() => {
@@ -135,22 +266,33 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <time className="text-xs text-slate-500">{formatTimestamp(entry.timestamp)}</time>
                       <button
                         type="button"
 onClick={() => openEntryInNewTab(username, entry)}
-                        className="ml-2 rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700"
+                        className="rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700"
                       >
                         Open
                       </button>
                       <button
                         type="button"
                         onClick={() => copyShareLink(entry)}
-                        className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 relative"
+                        className="rounded-md bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
                         title="Copy shareable link for fan"
                       >
                         {copiedEntryId === entry.id ? '✓ Copied!' : '🔗 Share'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => showQRCode(entry)}
+                        className="rounded-md bg-purple-600 px-2 py-1 text-xs text-white hover:bg-purple-700 flex items-center gap-1"
+                        title="Show QR code"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        QR
                       </button>
                     </div>
                   </header>
@@ -175,6 +317,91 @@ onClick={() => openEntryInNewTab(username, entry)}
           )}
         </div>
       </div>
+      
+      {/* QR Code Modal */}
+      {qrModalEntry && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">QR Code</h3>
+                <p className="text-sm text-slate-300 mt-1">
+                  Session #{qrModalEntry.sessionNumber} - {qrModalEntry.fanName}
+                </p>
+              </div>
+              <button
+                onClick={closeQRModal}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {generatingQR ? (
+              <div className="bg-white rounded-lg p-8 mb-4 flex flex-col items-center justify-center min-h-[300px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p className="text-slate-600 text-sm">Generating QR code...</p>
+              </div>
+            ) : qrCodeDataUrl ? (() => {
+              const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+              const hasLogo = hasBrandingAccess && branding?.logoUrl;
+              
+              return (
+                <>
+                  <div className="bg-white rounded-lg p-4 mb-4 flex flex-col items-center">
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-sm text-slate-800 font-semibold">Scan to View Prizes:</p>
+                      {hasLogo && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
+                          Branded
+                        </span>
+                      )}
+                    </div>
+                    <img 
+                      src={qrCodeDataUrl} 
+                      alt="QR Code" 
+                      className="w-64 h-64 border-4 border-slate-200 rounded-lg shadow-lg"
+                    />
+                    <p className="text-xs text-slate-600 mt-3 text-center">
+                      {hasLogo 
+                        ? 'Branded QR code with your logo 🎉'
+                        : 'Fan can scan this to view their prizes'}
+                    </p>
+                  </div>
+                  
+                  <div className="text-xs text-slate-400 mb-4">
+                    <p>✨ Share this QR code with {qrModalEntry.fanName}</p>
+                    <p className="mt-1">📱 They can scan it to see their prizes</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={downloadQRCode}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </button>
+                    <button
+                      onClick={closeQRModal}
+                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              );
+            })() : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

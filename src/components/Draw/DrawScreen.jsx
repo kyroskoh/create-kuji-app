@@ -375,11 +375,14 @@ export default function DrawScreen() {
       const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
       const logoUrl = hasBrandingAccess && branding?.logoUrl ? branding.logoUrl : null;
       
+      // Get custom QR code color from settings (if available)
+      const qrCodeColor = sessionSettings.qrCodeColor || branding?.primaryColor || '#1e293b';
+      
       if (logoUrl) {
         // Generate QR code with embedded logo for Pro users
         console.log('🎨 Auto-generating QR code with branded logo');
         generateQRCodeWithLogo(shareUrl, logoUrl, {
-          primaryColor: branding?.primaryColor || '#1e293b'
+          primaryColor: qrCodeColor
         }).then(url => {
           setQrCodeDataUrl(url);
         }).catch(err => {
@@ -389,7 +392,7 @@ export default function DrawScreen() {
             width: 400,
             margin: 2,
             color: {
-              dark: branding?.primaryColor || '#1e293b',
+              dark: qrCodeColor,
               light: '#ffffff'
             }
           }).then(url => setQrCodeDataUrl(url));
@@ -400,7 +403,7 @@ export default function DrawScreen() {
           width: 400,
           margin: 2,
           color: {
-            dark: branding?.primaryColor || '#1e293b',
+            dark: qrCodeColor,
             light: '#ffffff'
           }
         }).then(url => {
@@ -486,12 +489,15 @@ export default function DrawScreen() {
       const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
       const logoUrl = hasBrandingAccess && branding?.logoUrl ? branding.logoUrl : null;
       
+      // Get custom QR code color from settings (if available)
+      const qrCodeColor = sessionSettings.qrCodeColor || branding?.primaryColor || '#1e293b';
+      
       let qrDataUrl;
       if (logoUrl) {
         // Generate QR code with embedded logo for Pro users
         console.log('🎨 Generating QR code with branded logo');
         qrDataUrl = await generateQRCodeWithLogo(shareUrl, logoUrl, {
-          primaryColor: branding?.primaryColor || '#1e293b'
+          primaryColor: qrCodeColor
         });
       } else {
         // Generate standard QR code
@@ -499,7 +505,7 @@ export default function DrawScreen() {
           width: 400,
           margin: 2,
           color: {
-            dark: branding?.primaryColor || '#1e293b',
+            dark: qrCodeColor,
             light: '#ffffff'
           }
         });
@@ -974,6 +980,7 @@ export default function DrawScreen() {
           onClose={closeHistory} 
           username={user?.username || ""}
           subscriptionPlan={sessionSettings.subscriptionPlan || 'free'}
+          settings={sessionSettings}
         />
       )}
       

@@ -6,7 +6,7 @@ import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js"
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import { COUNTRIES, searchCountries, formatCurrencySample } from "../../utils/countries.js";
-import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync, canUseCustomTierColors } from "../../utils/subscriptionPlans.js";
+import { getAvailableColorsForPlan, canCreateTier, getAvailableWeightModesForPlan, getMaxTierNameLength, isTierSortingAllowed, validateTierName, canPublishStockPage, hasDatabaseSync, canUseCustomTierColors, canCustomizeQRCodeColor } from "../../utils/subscriptionPlans.js";
 import ProColorWheel from '../ProColorWheel.jsx';
 import AddTierModal from './AddTierModal.jsx';
 import SessionManager from './SessionManager.jsx';
@@ -44,7 +44,8 @@ export default function Settings() {
     tierColors: DEFAULT_TIER_COLOR_MAP,
     nextSessionNumber: 1,
     weightMode: "basic",
-    subscriptionPlan: "free" // Default plan
+    subscriptionPlan: "free", // Default plan
+    qrCodeColor: null // Custom QR code color (null = use brand primary color)
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
@@ -124,6 +125,11 @@ export default function Settings() {
   // Check if user has Pro access for custom tier colors
   const hasCustomTierColors = useMemo(() => {
     return canUseCustomTierColors(settings.subscriptionPlan || "free");
+  }, [settings.subscriptionPlan]);
+  
+  // Check if user can customize QR code color (all paid plans)
+  const canCustomizeQRColor = useMemo(() => {
+    return canCustomizeQRCodeColor(settings.subscriptionPlan || "free");
   }, [settings.subscriptionPlan]);
 
   // Get available colors and weight modes based on subscription plan
@@ -503,6 +509,17 @@ export default function Settings() {
   const handleWeightModeChange = (mode) => {
     updateSettings({ weightMode: mode === "advanced" ? "advanced" : "basic" });
   };
+  
+  const handleQRCodeColorChange = (event) => {
+    const color = event.target.value;
+    // Validate hex color format
+    const hexColorRegex = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
+    if (color && !hexColorRegex.test(color)) {
+      setStatusMessage("Invalid hex color format. Use format: #RRGGBB or #RGB");
+      return;
+    }
+    updateSettings({ qrCodeColor: color || null });
+  };
 
   const activeCountryEmoji = settings.countryEmoji || flagFromCountryCode(settings.countryCode || "");
   
@@ -709,6 +726,110 @@ export default function Settings() {
               </button>
             );
           })}
+        </div>
+      </div>
+      {/* QR Code Customization */}
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold text-white">QR Code Customization</h3>
+        <p className="text-sm text-slate-400">
+          {canCustomizeQRColor
+            ? "Customize the color of QR codes generated for your draws. This color will be used instead of your brand primary color."
+            : "Upgrade to any paid plan to customize your QR code colors."}
+          {!canCustomizeQRColor && <span className="text-amber-400"> (Available on Basic, Advanced & Pro plans)</span>}
+        </p>
+        <div className={`rounded-lg border p-4 ${
+          canCustomizeQRColor
+            ? 'border-slate-700 bg-slate-800/50'
+            : 'border-amber-500/30 bg-amber-500/5'
+        }`}>
+          {canCustomizeQRColor ? (
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="flex-1">
+                  <label className="text-xs uppercase tracking-wide text-slate-400 mb-2 block" htmlFor="qr-color-input">
+                    QR Code Color (Hex)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="qr-color-input"
+                      type="text"
+                      placeholder="#1e293b"
+                      maxLength={7}
+                      value={settings.qrCodeColor || ''}
+                      onChange={handleQRCodeColorChange}
+                      className="w-full sm:w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-mono text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+                    />
+                    <input
+                      type="color"
+                      value={settings.qrCodeColor || '#1e293b'}
+                      onChange={handleQRCodeColorChange}
+                      className="h-10 w-16 rounded-md border border-slate-700 bg-slate-900 cursor-pointer"
+                      title="Pick a color"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Enter a hex color code (e.g., #3b82f6) or use the color picker. Leave empty to use brand primary color.
+                  </p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-xs uppercase tracking-wide text-slate-400">Preview</span>
+                  <div 
+                    className="w-16 h-16 rounded-lg border-2 border-slate-700 shadow-md"
+                    style={{ backgroundColor: settings.qrCodeColor || '#1e293b' }}
+                    title={settings.qrCodeColor || 'Default (#1e293b)'}
+                  />
+                  <span className="text-xs font-mono text-slate-500">
+                    {settings.qrCodeColor || 'Default'}
+                  </span>
+                </div>
+              </div>
+              {settings.qrCodeColor && (
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ qrCodeColor: null })}
+                  className="text-xs text-slate-400 hover:text-slate-200 underline"
+                >
+                  Reset to default
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-amber-200/90">
+                ✨ Upgrade to a paid plan to customize your QR code colors! Stand out with your brand colors on every QR code you generate.
+              </p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start gap-2 text-xs text-slate-300">
+                  <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Set custom hex colors for all QR codes</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-slate-300">
+                  <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Match your brand identity perfectly</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-slate-300">
+                  <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Available on all paid plans (Basic, Advanced, Pro)</span>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="mt-3 rounded-md px-4 py-2 text-sm font-semibold bg-amber-600 text-white hover:bg-amber-500 hover:shadow-lg transition-all flex items-center gap-2"
+                onClick={() => window.alert('Visit the Subscription Plan page to upgrade!')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Upgrade Now
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-3">
