@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import SSOButtons from '../auth/SSOButtons';
+import Footer from '../components/Footer';
 
 export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState('');
@@ -141,6 +142,8 @@ export default function Login() {
             </Link>
           </p>
         </div>
+        
+        <Footer variant="minimal" />
       </div>
     </div>
   );
