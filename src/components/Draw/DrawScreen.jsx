@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { executeDraw } from "../../utils/randomDraw.js";
 import { tierChipClass, sortTierEntries } from "../../utils/tierColors.js";
-import { isTierSortingAllowed } from "../../utils/subscriptionPlans.js";
+import { isTierSortingAllowed, hasCustomBranding } from "../../utils/subscriptionPlans.js";
 import ResultCard from "./ResultCard.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import ScratchCard from "./ScratchCard.jsx";
@@ -14,6 +14,7 @@ import { syncUserData } from "../../services/syncService.js";
 import BrandingHeader from "../Branding/BrandingHeader.jsx";
 import BrandingFooter from "../Branding/BrandingFooter.jsx";
 import BrandingWrapper from "../Branding/BrandingWrapper.jsx";
+import { useBranding } from "../../contexts/BrandingContext.jsx";
 
 const createId = () => (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
 
@@ -41,10 +42,87 @@ const normalisePresets = (list) =>
     return { ...preset, price };
   });
 
+// Helper function to generate QR code with embedded logo
+const generateQRCodeWithLogo = async (url, logoDataUrl, brandColors) => {
+  try {
+    // Generate base QR code as canvas
+    const canvas = document.createElement('canvas');
+    const primaryColor = brandColors?.primaryColor || '#1e293b';
+    
+    await QRCode.toCanvas(canvas, url, {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: primaryColor,
+        light: '#ffffff'
+      },
+      errorCorrectionLevel: 'H' // High error correction to allow logo embedding
+    });
+    
+    if (!logoDataUrl) {
+      // No logo, just return the QR code
+      return canvas.toDataURL('image/png');
+    }
+    
+    // Load and draw logo on top of QR code
+    const ctx = canvas.getContext('2d');
+    const logoImage = new Image();
+    
+    return new Promise((resolve, reject) => {
+      logoImage.onload = () => {
+        // Calculate logo size (about 20% of QR code size)
+        const logoSize = canvas.width * 0.2;
+        const logoX = (canvas.width - logoSize) / 2;
+        const logoY = (canvas.height - logoSize) / 2;
+        
+        // Draw white background circle for logo
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2 + 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Draw logo with rounded corners
+        ctx.save();
+        const radius = 8;
+        ctx.beginPath();
+        ctx.moveTo(logoX + radius, logoY);
+        ctx.lineTo(logoX + logoSize - radius, logoY);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY, logoX + logoSize, logoY + radius);
+        ctx.lineTo(logoX + logoSize, logoY + logoSize - radius);
+        ctx.quadraticCurveTo(logoX + logoSize, logoY + logoSize, logoX + logoSize - radius, logoY + logoSize);
+        ctx.lineTo(logoX + radius, logoY + logoSize);
+        ctx.quadraticCurveTo(logoX, logoY + logoSize, logoX, logoY + logoSize - radius);
+        ctx.lineTo(logoX, logoY + radius);
+        ctx.quadraticCurveTo(logoX, logoY, logoX + radius, logoY);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Draw logo
+        ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      logoImage.onerror = () => {
+        // If logo fails to load, just return QR code without logo
+        console.warn('Failed to load logo for QR code');
+        resolve(canvas.toDataURL('image/png'));
+      };
+      
+      logoImage.src = logoDataUrl;
+    });
+  } catch (err) {
+    console.error('Failed to generate QR code with logo:', err);
+    throw err;
+  }
+};
+
 export default function DrawScreen() {
   const location = useLocation();
   const { getPrizes, setPrizes, getPricing, saveHistory, getHistory, getSettings, setSettings } = useLocalStorageDAO();
   const { user } = useAuth();
+  const { branding } = useBranding();
   const [prizes, setPrizePool] = useState([]);
   const [presets, setPresets] = useState([]);
   const [sessionSettings, setSessionSettings] = useState({
@@ -292,18 +370,45 @@ export default function DrawScreen() {
       setShowShareLinkImmediately(true);
       // Generate QR code for the share link
       const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(sessionMeta.id)}`;
-      QRCode.toDataURL(shareUrl, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#1e293b',
-          light: '#ffffff'
-        }
-      }).then(url => {
-        setQrCodeDataUrl(url);
-      }).catch(err => {
-        console.error('Failed to generate QR code:', err);
-      });
+      
+      // Check if user has Pro plan with custom branding
+      const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+      const logoUrl = hasBrandingAccess && branding?.logoUrl ? branding.logoUrl : null;
+      
+      if (logoUrl) {
+        // Generate QR code with embedded logo for Pro users
+        console.log('🎨 Auto-generating QR code with branded logo');
+        generateQRCodeWithLogo(shareUrl, logoUrl, {
+          primaryColor: branding?.primaryColor || '#1e293b'
+        }).then(url => {
+          setQrCodeDataUrl(url);
+        }).catch(err => {
+          console.error('Failed to generate QR code with logo:', err);
+          // Fallback to standard QR code
+          QRCode.toDataURL(shareUrl, {
+            width: 400,
+            margin: 2,
+            color: {
+              dark: branding?.primaryColor || '#1e293b',
+              light: '#ffffff'
+            }
+          }).then(url => setQrCodeDataUrl(url));
+        });
+      } else {
+        // Generate standard QR code
+        QRCode.toDataURL(shareUrl, {
+          width: 400,
+          margin: 2,
+          color: {
+            dark: branding?.primaryColor || '#1e293b',
+            light: '#ffffff'
+          }
+        }).then(url => {
+          setQrCodeDataUrl(url);
+        }).catch(err => {
+          console.error('Failed to generate QR code:', err);
+        });
+      }
       // Auto-copy the link
       setTimeout(() => {
         handleCopyShareLink();
@@ -377,14 +482,29 @@ export default function DrawScreen() {
     
     const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
     try {
-      const qrDataUrl = await QRCode.toDataURL(shareUrl, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#1e293b',
-          light: '#ffffff'
-        }
-      });
+      // Check if user has Pro plan with custom branding
+      const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+      const logoUrl = hasBrandingAccess && branding?.logoUrl ? branding.logoUrl : null;
+      
+      let qrDataUrl;
+      if (logoUrl) {
+        // Generate QR code with embedded logo for Pro users
+        console.log('🎨 Generating QR code with branded logo');
+        qrDataUrl = await generateQRCodeWithLogo(shareUrl, logoUrl, {
+          primaryColor: branding?.primaryColor || '#1e293b'
+        });
+      } else {
+        // Generate standard QR code
+        qrDataUrl = await QRCode.toDataURL(shareUrl, {
+          width: 400,
+          margin: 2,
+          color: {
+            dark: branding?.primaryColor || '#1e293b',
+            light: '#ffffff'
+          }
+        });
+      }
+      
       setQrCodeDataUrl(qrDataUrl);
     } catch (err) {
       console.error('Failed to generate QR code:', err);
@@ -540,17 +660,36 @@ export default function DrawScreen() {
                 </div>
 
                 {/* QR Code Display */}
-                {qrCodeDataUrl && (
-                  <div className="bg-white rounded-lg p-4 mb-4 flex flex-col items-center">
-                    <p className="text-sm text-slate-800 font-semibold mb-3">Scan QR Code:</p>
-                    <img 
-                      src={qrCodeDataUrl} 
-                      alt="QR Code for share link" 
-                      className="w-48 h-48 border-4 border-slate-200 rounded-lg"
-                    />
-                    <p className="text-xs text-slate-600 mt-3 text-center">Fan can scan this to access their prizes</p>
-                  </div>
-                )}
+                {qrCodeDataUrl && (() => {
+                  const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
+                  const hasLogo = hasBrandingAccess && branding?.logoUrl;
+                  
+                  return (
+                    <div className="bg-white rounded-lg p-4 mb-4 flex flex-col items-center">
+                      <div className="flex items-center gap-2 mb-3">
+                        <p className="text-sm text-slate-800 font-semibold">Scan QR Code:</p>
+                        {hasLogo && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                            Branded
+                          </span>
+                        )}
+                      </div>
+                      <img 
+                        src={qrCodeDataUrl} 
+                        alt="QR Code for share link" 
+                        className="w-48 h-48 border-4 border-slate-200 rounded-lg shadow-lg"
+                      />
+                      <p className="text-xs text-slate-600 mt-3 text-center">
+                        {hasLogo 
+                          ? 'Branded QR code with your logo - Pro feature! 🎉'
+                          : 'Fan can scan this to access their prizes'}
+                      </p>
+                    </div>
+                  );
+                })()}
                 
                 <div className="text-xs text-slate-400 mb-4">
                   <p>✨ The prizes are hidden - fan will scratch to reveal!</p>
@@ -644,8 +783,19 @@ export default function DrawScreen() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
                     <div>
-                      <div className="font-semibold">{qrCodeDataUrl ? 'QR Code Generated ✓' : 'Generate QR Code'}</div>
-                      <div className="text-xs text-slate-400">For easy scanning</div>
+                      <div className="font-semibold flex items-center gap-2">
+                        {qrCodeDataUrl ? 'QR Code Generated ✓' : 'Generate QR Code'}
+                        {qrCodeDataUrl && hasCustomBranding(user?.subscriptionPlan || 'free') && branding?.logoUrl && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                            Branded
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {qrCodeDataUrl && hasCustomBranding(user?.subscriptionPlan || 'free') && branding?.logoUrl
+                          ? 'QR code includes your logo'
+                          : 'For easy scanning'}
+                      </div>
                     </div>
                   </button>
                   {qrCodeDataUrl && (
