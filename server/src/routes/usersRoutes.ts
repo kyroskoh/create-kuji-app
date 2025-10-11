@@ -30,4 +30,9 @@ router.get('/:username/branding', brandingController.getBranding); // Public end
 router.post('/:username/branding/sync', requireAuth, brandingController.syncBranding); // Authenticated
 router.delete('/:username/branding', requireAuth, brandingController.deleteBrandingController); // Authenticated
 
+// Session reveal tracking (public endpoints - no auth needed for fans)
+router.get('/:username/sessions/:entryId', userKujiController.getFanDrawSession);
+router.post('/:username/sessions/:entryId/revealed', userKujiController.markSessionRevealed);
+router.get('/:username/sessions/:entryId/revealed', userKujiController.getSessionRevealStatus);
+
 export default router;

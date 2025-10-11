@@ -172,16 +172,18 @@ model Prize {
 }
 
 model DrawSession {
-  id            String   @id @default(uuid())
-  sessionNumber Int      @map("session_number")
-  fanName       String   @map("fan_name")
-  queueNumber   String?  @map("queue_number")
+  id            String    @id @default(uuid())
+  sessionNumber Int       @map("session_number")
+  fanName       String    @map("fan_name")
+  queueNumber   String?   @map("queue_number")
   label         String?
-  timestamp     DateTime @default(now())
+  timestamp     DateTime  @default(now())
+  fanRevealed   Boolean   @default(false) @map("fan_revealed")     // Fan viewed/revealed prizes
+  fanRevealedAt DateTime? @map("fan_revealed_at")                  // When fan revealed
   
   // Foreign key
-  userId        String   @map("user_id")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Relations
   drawResults   DrawResult[]

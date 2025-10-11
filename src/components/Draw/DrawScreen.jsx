@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
@@ -68,6 +68,10 @@ export default function DrawScreen() {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [useScratchMode, setUseScratchMode] = useState(false);
   const [revealedResults, setRevealedResults] = useState(new Set());
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
+  const [showShareLinkImmediately, setShowShareLinkImmediately] = useState(false);
+  const shareMenuRef = useRef(null);
 
   // Load initial data
   useEffect(() => {
@@ -108,6 +112,20 @@ export default function DrawScreen() {
     };
   }, [location.pathname, getSettings]); // Re-run when route changes
 
+  // Close share menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
+        setShowShareMenu(false);
+      }
+    };
+
+    if (showShareMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showShareMenu]);
+
   const currencyFormatter = useMemo(() => {
     const currency = sessionSettings.currency || "MYR";
     const locale = sessionSettings.locale || LOCALE_MAP[currency] || navigator.language || "ms-MY";
@@ -145,7 +163,7 @@ export default function DrawScreen() {
     setDrawLabel(preset.label);
   };
 
-  const handleDraw = async () => {
+  const handleDraw = async (skipReveal = false) => {
     const trimmedName = fanName.trim();
     if (!trimmedName) {
       setError("Fan name is required before drawing.");
@@ -201,7 +219,12 @@ export default function DrawScreen() {
     }));
 
     setPrizePool(remaining);
-    setResults(resultItems);
+    
+    // If skipReveal is true, don't show results on screen (for share link workflow)
+    if (!skipReveal) {
+      setResults(resultItems);
+    }
+    
     setLastDrawInfo(sessionMeta);
 
     const nextHistory = [
@@ -229,8 +252,10 @@ export default function DrawScreen() {
     ]);
     
     // Sync updated data to backend if user is authenticated
+    // For skipReveal (share link workflow), wait for sync to complete
     if (user?.username) {
-      setTimeout(async () => {
+      if (skipReveal) {
+        // Wait for sync before showing share modal
         try {
           await Promise.allSettled([
             syncUserData(user.username, 'prizes', remaining),
@@ -241,10 +266,33 @@ export default function DrawScreen() {
         } catch (syncError) {
           console.warn('⚠️ Failed to sync draw results to backend:', syncError);
         }
-      }, 1000); // Longer delay to let UI animations complete
+      } else {
+        // For regular draw, sync in background
+        setTimeout(async () => {
+          try {
+            await Promise.allSettled([
+              syncUserData(user.username, 'prizes', remaining),
+              syncUserData(user.username, 'history', nextHistory),
+              syncUserData(user.username, 'settings', updatedSettings)
+            ]);
+            console.log('✅ Draw results synced to backend');
+          } catch (syncError) {
+            console.warn('⚠️ Failed to sync draw results to backend:', syncError);
+          }
+        }, 1000);
+      }
     }
 
     setIsDrawing(false);
+    
+    // If skipReveal, show share link immediately (after sync completes)
+    if (skipReveal) {
+      setShowShareLinkImmediately(true);
+      // Auto-copy the link
+      setTimeout(() => {
+        handleCopyShareLink();
+      }, 100);
+    }
   };
 
   const processedResults = useMemo(() => {
@@ -293,6 +341,25 @@ export default function DrawScreen() {
 
   const closeHistory = () => {
     setHistoryOpen(false);
+  };
+
+  const handleCopyShareLink = () => {
+    if (!lastDrawInfo) return;
+    
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareLinkCopied(true);
+      setTimeout(() => setShareLinkCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy link:', err);
+      alert('Failed to copy link to clipboard');
+    });
+  };
+
+  const handleOpenFanLink = () => {
+    if (!lastDrawInfo) return;
+    const shareUrl = `/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
   };
 
   const tierColors = sessionSettings.tierColors ?? {};
@@ -376,10 +443,157 @@ export default function DrawScreen() {
             />
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={handleDraw} disabled={isDrawing}>
-            {isDrawing ? "Drawing..." : "Start Draw"}
-          </button>
+        <div className="mt-6 flex flex-wrap gap-3 items-center">
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={() => handleDraw(false)} disabled={isDrawing}>
+              {isDrawing ? "Drawing..." : "Start Draw"}
+            </button>
+            <button 
+              type="button" 
+              onClick={() => handleDraw(true)} 
+              disabled={isDrawing}
+              className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-2 rounded-md font-semibold text-xs transition-colors flex items-center gap-2 justify-center"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              {isDrawing ? "Drawing..." : "Draw & Share Link"}
+            </button>
+          </div>
+          
+          {/* Share Link Modal - Shows immediately after draw with share link */}
+          {showShareLinkImmediately && lastDrawInfo && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                <div className="text-center mb-4">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Draw Complete!</h3>
+                  <p className="text-slate-300">Session #{lastDrawInfo.sessionNumber} for {lastDrawInfo.fanName}</p>
+                </div>
+                
+                <div className="bg-slate-900 rounded-lg p-4 mb-4">
+                  <label className="text-xs text-slate-400 mb-2 block">Share this link with the fan:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`}
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 font-mono"
+                      onClick={(e) => e.target.select()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCopyShareLink()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
+                    >
+                      {shareLinkCopied ? '✓' : 'Copy'}
+                    </button>
+                  </div>
+                  {shareLinkCopied && (
+                    <p className="text-xs text-green-400 mt-2">✓ Link copied to clipboard!</p>
+                  )}
+                </div>
+                
+                <div className="text-xs text-slate-400 mb-4">
+                  <p>✨ The prizes are hidden - fan will scratch to reveal!</p>
+                  <p className="mt-1">📱 Send this link via SMS, email, or messaging app</p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenFanLink();
+                    }}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
+                  >
+                    Preview Fan Page
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowShareLinkImmediately(false);
+                      setShareLinkCopied(false);
+                    }}
+                    className="flex-1 bg-create-primary hover:bg-create-primary/80 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Share Link Dropdown - Only visible after a draw */}
+          {lastDrawInfo && results.length > 0 && (
+            <div className="relative" ref={shareMenuRef}>
+              <button
+                type="button"
+                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors flex items-center gap-2"
+                onClick={() => setShowShareMenu(!showShareMenu)}
+              >
+                {shareLinkCopied ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Link Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    <span className="flex flex-col items-start">
+                      <span className="text-xs font-normal opacity-75">Share Session #{lastDrawInfo.sessionNumber}</span>
+                      <span>Share Link</span>
+                    </span>
+                    <svg className={`w-4 h-4 transition-transform ${showShareMenu ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </>
+                )}
+              </button>
+              
+              {showShareMenu && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCopyShareLink();
+                      setShowShareMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-700 transition-colors flex items-center gap-3"
+                  >
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <div className="font-semibold">Copy Fan Link</div>
+                      <div className="text-xs text-slate-400">Share with {lastDrawInfo.fanName}</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenFanLink();
+                      setShowShareMenu(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-700 transition-colors flex items-center gap-3 border-t border-slate-700"
+                  >
+                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    <div>
+                      <div className="font-semibold">Preview Fan Page</div>
+                      <div className="text-xs text-slate-400">Open in new tab</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          
           <button
             type="button"
             className="bg-slate-800 text-slate-200"
@@ -511,7 +725,13 @@ export default function DrawScreen() {
       </section>
 
       {isHistoryOpen && (
-        <HistoryPanel history={history} tierColors={tierColors} onClose={closeHistory} username={user?.username || ""} />
+        <HistoryPanel 
+          history={history} 
+          tierColors={tierColors} 
+          onClose={closeHistory} 
+          username={user?.username || ""}
+          subscriptionPlan={sessionSettings.subscriptionPlan || 'free'}
+        />
       )}
       
       {/* Custom Branding Footer */}

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../utils/AuthContext";
 import Draw from "../pages/Draw.jsx";
 import DrawHistory from "../pages/DrawHistory.jsx";
+import FanDrawSession from "../pages/FanDrawSession.jsx";
 import Stock from "../pages/Stock.jsx";
 import Account from "../pages/Account.jsx";
 import Admin from "../pages/Admin.jsx";
@@ -70,6 +71,11 @@ export default function UserRoutes() {
             </RequireSetup>
           </RequireAuth>
         </ValidateUserAccess>
+      } />
+
+      {/* Fan Draw Session - Publicly accessible shareable link for fans to scratch prizes */}
+      <Route path="/:username/fan/draw/:entryId" element={
+        <MainLayout><FanDrawSession /></MainLayout>
       } />
       
       {/* Stock page - publicly accessible for all usernames */}

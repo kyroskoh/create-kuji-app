@@ -6,6 +6,196 @@ import { getDefaultUserSettings } from '../utils/defaultSettings';
 const prisma = new PrismaClient();
 
 /**
+ * Mark a draw session as revealed by the fan (public endpoint)
+ * POST /api/users/:username/sessions/:entryId/revealed
+ */
+export async function markSessionRevealed(req: Request, res: Response) {
+  try {
+    const { username, entryId } = req.params;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Find and update the session
+    const session = await prisma.drawSession.findFirst({
+      where: {
+        id: entryId,
+        userId: user.id
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'SESSION_NOT_FOUND',
+        message: 'Draw session not found'
+      });
+    }
+
+    // Update session to mark as revealed
+    const updatedSession = await prisma.drawSession.update({
+      where: { id: session.id },
+      data: {
+        fanRevealed: true,
+        fanRevealedAt: new Date()
+      }
+    });
+
+    return res.status(200).json({
+      message: 'Session marked as revealed',
+      revealed: true,
+      revealedAt: updatedSession.fanRevealedAt
+    });
+
+  } catch (error) {
+    console.error('Error marking session as revealed:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to mark session as revealed'
+    });
+  }
+}
+
+/**
+ * Get draw session data for fan view (public endpoint)
+ * GET /api/users/:username/sessions/:entryId
+ */
+export async function getFanDrawSession(req: Request, res: Response) {
+  try {
+    const { username, entryId } = req.params;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username },
+      include: {
+        userSettings: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Find the session with its draws
+    const session = await prisma.drawSession.findFirst({
+      where: {
+        id: entryId,
+        userId: user.id
+      },
+      include: {
+        drawResults: {
+          orderBy: {
+            drawIndex: 'asc'
+          }
+        }
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'SESSION_NOT_FOUND',
+        message: 'Draw session not found'
+      });
+    }
+
+    // Transform to match localStorage format
+    const responseData = {
+      id: session.id,
+      sessionNumber: session.sessionNumber,
+      fanName: session.fanName,
+      queueNumber: session.queueNumber,
+      label: session.label,
+      timestamp: session.timestamp.toISOString(),
+      fanRevealed: session.fanRevealed,
+      fanRevealedAt: session.fanRevealedAt?.toISOString(),
+      draws: session.drawResults.map(draw => ({
+        tier: draw.tier,
+        prize: draw.prizeName,
+        sku: draw.sku
+      })),
+      settings: {
+        tierColors: user.userSettings?.tierColors ? JSON.parse(user.userSettings.tierColors) : {},
+        subscriptionPlan: user.userSettings?.subscriptionPlan || 'free'
+      }
+    };
+
+    return res.status(200).json(responseData);
+
+  } catch (error) {
+    console.error('Error getting fan draw session:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to get draw session'
+    });
+  }
+}
+
+/**
+ * Get reveal status for a draw session (public endpoint)
+ * GET /api/users/:username/sessions/:entryId/revealed
+ */
+export async function getSessionRevealStatus(req: Request, res: Response) {
+  try {
+    const { username, entryId } = req.params;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Find the session
+    const session = await prisma.drawSession.findFirst({
+      where: {
+        id: entryId,
+        userId: user.id
+      },
+      select: {
+        id: true,
+        fanRevealed: true,
+        fanRevealedAt: true
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'SESSION_NOT_FOUND',
+        message: 'Draw session not found'
+      });
+    }
+
+    return res.status(200).json({
+      revealed: session.fanRevealed,
+      revealedAt: session.fanRevealedAt
+    });
+
+  } catch (error) {
+    console.error('Error getting session reveal status:', error);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to get reveal status'
+    });
+  }
+}
+
+/**
  * Sync user prizes from LocalForage to database
  * POST /api/users/:username/sync-prizes
  */
@@ -199,18 +389,19 @@ export async function syncHistory(req: Request, res: Response) {
       where: { userId: user.id }
     });
 
-    // Create draw sessions and results
-    for (const sessionData of history) {
-      const session = await prisma.drawSession.create({
-        data: {
-          userId: user.id,
-          sessionNumber: parseInt(sessionData.sessionNumber) || 1,
-          fanName: sessionData.fanName || 'Unknown',
-          queueNumber: sessionData.queueNumber || null,
-          label: sessionData.label || null,
-          timestamp: sessionData.timestamp ? new Date(sessionData.timestamp) : new Date()
-        }
-      });
+      // Create draw sessions and results
+      for (const sessionData of history) {
+        const session = await prisma.drawSession.create({
+          data: {
+            id: sessionData.id, // Preserve the original ID from localStorage
+            userId: user.id,
+            sessionNumber: parseInt(sessionData.sessionNumber) || 1,
+            fanName: sessionData.fanName || 'Unknown',
+            queueNumber: sessionData.queueNumber || null,
+            label: sessionData.label || null,
+            timestamp: sessionData.timestamp ? new Date(sessionData.timestamp) : new Date()
+          }
+        });
 
       if (sessionData.draws && Array.isArray(sessionData.draws)) {
         const drawResults = sessionData.draws.map((draw: any, index: number) => ({

@@ -17,6 +17,7 @@ export default function DrawHistory() {
   const [tierColors, setTierColors] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +55,17 @@ export default function DrawHistory() {
 
   const handleGoBack = () => {
     navigate(`/${username}/draw`);
+  };
+
+  const handleCopyShareLink = () => {
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(username)}/fan/draw/${encodeURIComponent(entryId)}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy link:', err);
+      alert('Failed to copy link to clipboard');
+    });
   };
 
   if (loading) {
@@ -112,17 +124,41 @@ export default function DrawHistory() {
               </p>
               {entry.eventName && (
                 <p className="text-sm text-slate-400">
-                  Event: {entry.eventName}
+                  Event: <span className="text-slate-300 font-semibold">{username}'s {entry.eventName}</span>
                 </p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={handleGoBack}
-              className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
-            >
-              ← Back to Draw
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center gap-2"
+                title="Copy shareable link for fan"
+              >
+                {copied ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Share Link
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleGoBack}
+                className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold"
+              >
+                ← Back to Draw
+              </button>
+            </div>
           </div>
         </section>
 
