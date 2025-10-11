@@ -5,10 +5,11 @@ import QRCode from "qrcode";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { executeDraw } from "../../utils/randomDraw.js";
 import { tierChipClass, sortTierEntries } from "../../utils/tierColors.js";
-import { isTierSortingAllowed, hasCustomBranding } from "../../utils/subscriptionPlans.js";
+import { isTierSortingAllowed, hasCustomBranding, hasBetaAccess } from "../../utils/subscriptionPlans.js";
 import ResultCard from "./ResultCard.jsx";
 import HistoryPanel from "./HistoryPanel.jsx";
 import ScratchCard from "./ScratchCard.jsx";
+import CardPackAnimation from "./CardPackAnimation.jsx";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 import BrandingHeader from "../Branding/BrandingHeader.jsx";
@@ -145,12 +146,14 @@ export default function DrawScreen() {
   const [sessionNumber, setSessionNumber] = useState(1);
   const [lastDrawInfo, setLastDrawInfo] = useState(null);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
-  const [useScratchMode, setUseScratchMode] = useState(false);
+  const [revealMode, setRevealMode] = useState('instant'); // 'instant', 'scratch', 'trading'
   const [revealedResults, setRevealedResults] = useState(new Set());
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const [showShareLinkImmediately, setShowShareLinkImmediately] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
+  const [showCardPackAnimation, setShowCardPackAnimation] = useState(false);
+  const [cardPackPrizes, setCardPackPrizes] = useState([]);
   const shareMenuRef = useRef(null);
 
   // Load initial data
@@ -302,7 +305,15 @@ export default function DrawScreen() {
     
     // If skipReveal is true, don't show results on screen (for share link workflow)
     if (!skipReveal) {
-      setResults(resultItems);
+      // Check reveal mode: trading card animation takes precedence
+      if (revealMode === 'trading' && hasBetaAccess(sessionSettings.subscriptionPlan || 'free')) {
+        // Show card pack animation
+        setCardPackPrizes(pulled);
+        setShowCardPackAnimation(true);
+      } else {
+        // Use default result display (instant or scratch mode)
+        setResults(resultItems);
+      }
     }
     
     setLastDrawInfo(sessionMeta);
@@ -456,8 +467,8 @@ export default function DrawScreen() {
   }, [processedResults, sessionSettings.tierColors, sessionSettings.subscriptionPlan]);
 
   const unrevealedScratchCards = useMemo(() => {
-    return processedResults.filter(item => useScratchMode && !revealedResults.has(item.id)).length;
-  }, [processedResults, useScratchMode, revealedResults]);
+    return processedResults.filter(item => revealMode === 'scratch' && !revealedResults.has(item.id)).length;
+  }, [processedResults, revealMode, revealedResults]);
 
   const openHistory = () => {
     setHistoryOpen(true);
@@ -860,21 +871,125 @@ export default function DrawScreen() {
           >
             History ({history.length})
           </button>
-          <button
-            type="button"
-            className={useScratchMode ? "bg-purple-600 text-white" : "bg-slate-800 text-slate-200"}
-            onClick={() => setUseScratchMode(!useScratchMode)}
-            title="Toggle scratch card mode"
-          >
-            {useScratchMode ? "🪙 Scratch Mode ON" : "⚡ Instant Reveal"}
-          </button>
+          {/* Reveal Mode Selector */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs uppercase tracking-wide text-slate-400">
+              Reveal Mode
+            </label>
+            <div className="flex gap-1 bg-slate-900 rounded-lg p-1 border border-slate-700">
+              <button
+                type="button"
+                onClick={() => setRevealMode('instant')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                  revealMode === 'instant'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+                title="Instant reveal - see results immediately"
+              >
+                ⚡ Instant
+              </button>
+              <button
+                type="button"
+                onClick={() => setRevealMode('scratch')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                  revealMode === 'scratch'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+                title="Scratch card mode - scratch to reveal prizes"
+              >
+                🪙 Scratch
+              </button>
+              {hasBetaAccess(sessionSettings.subscriptionPlan || 'free') ? (
+                <button
+                  type="button"
+                  onClick={() => setRevealMode('trading')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                    revealMode === 'trading'
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                  title="Trading card pack animation with special effects"
+                >
+                  🎴 Trading
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => alert('Trading card mode requires Pro plan. Visit Settings to upgrade!')}
+                  className="px-3 py-1.5 text-xs font-semibold rounded text-slate-500 hover:text-slate-400 relative"
+                  title="Trading card mode (Pro plan required)"
+                >
+                  <span className="opacity-50">🎴 Trading</span>
+                  <span className="absolute -top-1 -right-1 text-[10px]">🔒</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       </section>
+      
+      {/* Card Pack Animation Modal */}
+      {showCardPackAnimation && (
+        <CardPackAnimation
+          prizes={cardPackPrizes}
+          tierColors={tierColors}
+          tierOrder={Object.keys(tierColors)}
+          effectTierCount={sessionSettings.cardPackEffectTierCount || 3}
+          showLogo={sessionSettings.cardPackShowLogo && hasCustomBranding(sessionSettings.subscriptionPlan || 'free')}
+          customPackImage={sessionSettings.cardPackCustomImage}
+          logoUrl={branding?.logoUrl}
+          onComplete={() => {
+            // Convert prizes to result items
+            const resultItems = cardPackPrizes.map((prize, index) => ({
+              id: `${createId()}-${index}`,
+              prize,
+              drawIndex: index + 1
+            }));
+            setResults(resultItems);
+            setShowCardPackAnimation(false);
+            setCardPackPrizes([]);
+          }}
+          onSkip={() => {
+            // Skip animation and show results immediately
+            const resultItems = cardPackPrizes.map((prize, index) => ({
+              id: `${createId()}-${index}`,
+              prize,
+              drawIndex: index + 1
+            }));
+            setResults(resultItems);
+            setShowCardPackAnimation(false);
+            setCardPackPrizes([]);
+          }}
+        />
+      )}
+      
       <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-lg">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-2xl font-semibold text-white">Results</h3>
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-2xl font-semibold text-white">Results</h3>
+              {/* Current Reveal Mode Indicator */}
+              <div className="flex items-center gap-2">
+                {revealMode === 'instant' && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-600/20 border border-emerald-600/50 text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                    ⚡ Instant Mode
+                  </span>
+                )}
+                {revealMode === 'scratch' && (
+                  <span className="px-3 py-1 rounded-full bg-purple-600/20 border border-purple-600/50 text-purple-400 text-xs font-semibold flex items-center gap-1">
+                    🪙 Scratch Mode
+                  </span>
+                )}
+                {revealMode === 'trading' && (
+                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 text-purple-300 text-xs font-semibold flex items-center gap-1">
+                    🎴 Trading Mode
+                  </span>
+                )}
+              </div>
+            </div>
             <span className="text-sm text-slate-400">{drawLabel} | {processedResults.length} pulls</span>
           </div>
           <div className="text-sm text-slate-300">
@@ -948,7 +1063,7 @@ export default function DrawScreen() {
                 className="flex justify-center"
               >
                 <div className="w-full">
-                  {useScratchMode && !revealedResults.has(item.id) ? (
+                  {revealMode === 'scratch' && !revealedResults.has(item.id) ? (
                     <ScratchCard
                       prizeContent={
                         <ResultCard drawIndex={item.drawIndex} prize={item.prize} tierColors={tierColors} />

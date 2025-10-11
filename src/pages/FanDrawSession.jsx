@@ -2,18 +2,21 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { tierChipClass } from "../utils/tierColors.js";
-import { isFeatureAvailable } from "../utils/subscriptionPlans.js";
+import { isFeatureAvailable, hasBetaAccess, hasCustomBranding } from "../utils/subscriptionPlans.js";
 import BrandingHeader from "../components/Branding/BrandingHeader.jsx";
 import BrandingFooter from "../components/Branding/BrandingFooter.jsx";
 import BrandingWrapper from "../components/Branding/BrandingWrapper.jsx";
 import ResultCard from "../components/Draw/ResultCard.jsx";
 import ScratchCard from "../components/Draw/ScratchCard.jsx";
+import CardPackAnimation from "../components/Draw/CardPackAnimation.jsx";
+import { useBranding } from "../contexts/BrandingContext.jsx";
 
 const formatTimestamp = (timestamp) =>
   timestamp ? new Date(timestamp).toLocaleString() : "";
 
 export default function FanDrawSession() {
   const { username, entryId } = useParams();
+  const { branding } = useBranding();
   const [entry, setEntry] = useState(null);
   const [settings, setSettings] = useState({});
   const [tierColors, setTierColors] = useState({});
@@ -21,6 +24,8 @@ export default function FanDrawSession() {
   const [error, setError] = useState(null);
   const [revealedResults, setRevealedResults] = useState(new Set());
   const [scratchEnabled, setScratchEnabled] = useState(true);
+  const [tradingModeEnabled, setTradingModeEnabled] = useState(false);
+  const [showCardPackAnimation, setShowCardPackAnimation] = useState(false);
   const [allRevealed, setAllRevealed] = useState(false);
 
   useEffect(() => {
@@ -54,6 +59,10 @@ export default function FanDrawSession() {
         const hasScratchCards = isFeatureAvailable('scratchCards', planId);
         setScratchEnabled(hasScratchCards);
         
+        // Check if trading card animation is available
+        const hasTrading = hasBetaAccess(planId);
+        setTradingModeEnabled(hasTrading);
+        
         // Check if this session has been fully revealed before (localStorage or database)
         const revealedKey = `fan-revealed-${entryId}`;
         const wasRevealedLocally = localStorage.getItem(revealedKey) === 'true';
@@ -61,6 +70,9 @@ export default function FanDrawSession() {
         
         if (wasRevealedLocally || wasRevealedInDB) {
           setAllRevealed(true);
+        } else if (hasTrading) {
+          // If trading mode available and not yet revealed, show animation on load
+          setShowCardPackAnimation(true);
         }
         
         setLoading(false);
@@ -172,10 +184,41 @@ export default function FanDrawSession() {
     );
   }
 
+  // Convert draws to prize objects for card pack animation
+  const prizeObjects = useMemo(() => {
+    if (!entry?.draws) return [];
+    return entry.draws.map(draw => ({
+      prize_name: draw.prize,
+      tier: draw.tier,
+      sku: draw.sku
+    }));
+  }, [entry]);
+
   return (
     <BrandingWrapper className="min-h-screen">
       <div className="space-y-6 p-6">
         <BrandingHeader />
+
+        {/* Card Pack Animation Modal */}
+        {showCardPackAnimation && !allRevealed && tradingModeEnabled && (
+          <CardPackAnimation
+            prizes={prizeObjects}
+            tierColors={tierColors}
+            tierOrder={Object.keys(tierColors)}
+            effectTierCount={settings.cardPackEffectTierCount || 3}
+            showLogo={settings.cardPackShowLogo && hasCustomBranding(settings.subscriptionPlan || 'free')}
+            customPackImage={settings.cardPackCustomImage}
+            logoUrl={branding?.logoUrl}
+            onComplete={() => {
+              setShowCardPackAnimation(false);
+              markAsRevealed();
+            }}
+            onSkip={() => {
+              setShowCardPackAnimation(false);
+              markAsRevealed();
+            }}
+          />
+        )}
 
         {/* Welcome Message */}
         <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-8 shadow-xl text-center">
