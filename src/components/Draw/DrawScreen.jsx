@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import QRCode from "qrcode";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
 import { executeDraw } from "../../utils/randomDraw.js";
 import { tierChipClass, sortTierEntries } from "../../utils/tierColors.js";
@@ -71,6 +72,7 @@ export default function DrawScreen() {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const [showShareLinkImmediately, setShowShareLinkImmediately] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
   const shareMenuRef = useRef(null);
 
   // Load initial data
@@ -288,6 +290,20 @@ export default function DrawScreen() {
     // If skipReveal, show share link immediately (after sync completes)
     if (skipReveal) {
       setShowShareLinkImmediately(true);
+      // Generate QR code for the share link
+      const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(sessionMeta.id)}`;
+      QRCode.toDataURL(shareUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#1e293b',
+          light: '#ffffff'
+        }
+      }).then(url => {
+        setQrCodeDataUrl(url);
+      }).catch(err => {
+        console.error('Failed to generate QR code:', err);
+      });
       // Auto-copy the link
       setTimeout(() => {
         handleCopyShareLink();
@@ -354,6 +370,35 @@ export default function DrawScreen() {
       console.error('Failed to copy link:', err);
       alert('Failed to copy link to clipboard');
     });
+  };
+
+  const handleGenerateQRCode = async () => {
+    if (!lastDrawInfo) return;
+    
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    try {
+      const qrDataUrl = await QRCode.toDataURL(shareUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#1e293b',
+          light: '#ffffff'
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+      alert('Failed to generate QR code');
+    }
+  };
+
+  const handleDownloadQRCode = () => {
+    if (!qrCodeDataUrl || !lastDrawInfo) return;
+    
+    const link = document.createElement('a');
+    link.download = `kuji-session-${lastDrawInfo.sessionNumber}-${lastDrawInfo.fanName.replace(/\s+/g, '-')}.png`;
+    link.href = qrCodeDataUrl;
+    link.click();
   };
 
   const handleOpenFanLink = () => {
@@ -464,7 +509,7 @@ export default function DrawScreen() {
           {/* Share Link Modal - Shows immediately after draw with share link */}
           {showShareLinkImmediately && lastDrawInfo && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
                 <div className="text-center mb-4">
                   <div className="text-5xl mb-3">🎉</div>
                   <h3 className="text-2xl font-bold text-white mb-2">Draw Complete!</h3>
@@ -493,10 +538,24 @@ export default function DrawScreen() {
                     <p className="text-xs text-green-400 mt-2">✓ Link copied to clipboard!</p>
                   )}
                 </div>
+
+                {/* QR Code Display */}
+                {qrCodeDataUrl && (
+                  <div className="bg-white rounded-lg p-4 mb-4 flex flex-col items-center">
+                    <p className="text-sm text-slate-800 font-semibold mb-3">Scan QR Code:</p>
+                    <img 
+                      src={qrCodeDataUrl} 
+                      alt="QR Code for share link" 
+                      className="w-48 h-48 border-4 border-slate-200 rounded-lg"
+                    />
+                    <p className="text-xs text-slate-600 mt-3 text-center">Fan can scan this to access their prizes</p>
+                  </div>
+                )}
                 
                 <div className="text-xs text-slate-400 mb-4">
                   <p>✨ The prizes are hidden - fan will scratch to reveal!</p>
                   <p className="mt-1">📱 Send this link via SMS, email, or messaging app</p>
+                  <p className="mt-1">📷 Or show the QR code for the fan to scan</p>
                 </div>
                 
                 <div className="flex gap-2">
@@ -514,6 +573,7 @@ export default function DrawScreen() {
                     onClick={() => {
                       setShowShareLinkImmediately(false);
                       setShareLinkCopied(false);
+                      setQrCodeDataUrl(null);
                     }}
                     className="flex-1 bg-create-primary hover:bg-create-primary/80 text-white px-4 py-2 rounded font-semibold text-sm transition-colors"
                   >
@@ -556,7 +616,7 @@ export default function DrawScreen() {
               </button>
               
               {showShareMenu && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="absolute top-full left-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => {
@@ -573,6 +633,39 @@ export default function DrawScreen() {
                       <div className="text-xs text-slate-400">Share with {lastDrawInfo.fanName}</div>
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleGenerateQRCode();
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-700 transition-colors flex items-center gap-3 border-t border-slate-700"
+                  >
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                    <div>
+                      <div className="font-semibold">{qrCodeDataUrl ? 'QR Code Generated ✓' : 'Generate QR Code'}</div>
+                      <div className="text-xs text-slate-400">For easy scanning</div>
+                    </div>
+                  </button>
+                  {qrCodeDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDownloadQRCode();
+                        setShowShareMenu(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-700 transition-colors flex items-center gap-3 border-t border-slate-700"
+                    >
+                      <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <div>
+                        <div className="font-semibold">Download QR Code</div>
+                        <div className="text-xs text-slate-400">Save as PNG image</div>
+                      </div>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
