@@ -93,7 +93,7 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
               className="w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Fan, tier, prize�"
+              placeholder="Fan, tier, prize..."
             />
           </div>
           <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ onClick={() => openEntryInNewTab(username, entry)}
                     </div>
                   </header>
                   <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
-                    {entry.label || "Custom"} � {entry.draws?.length || 0} pulls
+                    {entry.label || "Custom"} • {entry.draws?.length || 0} pulls
                   </p>
                   <ul className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
                     {(entry.draws || []).map((draw, index) => (
