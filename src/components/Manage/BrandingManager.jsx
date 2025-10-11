@@ -320,7 +320,7 @@ export default function BrandingManager() {
           )}
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Form */}
           <div className="space-y-6">
             {/* Company/Event Name */}
@@ -390,7 +390,7 @@ export default function BrandingManager() {
             </div>
 
             {/* Color Pickers */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Primary Color
@@ -480,7 +480,7 @@ export default function BrandingManager() {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-3 gap-2">
                 {BG_PATTERNS.map(pattern => (
                   <button
                     key={pattern.id}
@@ -590,7 +590,7 @@ export default function BrandingManager() {
                   <label className="block text-sm font-medium text-slate-300 mb-2">
                     Typography Enhancement (Coming Soon)
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Font Weight</label>
                       <select disabled className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-500 text-sm cursor-not-allowed">
@@ -762,7 +762,7 @@ export default function BrandingManager() {
                 <h4 className="text-sm font-semibold text-slate-300">Applied Branding</h4>
                 <span className="text-xs text-slate-400">(CSS Variables)</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button 
                   className="py-2 px-3 rounded text-white text-sm font-medium transition-colors" 
                   style={{ backgroundColor: 'var(--brand-primary)' }}

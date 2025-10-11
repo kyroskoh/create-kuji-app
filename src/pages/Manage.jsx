@@ -59,18 +59,18 @@ export default function Manage() {
   return (
     <section className="space-y-6">
       <header className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold text-white">{t("manage.title") || "Manage"}</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">{t("manage.title") || "Manage"}</h2>
         <p className="text-sm text-slate-400">
           {t("manage.description") || "Manage prize pools, configure pricing presets, and control session settings."}
         </p>
       </header>
-      <nav className="flex gap-3">
+      <nav className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => navigate(`/${username}/manage/${tab.id}`)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+            className={`rounded-full px-4 sm:px-5 py-2 text-sm font-semibold transition whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-create-primary text-white"
                 : "bg-slate-800/60 text-slate-300 hover:bg-slate-800"
@@ -80,7 +80,7 @@ export default function Manage() {
           </button>
         ))}
       </nav>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-lg">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6 shadow-lg">
         {activeTab === "prizes" && <PrizePoolManager />}
         {activeTab === "pricing" && <PricingManager />}
         {activeTab === "analytics" && <UserAnalytics />}

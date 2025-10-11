@@ -230,12 +230,12 @@ export default function Admin() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-white">User Management</h1>
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-white">User Management</h1>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
             <p className="text-slate-400 text-sm">Total Users</p>
             <p className="text-2xl font-bold text-white">{stats.stats.totalUsers}</p>
@@ -265,7 +265,7 @@ export default function Admin() {
 
       {/* Search and Filters */}
       <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
           <input
             type="text"
             placeholder="Search users..."
@@ -276,7 +276,7 @@ export default function Admin() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="createdAt">Created Date</option>
             <option value="lastLogin">Last Login</option>
@@ -284,7 +284,7 @@ export default function Admin() {
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600"
+            className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600"
           >
             {sortOrder === 'asc' ? '↑' : '↓'}
           </button>
@@ -366,11 +366,11 @@ export default function Admin() {
         </div>
 
         {/* Pagination */}
-        <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-t border-slate-700">
+        <div className="bg-slate-900 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-700">
           <div className="text-sm text-slate-400">
             Showing {users.length} of {pagination.totalCount} users
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-center">
             <button
               onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
               disabled={!pagination.hasPreviousPage}

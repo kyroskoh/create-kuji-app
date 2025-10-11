@@ -584,7 +584,7 @@ export default function Settings() {
         <p className="text-sm text-slate-400">
           Search for a country to auto-fill locale, currency, and flag. Override currency manually if needed.
         </p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <div className="flex w-full flex-col gap-2 sm:w-auto">
             <label className="text-xs uppercase tracking-wide text-slate-500" htmlFor="country-search">
               Country search
@@ -647,7 +647,7 @@ export default function Settings() {
               : " (showing top matches)"}
             :
           </p>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <ul className="mt-2 grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sampleCountries.map((country) => {
               const emoji = flagFromCountryCode(country.code);
               return (
@@ -679,7 +679,7 @@ export default function Settings() {
         <p className="text-sm text-slate-400">
           Advanced mode factors in remaining quantity and tier priority so probabilities stay near 100%.
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
           {WEIGHT_MODES.map((mode) => {
             const isAvailable = availableWeightModes.some(m => m.id === mode.id);
             const isSelected = settings.weightMode === mode.id;
@@ -813,7 +813,7 @@ export default function Settings() {
           </div>
         )}
         
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {COLOR_PALETTE.map((palette) => {
             const isAvailable = availableColors.some(c => c.id === palette.id);
             const isSelected = tierColors[activeTier] === palette.id;
@@ -947,7 +947,7 @@ export default function Settings() {
         )}
         
         {/* Local Import/Export Section */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
           <button 
             type="button" 
             className="rounded-md px-4 py-2 text-sm font-semibold bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 

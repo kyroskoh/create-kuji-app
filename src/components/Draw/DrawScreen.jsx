@@ -445,11 +445,11 @@ export default function DrawScreen() {
               }}
             />
           </div>
-          <div className="ml-auto text-xs uppercase tracking-wide text-slate-400">
+          <div className="w-full sm:w-auto sm:ml-auto text-xs uppercase tracking-wide text-slate-400">
             Stock | {stockSnapshot || "N/A"}
           </div>
         </div>
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="mt-6 grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs uppercase tracking-wide text-slate-400" htmlFor="fan-name">
               Fan name
@@ -558,7 +558,7 @@ export default function DrawScreen() {
                   <p className="mt-1">📷 Or show the QR code for the fan to scan</p>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -716,7 +716,7 @@ export default function DrawScreen() {
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
       </section>
       <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-lg">
-        <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-2xl font-semibold text-white">Results</h3>
             <span className="text-sm text-slate-400">{drawLabel} | {processedResults.length} pulls</span>
@@ -780,7 +780,7 @@ export default function DrawScreen() {
             </span>
           )}
         </div>
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
             {processedResults.map((item) => (
               <motion.div

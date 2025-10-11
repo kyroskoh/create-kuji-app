@@ -275,12 +275,12 @@ export default function Account() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">Account Settings</h1>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Account Settings</h1>
         <button
           onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+          className="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
         >
           Log Out
         </button>
@@ -419,7 +419,7 @@ export default function Account() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Account Created</label>
               <p className="text-white">{new Date(profile.createdAt).toLocaleDateString()}</p>
@@ -448,10 +448,10 @@ export default function Account() {
           {profile.emails.map((email) => (
             <div
               key={email.id}
-              className="bg-slate-700 rounded-lg p-4 flex items-center justify-between"
+              className="bg-slate-700 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
             >
-              <div className="flex-1">
-                <p className="text-white font-medium">{email.address}</p>
+              <div className="flex-1 w-full sm:w-auto">
+                <p className="text-white font-medium break-all">{email.address}</p>
                 <div className="flex gap-2 mt-1">
                   {email.isPrimary && (
                     <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded">
@@ -478,11 +478,11 @@ export default function Account() {
                 </div>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
                 {!email.isPrimary && email.verifiedAt && (
                   <button
                     onClick={() => handleSetPrimary(email.id)}
-                    className="text-sm text-blue-400 hover:text-blue-300"
+                    className="text-sm text-blue-400 hover:text-blue-300 whitespace-nowrap"
                   >
                     Set Primary
                   </button>
@@ -490,7 +490,7 @@ export default function Account() {
                 {!email.isPrimary && (
                   <button
                     onClick={() => handleRemoveEmail(email.id)}
-                    className="text-sm text-red-400 hover:text-red-300"
+                    className="text-sm text-red-400 hover:text-red-300 whitespace-nowrap"
                   >
                     Remove
                   </button>
@@ -500,7 +500,7 @@ export default function Account() {
           ))}
         </div>
 
-        <form onSubmit={handleAddEmail} className="flex gap-2">
+        <form onSubmit={handleAddEmail} className="flex flex-col sm:flex-row gap-2">
           <input
             type="email"
             value={newEmail}
@@ -511,7 +511,7 @@ export default function Account() {
           <button
             type="submit"
             disabled={addingEmail}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
           >
             {addingEmail ? 'Adding...' : 'Add Email'}
           </button>

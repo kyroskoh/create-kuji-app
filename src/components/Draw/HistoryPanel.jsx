@@ -60,7 +60,7 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
-      <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+      <div className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h4 className="text-xl font-semibold text-white">Draw History</h4>
@@ -83,14 +83,14 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
           </button>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
           <div className="flex items-center gap-2">
             <label className="text-xs uppercase tracking-wide text-slate-400" htmlFor="history-search">
               Search
             </label>
             <input
               id="history-search"
-              className="w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+              className="w-full sm:w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Fan, tier, prize..."
@@ -102,7 +102,7 @@ export default function HistoryPanel({ history, tierColors, onClose, username, s
             </label>
             <select
               id="search-type"
-              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
+              className="w-full sm:w-auto rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-create-primary/70 focus:outline-none focus:ring-2 focus:ring-create-primary/30"
               value={searchType}
               onChange={(event) => setSearchType(event.target.value)}
             >
