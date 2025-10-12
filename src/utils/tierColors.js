@@ -1,68 +1,68 @@
 import { COLOR_PALETTE } from "./colorPalette.js";
+import colors from 'tailwindcss/colors.js';
 
 const LETTERS = Array.from({ length: 26 }, (_, index) => String.fromCharCode(65 + index));
 export const DEFAULT_TIER_SEQUENCE = ["S", ...LETTERS.filter((letter) => letter !== "S")];
 
-// Default tier color map: carefully curated colors with maximum contrast and visual distinction
-// Colors are distributed across the hue spectrum to avoid repetition
-// S tier gets the prestigious amber/gold color
+// Tailwind CSS color palette with carefully selected vibrant shades
+// Using 500 weight for most colors for optimal visibility and contrast
 const TIER_COLOR_ASSIGNMENTS = {
-  'S': '#f59e0b',  // Amber/Gold - premium tier
-  'A': '#ef4444',  // Red
-  'B': '#3b82f6',  // Blue
-  'C': '#10b981',  // Emerald Green
-  'D': '#a855f7',  // Purple
-  'E': '#f97316',  // Orange
-  'F': '#06b6d4',  // Cyan
-  'G': '#ec4899',  // Pink
-  'H': '#eab308',  // Yellow
-  'I': '#8b5cf6',  // Violet
-  'J': '#14b8a6',  // Teal
-  'K': '#f43f5e',  // Rose
-  'L': '#22c55e',  // Green
-  'M': '#6366f1',  // Indigo
-  'N': '#84cc16',  // Lime
-  'O': '#db2777',  // Fuchsia
-  'P': '#0ea5e9',  // Sky
-  'Q': '#94a3b8',  // Slate
-  'R': '#fb923c',  // Peach
-  'T': '#2dd4bf',  // Aqua
-  'U': '#fbbf24',  // Gold
-  'V': '#a78bfa',  // Lavender
-  'W': '#34d399',  // Mint
-  'X': '#f472b6',  // Magenta
-  'Y': '#60a5fa',  // Azure
-  'Z': '#fb7185',  // Coral
+  'S': colors.amber[500],    // Amber 500 - premium gold tier
+  'A': colors.red[500],      // Red 500
+  'B': colors.blue[500],     // Blue 500
+  'C': colors.emerald[500],  // Emerald 500
+  'D': colors.purple[500],   // Purple 500
+  'E': colors.orange[500],   // Orange 500
+  'F': colors.cyan[500],     // Cyan 500
+  'G': colors.pink[500],     // Pink 500
+  'H': colors.yellow[500],   // Yellow 500
+  'I': colors.violet[500],   // Violet 500
+  'J': colors.teal[500],     // Teal 500
+  'K': colors.rose[500],     // Rose 500
+  'L': colors.green[500],    // Green 500
+  'M': colors.indigo[500],   // Indigo 500
+  'N': colors.lime[500],     // Lime 500
+  'O': colors.fuchsia[600],  // Fuchsia 600 (deeper for contrast)
+  'P': colors.sky[500],      // Sky 500
+  'Q': colors.slate[400],    // Slate 400 (lighter neutral)
+  'R': colors.orange[400],   // Orange 400 (lighter variant)
+  'T': colors.teal[400],     // Teal 400 (lighter variant)
+  'U': colors.amber[400],    // Amber 400 (lighter gold)
+  'V': colors.violet[400],   // Violet 400 (lighter)
+  'W': colors.emerald[400],  // Emerald 400 (lighter)
+  'X': colors.pink[400],     // Pink 400 (lighter)
+  'Y': colors.blue[400],     // Blue 400 (lighter)
+  'Z': colors.rose[400],     // Rose 400 (lighter)
 };
 
-// Color names mapping for tier colors
+// Tailwind color names mapping - automatically derived from Tailwind palette
 const TIER_COLOR_NAMES = {
-  '#f59e0b': 'Amber',
-  '#ef4444': 'Red',
-  '#3b82f6': 'Blue',
-  '#10b981': 'Emerald',
-  '#a855f7': 'Purple',
-  '#f97316': 'Orange',
-  '#06b6d4': 'Cyan',
-  '#ec4899': 'Pink',
-  '#eab308': 'Yellow',
-  '#8b5cf6': 'Violet',
-  '#14b8a6': 'Teal',
-  '#f43f5e': 'Rose',
-  '#22c55e': 'Green',
-  '#6366f1': 'Indigo',
-  '#84cc16': 'Lime',
-  '#db2777': 'Fuchsia',
-  '#0ea5e9': 'Sky',
-  '#94a3b8': 'Slate',
-  '#fb923c': 'Peach',
-  '#2dd4bf': 'Aqua',
-  '#fbbf24': 'Gold',
-  '#a78bfa': 'Lavender',
-  '#34d399': 'Mint',
-  '#f472b6': 'Magenta',
-  '#60a5fa': 'Azure',
-  '#fb7185': 'Coral',
+  [colors.amber[500]]: 'Amber',
+  [colors.red[500]]: 'Red',
+  [colors.blue[500]]: 'Blue',
+  [colors.emerald[500]]: 'Emerald',
+  [colors.purple[500]]: 'Purple',
+  [colors.orange[500]]: 'Orange',
+  [colors.cyan[500]]: 'Cyan',
+  [colors.pink[500]]: 'Pink',
+  [colors.yellow[500]]: 'Yellow',
+  [colors.violet[500]]: 'Violet',
+  [colors.teal[500]]: 'Teal',
+  [colors.rose[500]]: 'Rose',
+  [colors.green[500]]: 'Green',
+  [colors.indigo[500]]: 'Indigo',
+  [colors.lime[500]]: 'Lime',
+  [colors.fuchsia[600]]: 'Fuchsia',
+  [colors.sky[500]]: 'Sky',
+  [colors.slate[400]]: 'Slate',
+  [colors.orange[400]]: 'Orange Light',
+  [colors.teal[400]]: 'Teal Light',
+  [colors.amber[400]]: 'Gold',
+  [colors.violet[400]]: 'Lavender',
+  [colors.emerald[400]]: 'Mint',
+  [colors.pink[400]]: 'Pink Light',
+  [colors.blue[400]]: 'Azure',
+  [colors.rose[400]]: 'Coral',
 };
 
 export const DEFAULT_TIER_COLOR_MAP = TIER_COLOR_ASSIGNMENTS;
