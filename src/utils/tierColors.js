@@ -3,13 +3,75 @@ import { COLOR_PALETTE } from "./colorPalette.js";
 const LETTERS = Array.from({ length: 26 }, (_, index) => String.fromCharCode(65 + index));
 export const DEFAULT_TIER_SEQUENCE = ["S", ...LETTERS.filter((letter) => letter !== "S")];
 
-export const DEFAULT_TIER_COLOR_MAP = DEFAULT_TIER_SEQUENCE.reduce((acc, tier, index) => {
-  const palette = COLOR_PALETTE[index % COLOR_PALETTE.length];
-  if (palette) {
-    acc[tier] = palette.id;
-  }
-  return acc;
-}, {});
+// Default tier color map: carefully curated colors with maximum contrast and visual distinction
+// Colors are distributed across the hue spectrum to avoid repetition
+// S tier gets the prestigious amber/gold color
+const TIER_COLOR_ASSIGNMENTS = {
+  'S': '#f59e0b',  // Amber/Gold - premium tier
+  'A': '#ef4444',  // Red
+  'B': '#3b82f6',  // Blue
+  'C': '#10b981',  // Emerald Green
+  'D': '#a855f7',  // Purple
+  'E': '#f97316',  // Orange
+  'F': '#06b6d4',  // Cyan
+  'G': '#ec4899',  // Pink
+  'H': '#eab308',  // Yellow
+  'I': '#8b5cf6',  // Violet
+  'J': '#14b8a6',  // Teal
+  'K': '#f43f5e',  // Rose
+  'L': '#22c55e',  // Green
+  'M': '#6366f1',  // Indigo
+  'N': '#84cc16',  // Lime
+  'O': '#db2777',  // Fuchsia
+  'P': '#0ea5e9',  // Sky
+  'Q': '#94a3b8',  // Slate
+  'R': '#fb923c',  // Peach
+  'T': '#2dd4bf',  // Aqua
+  'U': '#fbbf24',  // Gold
+  'V': '#a78bfa',  // Lavender
+  'W': '#34d399',  // Mint
+  'X': '#f472b6',  // Magenta
+  'Y': '#60a5fa',  // Azure
+  'Z': '#fb7185',  // Coral
+};
+
+// Color names mapping for tier colors
+const TIER_COLOR_NAMES = {
+  '#f59e0b': 'Amber',
+  '#ef4444': 'Red',
+  '#3b82f6': 'Blue',
+  '#10b981': 'Emerald',
+  '#a855f7': 'Purple',
+  '#f97316': 'Orange',
+  '#06b6d4': 'Cyan',
+  '#ec4899': 'Pink',
+  '#eab308': 'Yellow',
+  '#8b5cf6': 'Violet',
+  '#14b8a6': 'Teal',
+  '#f43f5e': 'Rose',
+  '#22c55e': 'Green',
+  '#6366f1': 'Indigo',
+  '#84cc16': 'Lime',
+  '#db2777': 'Fuchsia',
+  '#0ea5e9': 'Sky',
+  '#94a3b8': 'Slate',
+  '#fb923c': 'Peach',
+  '#2dd4bf': 'Aqua',
+  '#fbbf24': 'Gold',
+  '#a78bfa': 'Lavender',
+  '#34d399': 'Mint',
+  '#f472b6': 'Magenta',
+  '#60a5fa': 'Azure',
+  '#fb7185': 'Coral',
+};
+
+export const DEFAULT_TIER_COLOR_MAP = TIER_COLOR_ASSIGNMENTS;
+
+// Get color name from hex code
+export function getColorNameFromHex(hexColor) {
+  if (!hexColor || !hexColor.startsWith('#')) return null;
+  return TIER_COLOR_NAMES[hexColor.toLowerCase()] || null;
+}
 
 const FALLBACK_PALETTE = COLOR_PALETTE[0];
 

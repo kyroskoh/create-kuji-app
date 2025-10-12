@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass, tierSwatchStyle } from "../../utils/tierColors.js";
+import { DEFAULT_TIER_COLOR_MAP, DEFAULT_TIER_SEQUENCE, compareTierLabels, tierChipClass, tierSwatchClass, tierSwatchStyle, getColorNameFromHex } from "../../utils/tierColors.js";
 import { COLOR_PALETTE } from "../../utils/colorPalette.js";
 import { flagFromCountryCode, normalizeCountryCode } from "../../utils/flags.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
@@ -121,17 +121,23 @@ export default function Settings() {
   }, [settings.subscriptionPlan]);
 
   const tierList = useMemo(() => {
-    // If tier sorting is allowed and we have custom order in tierColors, use that order
-    // Otherwise, sort alphabetically
-    const tierKeys = Object.keys(tierColors);
-    if (tierKeys.length > 0 && tierSortingAllowed) {
-      // Use the order from tierColors object (insertion order is preserved in JS objects)
-      return tierKeys;
-    }
-    // Default: merge DEFAULT_TIER_SEQUENCE with tierColors keys and sort
+    // Always include DEFAULT_TIER_SEQUENCE plus any additional custom tiers
+    // This ensures all 26 default tiers (S, A-Z) are always available
     const keys = new Set(DEFAULT_TIER_SEQUENCE);
     Object.keys(tierColors).forEach((key) => keys.add(key));
-    return Array.from(keys).sort(compareTierLabels);
+    
+    const allTiers = Array.from(keys);
+    
+    if (tierSortingAllowed && Object.keys(tierColors).length > 0) {
+      // For custom sorting: preserve order from tierColors for tiers that exist there,
+      // then append any remaining default tiers that aren't in tierColors
+      const tierColorKeys = Object.keys(tierColors);
+      const remainingTiers = allTiers.filter(t => !tierColorKeys.includes(t));
+      return [...tierColorKeys, ...remainingTiers.sort(compareTierLabels)];
+    }
+    
+    // Default: alphabetical sorting
+    return allTiers.sort(compareTierLabels);
   }, [tierColors, tierSortingAllowed]);
 
   // Check if user has Pro access for custom tier colors
@@ -1367,6 +1373,20 @@ export default function Settings() {
             const isBeingDragged = draggedTier === index;
             const showDropIndicator = dropTargetTier === index && draggedTier !== null && draggedTier !== index;
             
+            // Get the hex color for this tier
+            const tierColorId = tierColors[tier];
+            let tierHexColor = '#3b82f6'; // Default blue
+            
+            if (tierColorId) {
+              if (tierColorId.startsWith('#')) {
+                tierHexColor = tierColorId;
+              } else {
+                // It's a preset ID, find the hex
+                const preset = COLOR_PALETTE.find(p => p.id === tierColorId);
+                tierHexColor = preset?.hex || tierHexColor;
+              }
+            }
+            
             return (
               <div key={tier} className="relative flex items-center gap-1">
                 {/* Drop indicator line - shows before this tier */}
@@ -1424,9 +1444,10 @@ export default function Settings() {
                     setDropTargetTier(null);
                   }}
                   onClick={() => handleTierSelection(tier)}
-                  className={`${tierChipClass(tier, tierColors)} ${
+                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold uppercase tracking-wide border-2 text-white ${
                     activeTier === tier ? "ring-2 ring-offset-2 ring-offset-slate-900" : ""
                   } ${tierSortingAllowed ? "cursor-move" : ""} ${isBeingDragged ? "opacity-30 scale-95" : ""} transition-all duration-150`}
+                  style={{ backgroundColor: tierHexColor, borderColor: tierHexColor }}
                 >
                   {tierSortingAllowed && (
                     <svg className="w-3 h-3 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
@@ -1455,6 +1476,126 @@ export default function Settings() {
           {canAddMoreTiers ? "Add New Tier" : "🔒 Upgrade to add more tiers"}
         </button>
         
+        {/* Tier Color Overview - Shows all tier assignments */}
+        <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              All Tier Colors Overview
+            </h4>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Reset all tier colors to default hex codes? This will replace your current color assignments.')) {
+                  updateSettings({ tierColors: DEFAULT_TIER_COLOR_MAP });
+                  setStatusMessage('✨ Tier colors reset to defaults!');
+                }
+              }}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-1.5"
+              title="Reset all tier colors to default hex codes"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reset to Defaults
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {tierList.map(tier => {
+              const colorId = tierColors[tier];
+              const hasColor = colorId && colorId !== null;
+              
+              // Check if colorId is a hex code or preset ID
+              let colorPreset = null;
+              let colorName = null;
+              let isCustomColor = false;
+              
+              if (colorId?.startsWith('#')) {
+                // It's a hex code - check if it has a name in our tier color mapping
+                colorName = getColorNameFromHex(colorId);
+                if (!colorName) {
+                  // Check if it matches a COLOR_PALETTE preset
+                  colorPreset = COLOR_PALETTE.find(p => p.hex.toLowerCase() === colorId.toLowerCase());
+                  colorName = colorPreset?.label;
+                }
+                isCustomColor = !colorName; // Only custom if no name found
+              } else {
+                // It's a preset ID
+                colorPreset = COLOR_PALETTE.find(p => p.id === colorId);
+                colorName = colorPreset?.label;
+                isCustomColor = false;
+              }
+              
+              return (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => handleTierSelection(tier)}
+                  className={`group relative flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
+                    activeTier === tier
+                      ? 'border-create-primary bg-create-primary/20 ring-2 ring-create-primary shadow-lg shadow-create-primary/20'
+                      : hasColor
+                      ? 'border-slate-600 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-700/50 hover:shadow-md'
+                      : 'border-slate-700/50 bg-slate-900/20 hover:border-slate-600 hover:bg-slate-800/30'
+                  }`}
+                  title={`Click to edit Tier ${tier} color${activeTier === tier ? ' (Currently selected)' : ''}`}
+                >
+                  {/* Tier label */}
+                  <span className={`text-xs font-bold ${
+                    activeTier === tier ? 'text-white' : 'text-slate-400'
+                  }`}>
+                    {tier}
+                  </span>
+                  
+                  {/* Color indicator */}
+                  {hasColor ? (
+                    <div className="flex flex-col items-center gap-1 w-full">
+                      <div 
+                        className={`w-10 h-10 rounded-full border-3 ${
+                          activeTier === tier ? 'border-white shadow-lg' : 'border-slate-700/50'
+                        }`}
+                        style={{ backgroundColor: colorId?.startsWith('#') ? colorId : colorPreset?.hex || '#3b82f6' }}
+                      />
+                      <div className="flex flex-col items-center gap-0.5 w-full">
+                        <span className="text-[10px] font-medium text-slate-400 truncate w-full text-center">
+                          {isCustomColor ? 'Custom' : colorName || 'Unknown'}
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-500 truncate w-full text-center">
+                          {colorId?.startsWith('#') ? colorId : colorPreset?.hex || colorId}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-8 h-8 rounded-full border-2 border-dashed border-slate-700 bg-slate-900 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <span className="text-[10px] text-slate-600">No color</span>
+                    </div>
+                  )}
+                  
+                  {/* Active indicator */}
+                  {activeTier === tier && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-create-primary rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-3">
+            Click any tier above to select it and assign colors below. 
+            {activeTier && `Currently editing: Tier ${activeTier}`}
+          </p>
+        </div>
+        
         {/* Pro Color Wheel for Custom Colors - Moved to top */}
         {hasCustomTierColors && activeTier && (
           <div className="mb-6">
@@ -1466,45 +1607,175 @@ export default function Settings() {
           </div>
         )}
         
-        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {COLOR_PALETTE.map((palette) => {
-            const isAvailable = availableColors.some(c => c.id === palette.id);
-            const isSelected = tierColors[activeTier] === palette.id;
-            return (
+        {/* Color Selection Grid */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide block mb-1">
+                Color Presets for Tier {activeTier}
+              </label>
+              <p className="text-xs text-slate-400">
+                {hasCustomTierColors 
+                  ? 'Select a preset or use the color wheel above for custom colors. Click selected color to deselect.'
+                  : `Available: ${availableColors.length}/${COLOR_PALETTE.length} colors (upgrade to unlock more)`
+                }
+              </p>
+            </div>
+            {tierColors[activeTier] && !tierColors[activeTier].startsWith('#') && (
               <button
-                key={palette.id}
                 type="button"
                 onClick={() => {
-                  if (isAvailable) {
-                    handleTierColorChange(palette.id);
-                  } else {
-                    setStatusMessage("Upgrade to unlock more colors for your tier customization.");
-                  }
+                  const updatedColors = { ...tierColors };
+                  // Set to null instead of deleting to preserve tier name
+                  updatedColors[activeTier] = null;
+                  updateSettings({ tierColors: updatedColors });
+                  setStatusMessage(`Tier "${activeTier}" color cleared`);
                 }}
-                className={`relative flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
-                  isSelected
-                    ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20"
-                    : isAvailable
-                    ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
-                    : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-pointer opacity-60 hover:opacity-80"
-                }`}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white transition-colors flex items-center gap-1"
+                title="Clear color selection"
               >
-                <span 
-                  className={`h-4 w-4 rounded-full ${tierSwatchClass(palette.id)} ${!isAvailable ? "opacity-40" : ""}`}
-                  style={tierSwatchStyle(palette.id)}
-                />
-                <span className="flex flex-col flex-1">
-                  <span>{palette.label}</span>
-                  <span className={`text-xs font-mono ${
-                    isSelected ? "text-slate-300" : isAvailable ? "text-slate-500" : "text-slate-600"
-                  }`}>{palette.hex}</span>
-                </span>
-                {!isAvailable && (
-                  <span className="text-xs text-slate-500">🔒</span>
-                )}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear
               </button>
-            );
-          })}
+            )}
+          </div>
+          
+          
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {COLOR_PALETTE.map((palette) => {
+              const isAvailable = availableColors.some(c => c.id === palette.id);
+              const isSelectedByActiveTier = tierColors[activeTier] === palette.id;
+              
+              // Find ALL tiers using this color
+              const tiersUsingThisColor = tierList.filter(tier => tierColors[tier] === palette.id);
+              const isUsedByAnyTier = tiersUsingThisColor.length > 0;
+              
+              return (
+                <button
+                  key={palette.id}
+                  type="button"
+                  onClick={() => {
+                    if (isAvailable) {
+                      if (isSelectedByActiveTier) {
+                        // Deselect: Set to null to preserve tier name
+                        const updatedColors = { ...tierColors };
+                        updatedColors[activeTier] = null;
+                        updateSettings({ tierColors: updatedColors });
+                        setStatusMessage(`Tier "${activeTier}" color deselected`);
+                      } else {
+                        // Select: assign color
+                        handleTierColorChange(palette.id);
+                      }
+                    } else {
+                      setStatusMessage(`🔒 "${palette.label}" is locked. Upgrade to unlock more colors!`);
+                    }
+                  }}
+                  className={`relative flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-all ${
+                    isSelectedByActiveTier
+                      ? "border-create-primary bg-create-primary/20 text-white shadow-lg shadow-create-primary/20 ring-2 ring-create-primary/50"
+                      : isUsedByAnyTier
+                      ? "border-emerald-600/50 bg-emerald-900/20 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800"
+                      : isAvailable
+                      ? "border-slate-700 bg-slate-900 text-slate-200 hover:border-create-primary/60 hover:bg-slate-800 hover:text-white hover:shadow-md"
+                      : "border-slate-800 bg-slate-900/50 text-slate-500 cursor-pointer opacity-60 hover:opacity-80 hover:border-amber-500/30"
+                  }`}
+                  title={
+                    isSelectedByActiveTier 
+                      ? `Used by Tier ${activeTier} (active) - Click to deselect` 
+                      : isUsedByAnyTier
+                      ? `Used by: ${tiersUsingThisColor.join(', ')} - Click to assign to Tier ${activeTier}`
+                      : isAvailable 
+                      ? 'Click to select' 
+                      : 'Locked - upgrade to unlock'
+                  }
+                >
+                  {/* Color swatch */}
+                  <span 
+                    className={`h-5 w-5 rounded-full flex-shrink-0 border-2 ${
+                      isSelectedByActiveTier
+                        ? 'border-white shadow-lg' 
+                        : isUsedByAnyTier
+                        ? 'border-emerald-400 shadow-md'
+                        : 'border-slate-700'
+                    } ${tierSwatchClass(palette.id)} ${!isAvailable ? "opacity-40" : ""}`}
+                    style={tierSwatchStyle(palette.id)}
+                  />
+                  
+                  {/* Color info */}
+                  <span className="flex flex-col flex-1 min-w-0">
+                    <span className="truncate flex items-center gap-1.5">
+                      {palette.label}
+                      {isSelectedByActiveTier && (
+                        <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" title={`Active: Tier ${activeTier}`}>
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className={`text-xs font-mono truncate ${
+                      isSelectedByActiveTier ? "text-slate-300" : isAvailable ? "text-slate-500" : "text-slate-600"
+                    }`}>
+                      {palette.hex}
+                    </span>
+                    
+                    {/* Show tier badges for colors in use */}
+                    {isUsedByAnyTier && (
+                      <span className="flex flex-wrap gap-1 mt-1">
+                        {tiersUsingThisColor.map(tier => (
+                          <span
+                            key={tier}
+                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              tier === activeTier
+                                ? 'bg-create-primary text-white'
+                                : 'bg-emerald-600/30 text-emerald-300 border border-emerald-600/50'
+                            }`}
+                            title={tier === activeTier ? 'Active tier' : `Tier ${tier} uses this color`}
+                          >
+                            {tier === activeTier && (
+                              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {tier}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </span>
+                  
+                  {/* Lock icon for unavailable colors */}
+                  {!isAvailable && (
+                    <span className="text-sm text-amber-500 flex-shrink-0" title="Premium color">
+                      🔒
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Plan limit info */}
+          {availableColors.length < COLOR_PALETTE.length && (
+            <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-xs">
+                  <p className="text-amber-200 font-semibold mb-1">
+                    {COLOR_PALETTE.length - availableColors.length} colors locked
+                  </p>
+                  <p className="text-amber-300/80">
+                    You have access to {availableColors.length} out of {COLOR_PALETTE.length} color presets. 
+                    {hasCustomTierColors 
+                      ? 'Pro plan unlocks all presets plus custom colors via color wheel.'
+                      : 'Upgrade to unlock all color presets and custom color picker.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-3">
