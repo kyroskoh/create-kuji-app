@@ -39,15 +39,23 @@ Available customization options:
 - **Range:** 1-10 tiers
 - **Description:** Number of top tiers that receive special particle effects and glow animations
 
-#### b) **Pack Background Color**
-- **Setting:** `cardPackColor`
-- **Default:** `#9333ea` (purple)
-- **Type:** Hex color code
+#### b) **Pack Background Gradient**
+- **Settings:** 
+  - `cardPackColor` (start color) - Default: `#9333ea` (purple)
+  - `cardPackColorEnd` (end color) - Default: `#4f46e5` (indigo)
+  - `cardPackGradientType` - Default: `linear` (options: `linear`, `radial`, `conic`)
+  - `cardPackGradientAngle` - Default: `135` (0-360 degrees, for linear gradients only)
+- **Type:** Dual hex color codes with gradient blending
 - **Features:**
-  - Color picker widget
-  - Manual hex input
-  - Live gradient preview
-  - Reset to default button
+  - Two color picker widgets (start & end colors)
+  - Manual hex input for both colors
+  - Gradient type selector:
+    - **Linear:** Directional gradient with customizable angle (0-360°)
+    - **Radial:** Circular gradient from center outward
+    - **Conic:** Conical gradient rotating around center
+  - Angle slider with quick-access buttons (0°, 45°, 90°, 135°, 180°)
+  - Large live preview showing the exact gradient
+  - Reset all button to restore defaults
 - **Usage:** Applied to card pack wrapper and card backs when no custom image is used
 
 #### c) **Custom Pack Design Image**
@@ -74,10 +82,13 @@ Available customization options:
 #### New Props:
 ```javascript
 {
-  tierOrder: [],              // Array of tier names in priority order
-  effectTierCount: 3,         // Number of top tiers for special effects
-  customPackColor: null,      // Hex color for pack background
-  customPackImage: null,      // Custom image URL for pack design
+  tierOrder: [],                      // Array of tier names in priority order
+  effectTierCount: 3,                 // Number of top tiers for special effects
+  customPackColor: null,              // Start hex color for gradient
+  customPackColorEnd: null,           // End hex color for gradient
+  customPackGradientType: 'linear',  // Gradient type: 'linear', 'radial', 'conic'
+  customPackGradientAngle: 135,      // Gradient angle (degrees, for linear only)
+  customPackImage: null,              // Custom image URL for pack design
 }
 ```
 
@@ -138,6 +149,9 @@ Supported Tailwind colors:
   showLogo={sessionSettings.cardPackShowLogo && hasCustomBranding(...)}
   logoUrl={branding?.logoUrl}
   customPackColor={sessionSettings.cardPackColor}
+  customPackColorEnd={sessionSettings.cardPackColorEnd}
+  customPackGradientType={sessionSettings.cardPackGradientType}
+  customPackGradientAngle={sessionSettings.cardPackGradientAngle}
   customPackImage={sessionSettings.cardPackCustomImage}
   onComplete={...}
   onSkip={...}
@@ -154,6 +168,9 @@ Supported Tailwind colors:
   showLogo={hasCustomBranding(...) && branding?.logoUrl}
   logoUrl={branding?.logoUrl}
   customPackColor={settings.cardPackColor}
+  customPackColorEnd={settings.cardPackColorEnd}
+  customPackGradientType={settings.cardPackGradientType}
+  customPackGradientAngle={settings.cardPackGradientAngle}
   customPackImage={settings.cardPackCustomImage}
   onComplete={...}
   onSkip={...}
@@ -178,6 +195,51 @@ Supported Tailwind colors:
    - One-by-one card reveals
    - Special effects for top-tier prizes
 5. Results displayed after animation
+
+## Gradient Examples
+
+### Linear Gradients
+```css
+/* Default (135°) - Diagonal top-right to bottom-left */
+linear-gradient(135deg, #9333ea 0%, #4f46e5 100%)
+
+/* Horizontal (0°) - Left to right */
+linear-gradient(0deg, #ff6b6b 0%, #feca57 100%)
+
+/* Vertical (90°) - Bottom to top */
+linear-gradient(90deg, #48dbfb 0%, #0abde3 100%)
+
+/* Diagonal (45°) - Bottom-left to top-right */
+linear-gradient(45deg, #1dd1a1 0%, #10ac84 100%)
+```
+
+### Radial Gradients
+```css
+/* Center spotlight effect */
+radial-gradient(circle at center, #ff6348 0%, #2d3436 100%)
+
+/* Vibrant burst */
+radial-gradient(circle at center, #feca57 0%, #ee5a6f 100%)
+```
+
+### Conic Gradients
+```css
+/* Rainbow wheel effect */
+conic-gradient(from 0deg at center, #9333ea 0%, #4f46e5 50%, #9333ea 100%)
+
+/* Color cycling */
+conic-gradient(from 0deg at center, #ff6b6b 0%, #feca57 50%, #ff6b6b 100%)
+```
+
+### Popular Color Combinations
+1. **Sunset:** `#FF512F` → `#F09819` (Linear 45°)
+2. **Ocean:** `#2E3192` → `#1BFFFF` (Linear 135°)
+3. **Forest:** `#134E5E` → `#71B280` (Radial)
+4. **Fire:** `#F00000` → `#DC281E` (Conic)
+5. **Purple Haze:** `#9333ea` → `#4f46e5` (Linear 135°, default)
+6. **Gold Rush:** `#FFD700` → `#FF8C00` (Linear 90°)
+7. **Neon Dreams:** `#FF00FF` → `#00FFFF` (Conic)
+8. **Midnight:** `#232526` → `#414345` (Linear 180°)
 
 ## CSS Animations
 

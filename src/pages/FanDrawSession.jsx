@@ -251,6 +251,9 @@ export default function FanDrawSession() {
             showLogo={hasCustomBranding(settings.subscriptionPlan || 'free') && branding?.logoUrl}
             logoUrl={branding?.logoUrl}
             customPackColor={settings.cardPackColor}
+            customPackColorEnd={settings.cardPackColorEnd}
+            customPackGradientType={settings.cardPackGradientType}
+            customPackGradientAngle={settings.cardPackGradientAngle}
             customPackImage={settings.cardPackCustomImage}
             onComplete={() => {
               setShowCardPackAnimation(false);

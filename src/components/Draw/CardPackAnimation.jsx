@@ -8,6 +8,9 @@ export default function CardPackAnimation({
   showLogo = false,
   logoUrl = null,
   customPackColor = null,
+  customPackColorEnd = null,
+  customPackGradientType = 'linear',
+  customPackGradientAngle = 135,
   customPackImage = null,
   onComplete,
   onSkip
@@ -19,11 +22,24 @@ export default function CardPackAnimation({
 
   const cardCount = prizes.length;
   
-  // Get pack color or image (default to purple gradient)
-  const baseColor = customPackColor || '#9333ea';
-  const packColor = customPackColor 
-    ? `linear-gradient(135deg, ${customPackColor} 0%, ${customPackColor} 100%)`
-    : 'linear-gradient(135deg, #9333ea 0%, #4f46e5 100%)';
+  // Get pack color or image with gradient support
+  const color1 = customPackColor || '#9333ea';
+  const color2 = customPackColorEnd || '#4f46e5';
+  const gradientType = customPackGradientType || 'linear';
+  const gradientAngle = customPackGradientAngle || 135;
+  
+  // Build gradient based on type
+  const packColor = (() => {
+    if (gradientType === 'linear') {
+      return `linear-gradient(${gradientAngle}deg, ${color1} 0%, ${color2} 100%)`;
+    } else if (gradientType === 'radial') {
+      return `radial-gradient(circle at center, ${color1} 0%, ${color2} 100%)`;
+    } else if (gradientType === 'conic') {
+      return `conic-gradient(from 0deg at center, ${color1} 0%, ${color2} 50%, ${color1} 100%)`;
+    }
+    return `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`;
+  })();
+  
   const hasCustomImage = Boolean(customPackImage);
   
   // Determine if current prize should have special effects

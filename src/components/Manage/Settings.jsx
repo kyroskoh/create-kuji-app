@@ -50,7 +50,10 @@ export default function Settings() {
     cardPackEffectTierCount: 3, // Number of top tiers to apply special effects (default 3)
     cardPackShowLogo: false, // Show logo on card backs and pack
     cardPackCustomImage: null, // Custom pack design image URL
-    cardPackColor: '#9333ea' // Custom pack background color (default purple)
+    cardPackColor: '#9333ea', // Custom pack background color (default purple)
+    cardPackColorEnd: '#4f46e5', // End color for gradient (default indigo)
+    cardPackGradientType: 'linear', // Gradient type: 'linear', 'radial', 'conic'
+    cardPackGradientAngle: 135 // Gradient angle in degrees (for linear gradients)
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
@@ -968,58 +971,186 @@ export default function Settings() {
                     </p>
                   </div>
                   
-                  {/* Custom Pack Color Picker */}
-                  <div className="space-y-2">
+                  {/* Custom Pack Gradient Editor */}
+                  <div className="space-y-3 bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
                     <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide block">
-                      Pack Background Color
+                      Pack Background Gradient
                     </label>
                     <p className="text-xs text-slate-400 mb-2">
-                      Choose a custom color for the card pack wrapper and card backs (when no custom image is used)
+                      Customize the gradient for the card pack wrapper and card backs (when no custom image is used)
                     </p>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={settings.cardPackColor || '#9333ea'}
-                        onChange={(e) => updateSettings({ cardPackColor: e.target.value })}
-                        className="h-10 w-20 rounded border border-slate-700 bg-slate-900 cursor-pointer"
-                        title="Choose pack color"
-                      />
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={settings.cardPackColor || '#9333ea'}
-                          onChange={(e) => {
-                            const color = e.target.value;
-                            // Validate hex color format
-                            const hexColorRegex = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
-                            if (hexColorRegex.test(color)) {
-                              updateSettings({ cardPackColor: color });
-                            }
-                          }}
-                          placeholder="#9333ea"
-                          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/30 font-mono"
-                        />
-                      </div>
-                      {settings.cardPackColor && settings.cardPackColor !== '#9333ea' && (
+                    
+                    {/* Gradient Type Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs text-slate-400">Gradient Type</label>
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => updateSettings({ cardPackColor: '#9333ea' })}
-                          className="rounded-md px-3 py-2 text-sm text-slate-400 hover:text-slate-300 transition-colors"
-                          title="Reset to default purple"
+                          onClick={() => updateSettings({ cardPackGradientType: 'linear' })}
+                          className={`flex-1 px-3 py-2 rounded text-xs font-semibold transition-all ${
+                            (settings.cardPackGradientType || 'linear') === 'linear'
+                              ? 'bg-purple-600 text-white shadow-md'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
                         >
-                          Reset
+                          📐 Linear
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => updateSettings({ cardPackGradientType: 'radial' })}
+                          className={`flex-1 px-3 py-2 rounded text-xs font-semibold transition-all ${
+                            settings.cardPackGradientType === 'radial'
+                              ? 'bg-purple-600 text-white shadow-md'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
+                        >
+                          ⭕ Radial
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateSettings({ cardPackGradientType: 'conic' })}
+                          className={`flex-1 px-3 py-2 rounded text-xs font-semibold transition-all ${
+                            settings.cardPackGradientType === 'conic'
+                              ? 'bg-purple-600 text-white shadow-md'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
+                        >
+                          🌀 Conic
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div 
-                        className="w-16 h-16 rounded-lg border-2 border-slate-700 shadow-md"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${settings.cardPackColor || '#9333ea'} 0%, ${settings.cardPackColor || '#4f46e5'} 100%)` 
-                        }}
-                      />
+                    
+                    {/* Gradient Angle (for linear only) */}
+                    {(settings.cardPackGradientType || 'linear') === 'linear' && (
+                      <div className="space-y-2">
+                        <label className="text-xs text-slate-400">Angle: {settings.cardPackGradientAngle || 135}°</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="0"
+                            max="360"
+                            step="15"
+                            value={settings.cardPackGradientAngle || 135}
+                            onChange={(e) => updateSettings({ cardPackGradientAngle: parseInt(e.target.value) })}
+                            className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            max="360"
+                            value={settings.cardPackGradientAngle || 135}
+                            onChange={(e) => updateSettings({ cardPackGradientAngle: Math.max(0, Math.min(360, parseInt(e.target.value) || 135)) })}
+                            className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 text-center focus:border-purple-500/70 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+                          />
+                        </div>
+                        <div className="flex gap-2 text-[10px]">
+                          <button type="button" onClick={() => updateSettings({ cardPackGradientAngle: 0 })} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">0° →</button>
+                          <button type="button" onClick={() => updateSettings({ cardPackGradientAngle: 45 })} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">45° ↗</button>
+                          <button type="button" onClick={() => updateSettings({ cardPackGradientAngle: 90 })} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">90° ↑</button>
+                          <button type="button" onClick={() => updateSettings({ cardPackGradientAngle: 135 })} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">135° ↖</button>
+                          <button type="button" onClick={() => updateSettings({ cardPackGradientAngle: 180 })} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300">180° ←</button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Color Pickers */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Start Color */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-slate-400">Start Color</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={settings.cardPackColor || '#9333ea'}
+                            onChange={(e) => updateSettings({ cardPackColor: e.target.value })}
+                            className="h-10 w-12 rounded border border-slate-700 bg-slate-900 cursor-pointer"
+                            title="Choose start color"
+                          />
+                          <input
+                            type="text"
+                            value={settings.cardPackColor || '#9333ea'}
+                            onChange={(e) => {
+                              const color = e.target.value;
+                              const hexColorRegex = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
+                              if (hexColorRegex.test(color)) {
+                                updateSettings({ cardPackColor: color });
+                              }
+                            }}
+                            placeholder="#9333ea"
+                            className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-100 focus:border-purple-500/70 focus:outline-none focus:ring-1 focus:ring-purple-500/30 font-mono"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* End Color */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-slate-400">End Color</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={settings.cardPackColorEnd || '#4f46e5'}
+                            onChange={(e) => updateSettings({ cardPackColorEnd: e.target.value })}
+                            className="h-10 w-12 rounded border border-slate-700 bg-slate-900 cursor-pointer"
+                            title="Choose end color"
+                          />
+                          <input
+                            type="text"
+                            value={settings.cardPackColorEnd || '#4f46e5'}
+                            onChange={(e) => {
+                              const color = e.target.value;
+                              const hexColorRegex = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
+                              if (hexColorRegex.test(color)) {
+                                updateSettings({ cardPackColorEnd: color });
+                              }
+                            }}
+                            placeholder="#4f46e5"
+                            className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-100 focus:border-purple-500/70 focus:outline-none focus:ring-1 focus:ring-purple-500/30 font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Preview */}
+                    <div className="space-y-2">
+                      <label className="text-xs text-slate-400">Preview</label>
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="flex-1 h-24 rounded-lg border-2 border-slate-700 shadow-lg"
+                          style={{ 
+                            background: (() => {
+                              const type = settings.cardPackGradientType || 'linear';
+                              const color1 = settings.cardPackColor || '#9333ea';
+                              const color2 = settings.cardPackColorEnd || '#4f46e5';
+                              const angle = settings.cardPackGradientAngle || 135;
+                              
+                              if (type === 'linear') {
+                                return `linear-gradient(${angle}deg, ${color1} 0%, ${color2} 100%)`;
+                              } else if (type === 'radial') {
+                                return `radial-gradient(circle at center, ${color1} 0%, ${color2} 100%)`;
+                              } else if (type === 'conic') {
+                                return `conic-gradient(from 0deg at center, ${color1} 0%, ${color2} 50%, ${color1} 100%)`;
+                              }
+                              return `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`;
+                            })()
+                          }}
+                        />
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ 
+                              cardPackColor: '#9333ea', 
+                              cardPackColorEnd: '#4f46e5',
+                              cardPackGradientType: 'linear',
+                              cardPackGradientAngle: 135
+                            })}
+                            className="px-3 py-1.5 rounded text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+                          >
+                            Reset All
+                          </button>
+                        </div>
+                      </div>
                       <p className="text-xs text-slate-500">
-                        Preview of pack gradient. This color is used when no custom image is uploaded.
+                        This gradient is applied to the pack wrapper and card backs when no custom image is uploaded.
                       </p>
                     </div>
                   </div>

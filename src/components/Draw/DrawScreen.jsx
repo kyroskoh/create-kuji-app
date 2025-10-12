@@ -1013,6 +1013,9 @@ export default function DrawScreen() {
           showLogo={sessionSettings.cardPackShowLogo && hasCustomBranding(sessionSettings.subscriptionPlan || 'free')}
           logoUrl={branding?.logoUrl}
           customPackColor={sessionSettings.cardPackColor}
+          customPackColorEnd={sessionSettings.cardPackColorEnd}
+          customPackGradientType={sessionSettings.cardPackGradientType}
+          customPackGradientAngle={sessionSettings.cardPackGradientAngle}
           customPackImage={sessionSettings.cardPackCustomImage}
           onComplete={() => {
             // Convert prizes to result items
