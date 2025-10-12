@@ -154,6 +154,7 @@ export default function DrawScreen() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
   const [showCardPackAnimation, setShowCardPackAnimation] = useState(false);
   const [cardPackPrizes, setCardPackPrizes] = useState([]);
+  const [selectedShareMode, setSelectedShareMode] = useState('default'); // 'default', 'instant', 'scratch', 'trading'
   const shareMenuRef = useRef(null);
 
   // Load initial data
@@ -478,10 +479,23 @@ export default function DrawScreen() {
     setHistoryOpen(false);
   };
 
+  const getShareUrl = (mode = selectedShareMode) => {
+    if (!lastDrawInfo) return '';
+    
+    const baseUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    
+    // Add mode parameter if not default
+    if (mode && mode !== 'default') {
+      return `${baseUrl}?mode=${mode}`;
+    }
+    
+    return baseUrl;
+  };
+
   const handleCopyShareLink = () => {
     if (!lastDrawInfo) return;
     
-    const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    const shareUrl = getShareUrl();
     navigator.clipboard.writeText(shareUrl).then(() => {
       setShareLinkCopied(true);
       setTimeout(() => setShareLinkCopied(false), 2000);
@@ -494,7 +508,7 @@ export default function DrawScreen() {
   const handleGenerateQRCode = async () => {
     if (!lastDrawInfo) return;
     
-    const shareUrl = `${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    const shareUrl = getShareUrl();
     try {
       // Check if user has Pro plan with custom branding
       const hasBrandingAccess = hasCustomBranding(user?.subscriptionPlan || 'free');
@@ -540,7 +554,8 @@ export default function DrawScreen() {
 
   const handleOpenFanLink = () => {
     if (!lastDrawInfo) return;
-    const shareUrl = `/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`;
+    const fullUrl = getShareUrl();
+    const shareUrl = fullUrl.replace(window.location.origin, '');
     window.open(shareUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -653,13 +668,70 @@ export default function DrawScreen() {
                   <p className="text-slate-300">Session #{lastDrawInfo.sessionNumber} for {lastDrawInfo.fanName}</p>
                 </div>
                 
+                {/* Reveal Mode Selection */}
+                <div className="bg-slate-900 rounded-lg p-4 mb-4">
+                  <label className="text-xs text-slate-400 mb-2 block">Choose reveal mode:</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedShareMode('default')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        selectedShareMode === 'default'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      Default (Plan-based)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedShareMode('instant')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        selectedShareMode === 'instant'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      ⚡ Instant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedShareMode('scratch')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        selectedShareMode === 'scratch'
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      🪙 Scratch
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedShareMode('trading')}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        selectedShareMode === 'trading'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      🃏 Trading Pack
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-3">
+                    {selectedShareMode === 'default' && 'Uses plan default (Trading/Scratch/Instant)'}
+                    {selectedShareMode === 'instant' && 'All prizes revealed immediately'}
+                    {selectedShareMode === 'scratch' && 'Fan scratches cards to reveal (Pro feature)'}
+                    {selectedShareMode === 'trading' && 'Opens like a card pack with animation (Beta)'}
+                  </p>
+                </div>
+
                 <div className="bg-slate-900 rounded-lg p-4 mb-4">
                   <label className="text-xs text-slate-400 mb-2 block">Share this link with the fan:</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       readOnly
-                      value={`${window.location.origin}/${encodeURIComponent(user?.username || '')}/fan/draw/${encodeURIComponent(lastDrawInfo.id)}`}
+                      value={getShareUrl()}
                       className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 font-mono"
                       onClick={(e) => e.target.select()}
                     />

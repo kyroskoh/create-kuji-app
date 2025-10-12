@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { tierChipClass } from "../utils/tierColors.js";
 import { isFeatureAvailable, hasBetaAccess, hasCustomBranding } from "../utils/subscriptionPlans.js";
@@ -16,6 +16,7 @@ const formatTimestamp = (timestamp) =>
 
 export default function FanDrawSession() {
   const { username, entryId } = useParams();
+  const [searchParams] = useSearchParams();
   const { branding } = useBranding();
   const [entry, setEntry] = useState(null);
   const [settings, setSettings] = useState({});
@@ -27,6 +28,9 @@ export default function FanDrawSession() {
   const [tradingModeEnabled, setTradingModeEnabled] = useState(false);
   const [showCardPackAnimation, setShowCardPackAnimation] = useState(false);
   const [allRevealed, setAllRevealed] = useState(false);
+  
+  // Get mode from URL query parameter (instant, scratch, or trading)
+  const modeParam = searchParams.get('mode')?.toLowerCase();
 
   useEffect(() => {
     let mounted = true;
@@ -57,23 +61,60 @@ export default function FanDrawSession() {
         // Check if scratch cards are enabled for this user's plan
         const planId = sessionData.settings?.subscriptionPlan || 'free';
         const hasScratchCards = isFeatureAvailable('scratchCards', planId);
-        setScratchEnabled(hasScratchCards);
-        
-        // Check if trading card animation is available
         const hasTrading = hasBetaAccess(planId);
-        setTradingModeEnabled(hasTrading);
         
         // Check if this session has been fully revealed before (localStorage or database)
         const revealedKey = `fan-revealed-${entryId}`;
         const wasRevealedLocally = localStorage.getItem(revealedKey) === 'true';
         const wasRevealedInDB = sessionData.fanRevealed === true;
         
+        // Determine reveal mode based on URL parameter or user's plan
+        let effectiveMode = 'instant'; // default
+        let enableScratch = false;
+        let enableTrading = false;
+        let showAnimation = false;
+        
         if (wasRevealedLocally || wasRevealedInDB) {
+          // Already revealed, show instant mode
           setAllRevealed(true);
-        } else if (hasTrading) {
-          // If trading mode available and not yet revealed, show animation on load
-          setShowCardPackAnimation(true);
+          effectiveMode = 'instant';
+        } else if (modeParam) {
+          // Use mode from URL parameter if specified
+          if (modeParam === 'trading' && hasTrading) {
+            effectiveMode = 'trading';
+            enableTrading = true;
+            showAnimation = true;
+          } else if (modeParam === 'scratch' && hasScratchCards) {
+            effectiveMode = 'scratch';
+            enableScratch = true;
+          } else if (modeParam === 'instant') {
+            effectiveMode = 'instant';
+            setAllRevealed(true); // Instantly reveal all
+          } else {
+            // Invalid mode or feature not available, fall back to instant
+            effectiveMode = 'instant';
+            setAllRevealed(true);
+          }
+        } else {
+          // No mode parameter, use default behavior based on plan
+          if (hasTrading) {
+            effectiveMode = 'trading';
+            enableTrading = true;
+            showAnimation = true;
+          } else if (hasScratchCards) {
+            effectiveMode = 'scratch';
+            enableScratch = true;
+          } else {
+            effectiveMode = 'instant';
+            setAllRevealed(true);
+          }
         }
+        
+        setScratchEnabled(enableScratch);
+        setTradingModeEnabled(enableTrading);
+        setShowCardPackAnimation(showAnimation);
+        
+        console.log('🎮 Reveal mode:', effectiveMode, '| From URL param:', modeParam || 'none');
         
         setLoading(false);
       } catch (err) {
@@ -87,7 +128,7 @@ export default function FanDrawSession() {
     return () => {
       mounted = false;
     };
-  }, [entryId, username]);
+  }, [entryId, username, modeParam]);
 
   // Prepare results as card items
   const resultItems = useMemo(() => {
