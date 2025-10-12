@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { PRICING_HEADERS, exportToCsv, parsePricingCsv } from "../../utils/csvUtils.js";
+import { PRICING_HEADERS, exportToCsv, parsePricingCsv, exportCsvTemplate, downloadCsv } from "../../utils/csvUtils.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
 import { syncUserData } from "../../services/syncService.js";
 
@@ -119,15 +119,14 @@ export default function PricingManager() {
 
   const handleExport = () => {
     const csv = exportToCsv(presets, PRICING_HEADERS);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "pricing.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadCsv(csv, 'pricing.csv');
+    setStatus({ type: "success", message: "Pricing exported successfully!" });
+  };
+
+  const handleExportTemplate = () => {
+    const csv = exportCsvTemplate(PRICING_HEADERS);
+    downloadCsv(csv, 'pricing-template.csv');
+    setStatus({ type: "success", message: "Template downloaded! Fill it out and import it back." });
   };
 
   const handleSave = async () => {
@@ -213,6 +212,14 @@ export default function PricingManager() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
+        <button 
+          type="button" 
+          onClick={handleExportTemplate} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+          title="Download empty CSV template with headers"
+        >
+          📋 Download Template
+        </button>
         <button type="button" onClick={() => fileInputRef.current?.click()}>
           Import Pricing CSV
         </button>

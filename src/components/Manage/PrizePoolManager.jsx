@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import useLocalStorageDAO from "../../hooks/useLocalStorageDAO.js";
-import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv } from "../../utils/csvUtils.js";
+import { PRIZE_HEADERS, exportToCsv, parsePrizesCsv, exportCsvTemplate, downloadCsv } from "../../utils/csvUtils.js";
 import { sortTierEntries, tierBadgeClass, tierChipClass, tierInputClass, getTierColorHex } from "../../utils/tierColors.js";
 import { calculateProbabilities, tierInfluence } from "../../utils/randomDraw.js";
 import { useAuth } from "../../utils/AuthContext.jsx";
@@ -202,15 +202,14 @@ export default function PrizePoolManager() {
 
   const handleExport = () => {
     const csv = exportToCsv(prizes, PRIZE_HEADERS);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "prizes.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadCsv(csv, 'prizes.csv');
+    setStatus({ type: "success", message: "Prizes exported successfully!" });
+  };
+
+  const handleExportTemplate = () => {
+    const csv = exportCsvTemplate(PRIZE_HEADERS);
+    downloadCsv(csv, 'prizes-template.csv');
+    setStatus({ type: "success", message: "Template downloaded! Fill it out and import it back." });
   };
 
   const handleAddRow = async () => {
@@ -557,6 +556,14 @@ export default function PrizePoolManager() {
         <span className="font-semibold text-white">Weight system:</span> {WEIGHT_MODE_LABEL[weightMode]}
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        <button 
+          type="button" 
+          onClick={handleExportTemplate} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+          title="Download empty CSV template with headers"
+        >
+          📋 Download Template
+        </button>
         <button type="button" onClick={() => fileInputRef.current?.click()}>
           Import Prizes CSV
         </button>

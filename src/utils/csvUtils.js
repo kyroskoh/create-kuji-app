@@ -67,6 +67,36 @@ export function exportToCsv(rows, headers) {
   return Papa.unparse({ fields: headers, data: rows.map((row) => headers.map((key) => row[key])) });
 }
 
+/**
+ * Export a CSV template with headers only (no data rows)
+ * @param {string[]} headers - Array of header names
+ * @returns {string} CSV string with headers only
+ */
+export function exportCsvTemplate(headers) {
+  return Papa.unparse({ fields: headers, data: [] });
+}
+
+/**
+ * Download a CSV file to the user's computer
+ * @param {string} csvContent - CSV content as string
+ * @param {string} filename - Name of the file to download
+ */
+export function downloadCsv(csvContent, filename) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  URL.revokeObjectURL(url);
+}
+
 function parseCsv(csvText, headers, mapRow, options = {}) {
   const { fallbackHeaders = {} } = options;
 
