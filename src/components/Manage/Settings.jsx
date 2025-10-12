@@ -251,18 +251,41 @@ export default function Settings() {
     setStatusMessage("All data reset.");
   };
 
-  const handleResetClick = async () => {
-    if (!window.confirm("Export prizes, pricing, and history before resetting. Continue with session reset?")) {
+  const handleClearSessionData = async () => {
+    if (!window.confirm("⚠️ This will clear your draw history (analytics data will be preserved). Export your data first if needed. Continue?")) {
+      return;
+    }
+    // Only clear prizes and pricing, preserve history for analytics
+    const history = await getHistory();
+    await resetAll();
+    // Restore history to preserve analytics
+    await saveHistory(history);
+    const fresh = await getSettings();
+    setLocalSettings(fresh);
+    setCountryQuery(fresh.country ?? "");
+    const tiers = fresh.tierColors ? Object.keys(fresh.tierColors) : DEFAULT_TIER_SEQUENCE;
+    const shouldSort = !isTierSortingAllowed(fresh.subscriptionPlan || "free");
+    const orderedTiers = shouldSort ? tiers.sort(compareTierLabels) : tiers;
+    setActiveTier(orderedTiers[0] ?? "S");
+    setStatusMessage("Session data cleared. Analytics preserved.");
+  };
+
+  const handleFullReset = async () => {
+    if (!window.confirm("🚨 DANGER: This will permanently delete ALL data including analytics history! This cannot be undone. Are you absolutely sure?")) {
+      return;
+    }
+    if (!window.confirm("⚠️ Final confirmation: Delete everything including all analytics data?")) {
       return;
     }
     await performReset();
   };
 
   const handleResetCounter = async () => {
-    if (!window.confirm("Export your data before resetting the session counter. Reset counter now?")) {
+    if (!window.confirm("Reset the session number counter to 1? (This only affects the session numbering, not your data)")) {
       return;
     }
     await updateSettings({ nextSessionNumber: 1 });
+    setStatusMessage("Session counter reset to 1.");
   };
 
   const handleImportAllClick = () => {
@@ -1577,35 +1600,82 @@ export default function Settings() {
         )}
         
         {/* Local Import/Export Section */}
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-          <button 
-            type="button" 
-            className="rounded-md px-4 py-2 text-sm font-semibold bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 
-            onClick={handleImportAllClick}
-          >
-            Import All Data
-          </button>
-          <button 
-            type="button" 
-            className="rounded-md px-4 py-2 text-sm font-semibold bg-create-primary/80 text-white hover:bg-create-primary hover:shadow-lg transition-all" 
-            onClick={handleExportAll}
-          >
-            Export All Data
-          </button>
-          <button 
-            type="button" 
-            className="rounded-md px-4 py-2 text-sm font-semibold bg-red-600/80 text-white hover:bg-red-600 hover:shadow-lg transition-all" 
-            onClick={handleResetClick}
-          >
-            Reset Session Data
-          </button>
-          <button 
-            type="button" 
-            className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white hover:shadow-md transition-all" 
-            onClick={handleResetCounter}
-          >
-            Reset Session Counter
-          </button>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            <button 
+              type="button" 
+              className="rounded-md px-4 py-2 text-sm font-semibold bg-emerald-600/80 text-white hover:bg-emerald-600 hover:shadow-lg transition-all" 
+              onClick={handleImportAllClick}
+            >
+              Import All Data
+            </button>
+            <button 
+              type="button" 
+              className="rounded-md px-4 py-2 text-sm font-semibold bg-create-primary/80 text-white hover:bg-create-primary hover:shadow-lg transition-all" 
+              onClick={handleExportAll}
+            >
+              Export All Data
+            </button>
+          </div>
+          
+          {/* Session Management Section */}
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Session Management
+            </h4>
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+              <button 
+                type="button" 
+                className="rounded-md px-4 py-2 text-sm font-semibold bg-orange-600/80 text-white hover:bg-orange-600 hover:shadow-lg transition-all flex items-center gap-2" 
+                onClick={handleClearSessionData}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear Prizes & Draw History
+              </button>
+              <button 
+                type="button" 
+                className="rounded-md px-4 py-2 text-sm font-semibold bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white hover:shadow-md transition-all flex items-center gap-2" 
+                onClick={handleResetCounter}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+                Reset Session Number Counter
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              💡 <strong>Tip:</strong> "Clear Prizes & Draw History" removes current stock and draw records while preserving analytics data for reports.
+            </p>
+          </div>
+          
+          {/* Danger Zone */}
+          <div className="bg-red-950/20 border border-red-800/50 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Danger Zone
+            </h4>
+            <p className="text-xs text-slate-400 mb-3">
+              ⚠️ This will permanently delete <strong>ALL</strong> data including analytics history. This action cannot be undone!
+            </p>
+            <button 
+              type="button" 
+              className="rounded-md px-4 py-2 text-sm font-semibold bg-red-700/80 text-white hover:bg-red-700 hover:shadow-lg transition-all flex items-center gap-2" 
+              onClick={handleFullReset}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Reset Everything (Including Analytics)
+            </button>
+          </div>
         </div>
         <input
           ref={fileInputRef}
