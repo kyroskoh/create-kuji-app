@@ -49,6 +49,7 @@ export default function BrandingWrapper({ children, className = '' }) {
     <div 
       className={`relative ${className}`}
       style={backgroundStyles}
+      data-branding-enabled={isEnabled ? "true" : "false"}
     >
       {/* Add overlay for better readability if custom background exists */}
       {hasCustomBackground && (

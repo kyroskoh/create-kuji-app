@@ -10,6 +10,10 @@
   --brand-secondary: #8b5cf6;
   --brand-accent: #06b6d4;
   --brand-font-family: 'Inter', sans-serif;
+  
+  /* Advanced Controls typography (Beta) */
+  --brand-font-weight: 400;
+  --brand-letter-spacing: 0;
 }
 
 body {
@@ -22,4 +26,23 @@ a {
 
 button {
   @apply rounded-md bg-create-primary px-4 py-2 font-semibold text-white transition hover:bg-create-secondary;
+}
+
+/* Branding Typography Utilities */
+.branding-text {
+  font-weight: var(--brand-font-weight) !important;
+  letter-spacing: var(--brand-letter-spacing) !important;
+}
+
+.branding-text-preserve-weight {
+  letter-spacing: var(--brand-letter-spacing) !important;
+}
+
+/* Apply typography to key UI elements on branded pages */
+[data-branding-enabled="true"] h1,
+[data-branding-enabled="true"] h2,
+[data-branding-enabled="true"] h3,
+[data-branding-enabled="true"] .branding-auto {
+  font-weight: var(--brand-font-weight);
+  letter-spacing: var(--brand-letter-spacing);
 }

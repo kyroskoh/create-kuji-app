@@ -12,6 +12,9 @@ export default function CardPackAnimation({
   customPackGradientType = 'linear',
   customPackGradientAngle = 135,
   customPackImage = null,
+  animationStyle = 'fade',
+  fontWeight = 400,
+  letterSpacing = 'normal',
   onComplete,
   onSkip
 }) {
@@ -48,6 +51,40 @@ export default function CardPackAnimation({
     const tierUpper = String(prize.tier).toUpperCase();
     const tierIndex = tierOrder.findIndex(t => String(t).toUpperCase() === tierUpper);
     return tierIndex >= 0 && tierIndex < effectTierCount;
+  };
+  
+  // Convert letter spacing preset to CSS value
+  const getLetterSpacingValue = () => {
+    const spacingMap = {
+      'tighter': '-0.05em',
+      'tight': '-0.025em',
+      'normal': '0',
+      'wide': '0.025em',
+      'wider': '0.05em',
+      'widest': '0.1em'
+    };
+    return spacingMap[letterSpacing] || '0';
+  };
+  
+  // Text style object for typography
+  const textStyle = {
+    fontWeight,
+    letterSpacing: getLetterSpacingValue()
+  };
+  
+  // Get animation class based on style
+  const getAnimationClass = () => {
+    switch(animationStyle) {
+      case 'slide':
+        return 'animate-slide-in';
+      case 'scale':
+        return 'animate-scale-in';
+      case 'bounce':
+        return 'animate-bounce-in';
+      case 'fade':
+      default:
+        return 'animate-fade-in';
+    }
   };
 
   const handleOpenPack = () => {
@@ -178,10 +215,16 @@ export default function CardPackAnimation({
                 ) : null}
 
                 {/* Title */}
-                <h2 className="text-5xl font-bold text-center drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+                <h2 
+                  className="text-5xl font-bold text-center drop-shadow-lg" 
+                  style={{ 
+                    textShadow: '0 0 20px rgba(255,255,255,0.5)',
+                    ...textStyle
+                  }}
+                >
                   Prize Pack
                 </h2>
-                <p className="text-2xl text-white font-semibold mt-3 drop-shadow-md">
+                <p className="text-2xl text-white font-semibold mt-3 drop-shadow-md" style={textStyle}>
                   {cardCount} {cardCount === 1 ? 'Card' : 'Cards'}
                 </p>
                 
@@ -199,12 +242,12 @@ export default function CardPackAnimation({
 
       {/* Cards Stage */}
       {stage === 'cards' && (
-        <div className="animate-fade-in">
+        <div className={getAnimationClass()}>
           <div className="text-center mb-4">
-            <p className="text-white text-lg font-semibold">
+            <p className="text-white text-lg font-semibold" style={textStyle}>
               Card {currentCardIndex + 1} of {cardCount}
             </p>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-400 text-sm mt-1" style={{ letterSpacing: getLetterSpacingValue() }}>
               👆 Tap card to reveal your prize
             </p>
           </div>
@@ -268,18 +311,27 @@ export default function CardPackAnimation({
               >
                 <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
                   {/* Tier Badge */}
-                  <div className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm font-bold text-xl border-2 border-white/30">
+                  <div 
+                    className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm font-bold text-xl border-2 border-white/30"
+                    style={textStyle}
+                  >
                     Tier {String(prizes[currentCardIndex]?.tier || '?').toUpperCase()}
                   </div>
                   
                   {/* Prize Name */}
                   <div className="text-center relative z-10">
-                    <h3 className="text-4xl font-bold mb-4 drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+                    <h3 
+                      className="text-4xl font-bold mb-4 drop-shadow-lg" 
+                      style={{ 
+                        textShadow: '0 0 20px rgba(0,0,0,0.5)',
+                        ...textStyle
+                      }}
+                    >
                       {prizes[currentCardIndex]?.prize_name || 'Prize'}
                     </h3>
                     
                     {prizes[currentCardIndex]?.sku && (
-                      <p className="text-xl text-white/80 font-semibold">
+                      <p className="text-xl text-white/80 font-semibold" style={textStyle}>
                         {prizes[currentCardIndex].sku}
                       </p>
                     )}
@@ -366,8 +418,8 @@ export default function CardPackAnimation({
               
               <div className="relative h-full flex flex-col items-center justify-center p-8 text-white z-10">
                 <div className="text-6xl mb-6">✨</div>
-                <h2 className="text-4xl font-bold text-center mb-4 drop-shadow-lg">All Cards Revealed!</h2>
-                <p className="text-xl text-center opacity-90 drop-shadow-md">
+                <h2 className="text-4xl font-bold text-center mb-4 drop-shadow-lg" style={textStyle}>All Cards Revealed!</h2>
+                <p className="text-xl text-center opacity-90 drop-shadow-md" style={textStyle}>
                   You've opened all {cardCount} {cardCount === 1 ? 'card' : 'cards'}
                 </p>
               </div>
@@ -422,6 +474,14 @@ export default function CardPackAnimation({
           animation: fadeIn 0.3s ease-out;
         }
         
+        .animate-slide-in {
+          animation: slideIn 0.5s ease-out;
+        }
+        
+        .animate-bounce-in {
+          animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
         @keyframes scaleIn {
           from {
             opacity: 0;
@@ -436,6 +496,35 @@ export default function CardPackAnimation({
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes bounceIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
       `}</style>
     </div>

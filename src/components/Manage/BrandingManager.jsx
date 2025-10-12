@@ -44,7 +44,11 @@ export default function BrandingManager() {
     fontFamily: 'Inter',
     backgroundPattern: null,
     backgroundImage: null,
-    footerText: ''
+    footerText: '',
+    // Advanced Controls (Beta)
+    cardPackAnimationStyle: 'fade',
+    cardPackFontWeight: 400,
+    cardPackLetterSpacing: 'normal'
   });
 
   const [previewLogo, setPreviewLogo] = useState(null);
@@ -571,46 +575,67 @@ export default function BrandingManager() {
                 {/* Animation Preferences */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Animation Style (Coming Soon)
+                    Card Pack Animation Style
                   </label>
                   <select
-                    disabled
-                    className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-500 cursor-not-allowed"
+                    value={formData.cardPackAnimationStyle || 'fade'}
+                    onChange={(e) => handleInputChange('cardPackAnimationStyle', e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option>Fade In (Default)</option>
-                    <option>Slide Up</option>
-                    <option>Scale In</option>
-                    <option>Bounce</option>
+                    <option value="fade">Fade In (Default)</option>
+                    <option value="slide">Slide Up</option>
+                    <option value="scale">Scale In</option>
+                    <option value="bounce">Bounce</option>
                   </select>
-                  <p className="text-xs text-slate-500 mt-1">Custom draw animations will be available in a future update.</p>
+                  <p className="text-xs text-slate-500 mt-1">Choose how cards animate when revealed in trading card mode.</p>
                 </div>
-
+                
                 {/* Advanced Typography */}
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Typography Enhancement (Coming Soon)
+                    Typography Enhancement
                   </label>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Apply custom typography to Draw Session, Stock Page, and Card Pack animations.
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Font Weight</label>
-                      <select disabled className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-500 text-sm cursor-not-allowed">
-                        <option>400 (Normal)</option>
-                        <option>500 (Medium)</option>
-                        <option>600 (Semibold)</option>
-                        <option>700 (Bold)</option>
+                      <select 
+                        value={formData.cardPackFontWeight || 400}
+                        onChange={(e) => handleInputChange('cardPackFontWeight', parseInt(e.target.value))}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="100">100 (Thin)</option>
+                        <option value="200">200 (Extra Light)</option>
+                        <option value="300">300 (Light)</option>
+                        <option value="400">400 (Normal)</option>
+                        <option value="500">500 (Medium)</option>
+                        <option value="600">600 (Semi Bold)</option>
+                        <option value="700">700 (Bold)</option>
+                        <option value="800">800 (Extra Bold)</option>
+                        <option value="900">900 (Black)</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs text-slate-400 mb-1">Letter Spacing</label>
-                      <select disabled className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-slate-500 text-sm cursor-not-allowed">
-                        <option>Normal</option>
-                        <option>Tight</option>
-                        <option>Wide</option>
-                        <option>Wider</option>
+                      <select 
+                        value={formData.cardPackLetterSpacing || 'normal'}
+                        onChange={(e) => handleInputChange('cardPackLetterSpacing', e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="tighter">Tighter (-0.05em)</option>
+                        <option value="tight">Tight (-0.025em)</option>
+                        <option value="normal">Normal</option>
+                        <option value="wide">Wide (0.025em)</option>
+                        <option value="wider">Wider (0.05em)</option>
+                        <option value="widest">Widest (0.1em)</option>
                       </select>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Advanced typography controls for fine-tuning text appearance.</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Fine-tune text appearance across Draw Session, Stock Page, and Card Pack animations.
+                  </p>
                 </div>
               </div>
             )}

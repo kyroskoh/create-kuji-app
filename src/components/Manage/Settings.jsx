@@ -53,7 +53,10 @@ export default function Settings() {
     cardPackColor: '#9333ea', // Custom pack background color (default purple)
     cardPackColorEnd: '#4f46e5', // End color for gradient (default indigo)
     cardPackGradientType: 'linear', // Gradient type: 'linear', 'radial', 'conic'
-    cardPackGradientAngle: 135 // Gradient angle in degrees (for linear gradients)
+    cardPackGradientAngle: 135, // Gradient angle in degrees (for linear gradients)
+    cardPackAnimationStyle: 'fade', // Animation style: 'fade', 'slide', 'bounce' (coming soon)
+    cardPackFontWeight: 400, // Font weight for card text: 100-900
+    cardPackLetterSpacing: 'normal' // Letter spacing: 'tight', 'normal', 'wide'
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
@@ -1234,6 +1237,27 @@ export default function Settings() {
                           />
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Advanced Controls Note for Pro Users */}
+                  {hasCustomBranding(settings.subscriptionPlan || 'free') && (
+                    <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-200 mb-1">
+                            Advanced Controls Available
+                          </h4>
+                          <p className="text-xs text-blue-300/80">
+                            Looking for Animation Style and Typography controls? Visit the <span className="font-semibold">Custom Branding</span> section below to configure advanced card pack settings including animation preferences and typography enhancement.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                   

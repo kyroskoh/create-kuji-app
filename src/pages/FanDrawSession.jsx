@@ -255,6 +255,9 @@ export default function FanDrawSession() {
             customPackGradientType={settings.cardPackGradientType}
             customPackGradientAngle={settings.cardPackGradientAngle}
             customPackImage={settings.cardPackCustomImage}
+            animationStyle={branding?.cardPackAnimationStyle || 'fade'}
+            fontWeight={branding?.cardPackFontWeight || 400}
+            letterSpacing={branding?.cardPackLetterSpacing || 'normal'}
             onComplete={() => {
               setShowCardPackAnimation(false);
               markAsRevealed();

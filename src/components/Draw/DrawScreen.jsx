@@ -1017,6 +1017,9 @@ export default function DrawScreen() {
           customPackGradientType={sessionSettings.cardPackGradientType}
           customPackGradientAngle={sessionSettings.cardPackGradientAngle}
           customPackImage={sessionSettings.cardPackCustomImage}
+          animationStyle={branding?.cardPackAnimationStyle || 'fade'}
+          fontWeight={branding?.cardPackFontWeight || 400}
+          letterSpacing={branding?.cardPackLetterSpacing || 'normal'}
           onComplete={() => {
             // Convert prizes to result items
             const resultItems = cardPackPrizes.map((prize, index) => ({

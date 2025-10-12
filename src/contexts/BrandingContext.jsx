@@ -104,6 +104,28 @@ export function BrandingProvider({ children }) {
     if (branding.fontFamily) {
       document.documentElement.style.setProperty('--brand-font-family', branding.fontFamily);
     }
+    
+    // Apply Advanced Controls typography (Beta)
+    if (branding.cardPackFontWeight) {
+      document.documentElement.style.setProperty('--brand-font-weight', branding.cardPackFontWeight.toString());
+    } else {
+      document.documentElement.style.setProperty('--brand-font-weight', '400');
+    }
+    
+    if (branding.cardPackLetterSpacing) {
+      const spacingMap = {
+        'tighter': '-0.05em',
+        'tight': '-0.025em',
+        'normal': '0',
+        'wide': '0.025em',
+        'wider': '0.05em',
+        'widest': '0.1em'
+      };
+      const spacingValue = spacingMap[branding.cardPackLetterSpacing] || '0';
+      document.documentElement.style.setProperty('--brand-letter-spacing', spacingValue);
+    } else {
+      document.documentElement.style.setProperty('--brand-letter-spacing', '0');
+    }
 
     // Inject font if it's a Google Font
     if (branding.fontFamily && branding.fontFamily !== 'Inter') {
