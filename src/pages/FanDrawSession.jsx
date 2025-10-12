@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { tierChipClass } from "../utils/tierColors.js";
-import { isFeatureAvailable, hasBetaAccess, hasCustomBranding } from "../utils/subscriptionPlans.js";
+import { isFeatureAvailable, hasTradingCardAnimation, hasCustomBranding } from "../utils/subscriptionPlans.js";
 import BrandingHeader from "../components/Branding/BrandingHeader.jsx";
 import BrandingFooter from "../components/Branding/BrandingFooter.jsx";
 import BrandingWrapper from "../components/Branding/BrandingWrapper.jsx";
@@ -61,7 +61,7 @@ export default function FanDrawSession() {
         // Check if scratch cards are enabled for this user's plan
         const planId = sessionData.settings?.subscriptionPlan || 'free';
         const hasScratchCards = isFeatureAvailable('scratchCards', planId);
-        const hasTrading = hasBetaAccess(planId);
+        const hasTrading = hasTradingCardAnimation(planId);
         
         // Check if this session has been fully revealed before (localStorage or database)
         const revealedKey = `fan-revealed-${entryId}`;
@@ -248,9 +248,10 @@ export default function FanDrawSession() {
             tierColors={tierColors}
             tierOrder={Object.keys(tierColors)}
             effectTierCount={settings.cardPackEffectTierCount || 3}
-            showLogo={settings.cardPackShowLogo && hasCustomBranding(settings.subscriptionPlan || 'free')}
-            customPackImage={settings.cardPackCustomImage}
+            showLogo={hasCustomBranding(settings.subscriptionPlan || 'free') && branding?.logoUrl}
             logoUrl={branding?.logoUrl}
+            customPackColor={settings.cardPackColor}
+            customPackImage={settings.cardPackCustomImage}
             onComplete={() => {
               setShowCardPackAnimation(false);
               markAsRevealed();

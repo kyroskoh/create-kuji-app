@@ -93,6 +93,7 @@ export const SUBSCRIPTION_PLANS = {
       databaseSync: true, // Cloud sync enabled
       apiAccess: true, // API access
       betaAccess: true, // Beta access for future features
+      tradingCardAnimation: true, // Trading card pack animation (no customization)
       eventManagement: true // Event session management
     },
     description: "For growing businesses",
@@ -127,6 +128,7 @@ export const SUBSCRIPTION_PLANS = {
       databaseSync: true, // Cloud sync enabled
       apiAccess: true,
       betaAccess: true, // Beta access for future features
+      tradingCardAnimation: true, // Trading card pack animation with customization
       customDrawAnimation: true, // Custom draw animations (Beta)
       eventManagement: true // Event session management
     },
@@ -286,4 +288,9 @@ export function canCustomizeQRCodeColor(planId) {
   
   // All paid plans (basic, advanced, pro) have QR code customization
   return plan.id !== 'free';
+}
+
+// Check if trading card animation is available for plan
+export function hasTradingCardAnimation(planId) {
+  return isFeatureAvailable('tradingCardAnimation', planId);
 }

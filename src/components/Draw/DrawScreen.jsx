@@ -1011,8 +1011,9 @@ export default function DrawScreen() {
           tierOrder={Object.keys(tierColors)}
           effectTierCount={sessionSettings.cardPackEffectTierCount || 3}
           showLogo={sessionSettings.cardPackShowLogo && hasCustomBranding(sessionSettings.subscriptionPlan || 'free')}
-          customPackImage={sessionSettings.cardPackCustomImage}
           logoUrl={branding?.logoUrl}
+          customPackColor={sessionSettings.cardPackColor}
+          customPackImage={sessionSettings.cardPackCustomImage}
           onComplete={() => {
             // Convert prizes to result items
             const resultItems = cardPackPrizes.map((prize, index) => ({

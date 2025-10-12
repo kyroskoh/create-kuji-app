@@ -1,513 +1,425 @@
-import { useState, useEffect } from 'react';
-import FlipCard from './FlipCard.jsx';
+import { useState } from "react";
 
-export default function CardPackAnimation({ 
-  prizes, 
-  tierColors, 
+export default function CardPackAnimation({
+  prizes,
+  tierColors = {},
   tierOrder = [],
   effectTierCount = 3,
   showLogo = false,
-  customPackImage = null,
   logoUrl = null,
+  customPackColor = null,
+  customPackImage = null,
   onComplete,
   onSkip
 }) {
-  const [stage, setStage] = useState('pack'); // 'pack' (includes peeling), 'revealing'
-  const [cardsRevealed, setCardsRevealed] = useState(0);
-  const [peelProgress, setPeelProgress] = useState(0); // 0 to 100
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
+  const [stage, setStage] = useState('pack'); // 'pack', 'cards', 'complete'
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flippedCards, setFlippedCards] = useState(new Set());
 
   const cardCount = prizes.length;
+  
+  // Get pack color or image (default to purple gradient)
+  const baseColor = customPackColor || '#9333ea';
+  const packColor = customPackColor 
+    ? `linear-gradient(135deg, ${customPackColor} 0%, ${customPackColor} 100%)`
+    : 'linear-gradient(135deg, #9333ea 0%, #4f46e5 100%)';
+  const hasCustomImage = Boolean(customPackImage);
+  
+  // Determine if current prize should have special effects
+  const isTopTierPrize = (prize) => {
+    if (!prize?.tier || !tierOrder.length || effectTierCount <= 0) return false;
+    const tierUpper = String(prize.tier).toUpperCase();
+    const tierIndex = tierOrder.findIndex(t => String(t).toUpperCase() === tierUpper);
+    return tierIndex >= 0 && tierIndex < effectTierCount;
+  };
 
-  // Determine top N tiers based on tier order and effectTierCount
-  const topTiers = tierOrder.slice(0, effectTierCount);
-  
-  // Handle drag start (pack stage)
-  const handlePeelStart = (clientY) => {
-    if (stage === 'pack') {
-      setIsDragging(true);
-      setStartY(clientY);
-    }
+  const handleOpenPack = () => {
+    setStage('cards');
   };
-  
-  // Handle drag move (pack stage)
-  const handlePeelMove = (clientX) => {
-    if (isDragging && stage === 'pack') {
-      const deltaX = clientX - startY; // Using startY variable for X position
-      const progress = Math.min(Math.max((deltaX / 300) * 100, 0), 100);
-      setPeelProgress(progress);
-      
-      // Auto-complete if dragged far enough
-      if (progress >= 100) {
-        completePeel();
-      }
-    }
-  };
-  
-  // Handle drag end (pack stage)
-  const handlePeelEnd = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      
-      // If not fully peeled, animate back or complete
-      if (peelProgress >= 70) {
-        completePeel();
-      } else {
-        // Snap back
-        setPeelProgress(0);
-      }
-    }
-  };
-  
-  // Complete the peel and show cards
-  const completePeel = () => {
-    setPeelProgress(100);
-    setIsDragging(false);
+
+  const handleFlipCard = () => {
+    if (isFlipping || flippedCards.has(currentCardIndex)) return;
+    
+    setIsFlipping(true);
+    setFlippedCards(prev => new Set([...prev, currentCardIndex]));
+    
     setTimeout(() => {
-      setStage('revealing');
-    }, 500);
+      setIsFlipping(false);
+      
+      // After 1.5 seconds, move to next card or complete
+      setTimeout(() => {
+        if (currentCardIndex < cardCount - 1) {
+          setCurrentCardIndex(currentCardIndex + 1);
+        } else {
+          setStage('complete');
+          setTimeout(() => {
+            onComplete?.();
+          }, 1000);
+        }
+      }, 1500);
+    }, 600);
   };
 
-  const handleCardFlipComplete = () => {
-    setCardsRevealed(prev => prev + 1);
-    // Don't auto-dismiss, wait for user to click Dismiss button
-  };
-  
-  const handleSkip = () => {
-    if (onSkip) {
-      onSkip();
+  const getTierColor = (tier) => {
+    const tierUpper = String(tier || '').toUpperCase();
+    const colorValue = tierColors[tierUpper];
+    
+    if (!colorValue) return '#6366f1'; // default blue
+    
+    // If it's a hex color
+    if (typeof colorValue === 'string' && colorValue.startsWith('#')) {
+      return colorValue;
     }
+    
+    // If it's a tailwind color name
+    const colorMap = {
+      'amber': '#f59e0b',
+      'sky': '#0ea5e9',
+      'emerald': '#10b981',
+      'purple': '#a855f7',
+      'rose': '#f43f5e',
+      'lime': '#84cc16',
+      'teal': '#14b8a6',
+      'cyan': '#06b6d4',
+      'violet': '#8b5cf6',
+      'fuchsia': '#d946ef'
+    };
+    
+    return colorMap[colorValue] || '#6366f1';
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4">
-      {/* Skip Button - shown during pack stage */}
-      {onSkip && stage === 'pack' && (
+      {/* Skip Button */}
+      {onSkip && stage !== 'complete' && (
         <button
-          onClick={handleSkip}
+          onClick={onSkip}
           className="absolute top-4 right-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-semibold transition-all border border-slate-700 hover:border-slate-600 shadow-lg z-10"
         >
           Skip Animation ➤
         </button>
       )}
-      {/* Pack Stage (with integrated Pokemon-style opening) */}
+
+      {/* Pack Stage */}
       {stage === 'pack' && (
-        <div
-          className="relative touch-none animate-scale-in"
-          style={{ width: '350px', height: '500px' }}
-          onMouseDown={(e) => handlePeelStart(e.clientX)}
-          onMouseMove={(e) => handlePeelMove(e.clientX)}
-          onMouseUp={handlePeelEnd}
-          onMouseLeave={handlePeelEnd}
-          onTouchStart={(e) => handlePeelStart(e.touches[0].clientX)}
-          onTouchMove={(e) => handlePeelMove(e.touches[0].clientX)}
-          onTouchEnd={handlePeelEnd}
-        >
-          {/* Instructions */}
-          <div className="absolute -top-16 left-0 right-0 text-center z-10">
-            <p className="text-white text-lg font-semibold animate-pulse">
-              👉 Drag right to peel open the pack
-            </p>
-          </div>
-          
-          {/* Glow/sparkle effect behind pack (revealed as wrapper peels) */}
-          <div 
-            className="absolute rounded-3xl overflow-hidden pointer-events-none transition-all duration-200"
-            style={{
-              inset: `${-peelProgress * 0.4}px`,
-              opacity: peelProgress / 100,
-              filter: `blur(${20 + peelProgress * 0.3}px)`,
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-radial from-yellow-200 via-orange-300 to-pink-400 animate-pulse" />
-          </div>
-          
-          {/* Base pack body (stays in place, visible through tear) */}
-          <div 
-            className="absolute inset-0 rounded-3xl shadow-2xl overflow-hidden"
-          >
-            {/* Pack artwork */}
-            {customPackImage ? (
-              <img 
-                src={customPackImage} 
-                alt="Card pack" 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700" />
-            )}
+        <div className="animate-scale-in">
+          <div className="relative" style={{ width: '350px', height: '500px' }}>
+            {/* Glow effect */}
+            <div 
+              className="absolute inset-0 rounded-3xl blur-2xl opacity-50"
+              style={{ background: packColor }}
+            />
             
-            {/* Guiding tear line (horizontal zigzag seam at top) */}
-            <svg 
-              className="absolute pointer-events-none"
-              style={{
-                left: 0,
-                top: '20%',
-                width: '100%',
-                height: '40px',
-                opacity: peelProgress < 5 ? 0.5 : 0,
-                transition: 'opacity 0.3s',
-              }}
-              viewBox="0 0 350 40"
-              preserveAspectRatio="none"
+            {/* Front Pack */}
+            <div 
+              className="relative w-full h-full rounded-3xl shadow-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105"
+              style={hasCustomImage ? {} : { background: packColor }}
+              onClick={handleOpenPack}
             >
-              <path
-                d="M 0 20 L 15 20 L 20 16 L 25 20 L 35 20 L 40 16 L 45 20 L 55 20 L 60 16 L 65 20 L 75 20 L 80 16 L 85 20 L 95 20 L 100 16 L 105 20 L 115 20 L 120 16 L 125 20 L 135 20 L 140 16 L 145 20 L 155 20 L 160 16 L 165 20 L 175 20 L 180 16 L 185 20 L 195 20 L 200 16 L 205 20 L 215 20 L 220 16 L 225 20 L 235 20 L 240 16 L 245 20 L 255 20 L 260 16 L 265 20 L 275 20 L 280 16 L 285 20 L 295 20 L 300 16 L 305 20 L 315 20 L 320 16 L 325 20 L 335 20 L 340 16 L 345 20 L 350 20"
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth="1.5"
-                fill="none"
-                strokeDasharray="4,4"
-                strokeLinecap="round"
-              />
-            </svg>
-            
-            {/* Pack content */}
-            <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
-              {/* Card count badge */}
-              <div className="absolute top-4 right-4 px-3 py-2 rounded-lg bg-yellow-400 text-yellow-900 font-bold text-base shadow-lg border-2 border-yellow-600">
-                ×{cardCount}
-              </div>
-
-              {/* Pack logo/icon */}
-              <div className="w-48 h-48 mb-6 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
-                {showLogo && logoUrl ? (
-                  <img 
-                    src={logoUrl} 
-                    alt="Logo" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <svg className="w-28 h-28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                  </svg>
-                )}
-              </div>
-
-              {/* Pack title */}
-              <h2 className="text-5xl font-bold mb-3 text-center drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
-                Prize Pack
-              </h2>
-              <p className="text-2xl text-white font-semibold drop-shadow-md">
-                {cardCount} {cardCount === 1 ? 'Card' : 'Cards'}
-              </p>
-            </div>
-          </div>
-          
-          {/* Wrapper back part (inside) - ONLY the top strip's back side */}
-          <div
-            className="absolute rounded-3xl overflow-hidden pointer-events-none transition-all duration-100"
-            style={{
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '20%',
-              zIndex: 10,
-              // Top strip back with matching zigzag on top edge
-              clipPath: `polygon(
-                ${peelProgress * 0.8 + 1}% ${2.5}%,
-                ${peelProgress * 0.8}% 0,
-                ${peelProgress * 0.8 + 3}% 0,
-                ${peelProgress * 0.8 + 4}% ${2.5}%,
-                ${peelProgress * 0.8 + 6}% 0,
-                ${peelProgress * 0.8 + 7}% ${2.5}%,
-                ${peelProgress * 0.8 + 9}% 0,
-                ${peelProgress * 0.8 + 10}% ${2.5}%,
-                ${peelProgress * 0.8 + 12}% 0,
-                ${peelProgress * 0.8 + 13}% ${2.5}%,
-                ${peelProgress * 0.8 + 15}% 0,
-                ${peelProgress * 0.8 + 16}% ${2.5}%,
-                ${peelProgress * 0.8 + 18}% 0,
-                ${peelProgress * 0.8 + 19}% ${2.5}%,
-                ${peelProgress * 0.8 + 21}% 0,
-                ${peelProgress * 0.8 + 22}% ${2.5}%,
-                ${peelProgress * 0.8 + 24}% 0,
-                ${peelProgress * 0.8 + 25}% ${2.5}%,
-                ${peelProgress * 0.8 + 27}% 0,
-                100% 0,
-                100% 100%,
-                0 100%,
-                0 0
-              )`,
-              transform: `perspective(1500px) translateX(${peelProgress * 4}px) translateZ(${peelProgress * 1.5}px) rotateY(${peelProgress * 1.5}deg) rotateZ(${peelProgress * -0.3}deg)`,
-              transformOrigin: 'left center',
-            }}
-          >
-            {/* Inner/back side - darker color */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
-            
-            {/* Texture/grain on inside */}
-            <div 
-              className="absolute inset-0"
-              style={{
-                background: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)',
-                opacity: 0.3,
-              }}
-            />
-            
-            {/* Shadow at torn edge on back */}
-            <div 
-              className="absolute left-0 right-0 top-0 h-8"
-              style={{
-                background: 'linear-gradient(to top, transparent, rgba(0,0,0,0.9))',
-                opacity: peelProgress > 5 ? 1 : 0,
-              }}
-            />
-          </div>
-          
-          {/* Wrapper top part (front) - ONLY the top strip peels */}
-          <div
-            className="absolute rounded-3xl shadow-2xl overflow-hidden pointer-events-none transition-all duration-100"
-            style={{
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '20%',
-              zIndex: 11,
-              // Top strip with zigzag on bottom edge
-              clipPath: `polygon(
-                0 0,
-                ${peelProgress * 0.8}% 0,
-                ${peelProgress * 0.8}% 100%,
-                ${peelProgress * 0.8 + 1}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 3}% 100%,
-                ${peelProgress * 0.8 + 4}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 6}% 100%,
-                ${peelProgress * 0.8 + 7}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 9}% 100%,
-                ${peelProgress * 0.8 + 10}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 12}% 100%,
-                ${peelProgress * 0.8 + 13}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 15}% 100%,
-                ${peelProgress * 0.8 + 16}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 18}% 100%,
-                ${peelProgress * 0.8 + 19}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 21}% 100%,
-                ${peelProgress * 0.8 + 22}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 24}% 100%,
-                ${peelProgress * 0.8 + 25}% ${100 - 2.5}%,
-                ${peelProgress * 0.8 + 27}% 100%,
-                100% 100%,
-                100% 0
-              )`,
-              transform: `perspective(1500px) translateX(${peelProgress * 4}px) translateZ(${peelProgress * 2}px) rotateY(${peelProgress * 1.5}deg) rotateZ(${peelProgress * -0.3}deg)`,
-              transformOrigin: 'left center',
-            }}
-          >
-            {/* Outer wrapper - matches main pack color */}
-            <div className="absolute inset-0">
-              {customPackImage ? (
+              {/* Custom Image Background */}
+              {hasCustomImage && (
                 <img 
                   src={customPackImage} 
-                  alt="Card pack wrapper" 
+                  alt="Card pack design" 
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{ objectPosition: 'top' }}
                 />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700" />
               )}
               
-              {/* Metallic/foil effect on outer wrapper */}
-              <div className="absolute inset-0 opacity-70 pointer-events-none">
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.6) 50%, transparent 70%)',
-                    animation: 'shimmer 3s ease-in-out infinite',
-                  }}
-                />
-              </div>
-            </div>
-            
-            {/* Shadow at torn edge */}
-            <div 
-              className="absolute left-0 right-0 bottom-0 h-8"
-              style={{
-                background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.8))',
-                opacity: peelProgress > 5 ? 1 : 0,
-              }}
-            />
-          </div>
-          
-          
-          {/* Progress indicator */}
-          <div className="absolute -bottom-20 left-0 right-0">
-            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border-2 border-slate-700">
+              {/* Shine effect */}
               <div 
-                className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 transition-all duration-100"
-                style={{ 
-                  width: `${peelProgress}%`,
-                  boxShadow: peelProgress > 50 ? '0 0 10px rgba(251, 146, 60, 0.8)' : 'none',
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)',
+                  animation: 'shimmer 3s ease-in-out infinite',
                 }}
               />
-            </div>
-            <p className="text-center text-white text-sm mt-3 font-semibold" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              {peelProgress > 0 ? (
-                <span>
-                  ✨ {Math.round(peelProgress)}% peeled open ✨
-                </span>
-              ) : (
-                'Drag right to peel open'
-              )}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Card Revealing Stage */}
-      {stage === 'revealing' && (
-        <div className="w-full max-w-7xl animate-fade-in">
-          <div className="mb-6 text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Your Prizes!
-            </h2>
-            <p className="text-slate-400 mb-2">
-              {cardsRevealed} / {cardCount} revealed
-            </p>
-            {cardsRevealed < cardCount && (
-              <p className="text-sm text-purple-300 animate-pulse">
-                👆 Click cards to flip and reveal your prizes
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto px-2">
-            {prizes.map((prize, index) => {
-              const tier = String(prize.tier || '?').toUpperCase();
-              const isTopTier = topTiers.includes(tier);
-
-              return (
-                <div
-                  key={index}
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <FlipCard
-                    prize={prize}
-                    tierColors={tierColors}
-                    delay={index * 200 + 500}
-                    isTopTier={isTopTier}
-                    showLogo={showLogo}
-                    logoUrl={logoUrl}
-                    onFlipComplete={handleCardFlipComplete}
-                  />
+              
+              {/* Content */}
+              <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
+                {/* Card count badge */}
+                <div className="absolute top-4 right-4 px-3 py-2 rounded-lg bg-yellow-400 text-yellow-900 font-bold text-base shadow-lg border-2 border-yellow-600">
+                  ×{cardCount}
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Action buttons */}
-          <div className="mt-6 text-center animate-fade-in flex flex-col gap-3">
-            {/* Dismiss button (only after all cards revealed) */}
-            {cardsRevealed >= cardCount && (
-              <button
-                onClick={onComplete}
-                className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all"
-              >
-                ❌ Dismiss
-              </button>
-            )}
-            
-            {/* Skip button (only while cards are unflipped) */}
-            {onSkip && cardsRevealed < cardCount && (
-              <button
-                onClick={handleSkip}
-                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg font-semibold transition-all border border-slate-600"
-              >
-                Skip to Results ➤
-              </button>
-            )}
+                {/* Logo */}
+                {showLogo && logoUrl && (
+                  <div className="w-48 h-48 mb-6 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
+                    <img 
+                      src={logoUrl} 
+                      alt="Logo" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                {!showLogo || !logoUrl ? (
+                  <div className="w-48 h-48 mb-6 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-4 border-white/30">
+                    <svg className="w-28 h-28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                    </svg>
+                  </div>
+                ) : null}
+
+                {/* Title */}
+                <h2 className="text-5xl font-bold text-center drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}>
+                  Prize Pack
+                </h2>
+                <p className="text-2xl text-white font-semibold mt-3 drop-shadow-md">
+                  {cardCount} {cardCount === 1 ? 'Card' : 'Cards'}
+                </p>
+                
+                <button
+                  onClick={handleOpenPack}
+                  className="mt-8 px-8 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xl font-bold rounded-2xl border-4 border-white/40 transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
+                >
+                  👆 Tap to Open
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      <style jsx>{`
+      {/* Cards Stage */}
+      {stage === 'cards' && (
+        <div className="animate-fade-in">
+          <div className="text-center mb-4">
+            <p className="text-white text-lg font-semibold">
+              Card {currentCardIndex + 1} of {cardCount}
+            </p>
+            <p className="text-slate-400 text-sm mt-1">
+              👆 Tap card to reveal your prize
+            </p>
+          </div>
+          
+          <div className="relative" style={{ width: '350px', height: '500px', perspective: '1000px' }}>
+            {/* Card */}
+            <div
+              className={`relative w-full h-full cursor-pointer transition-transform duration-600 ${
+                flippedCards.has(currentCardIndex) ? 'rotate-y-180' : ''
+              }`}
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: flippedCards.has(currentCardIndex) ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              }}
+              onClick={handleFlipCard}
+            >
+              {/* Card Back */}
+              <div 
+                className="absolute inset-0 rounded-3xl shadow-2xl flex items-center justify-center text-white text-6xl font-bold overflow-hidden"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  background: hasCustomImage ? 'transparent' : packColor,
+                }}
+              >
+                {/* Custom Image Background for card back */}
+                {hasCustomImage && (
+                  <img 
+                    src={customPackImage} 
+                    alt="Card back design" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                
+                {/* Logo on card back */}
+                {showLogo && logoUrl && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-32 h-32 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden border-2 border-white/30">
+                      <img 
+                        src={logoUrl} 
+                        alt="Logo" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="relative text-center z-10">
+                  <div className="text-8xl mb-4">?</div>
+                  <p className="text-2xl font-semibold opacity-80 drop-shadow-lg">Tap to Reveal</p>
+                </div>
+              </div>
+
+              {/* Card Front (Prize) */}
+              <div 
+                className="absolute inset-0 rounded-3xl shadow-2xl overflow-hidden"
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  background: getTierColor(prizes[currentCardIndex]?.tier),
+                }}
+              >
+                <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
+                  {/* Tier Badge */}
+                  <div className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm font-bold text-xl border-2 border-white/30">
+                    Tier {String(prizes[currentCardIndex]?.tier || '?').toUpperCase()}
+                  </div>
+                  
+                  {/* Prize Name */}
+                  <div className="text-center relative z-10">
+                    <h3 className="text-4xl font-bold mb-4 drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+                      {prizes[currentCardIndex]?.prize_name || 'Prize'}
+                    </h3>
+                    
+                    {prizes[currentCardIndex]?.sku && (
+                      <p className="text-xl text-white/80 font-semibold">
+                        {prizes[currentCardIndex].sku}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Special effects for top-tier prizes */}
+                  {isTopTierPrize(prizes[currentCardIndex]) && flippedCards.has(currentCardIndex) && (
+                    <>
+                      {/* Particle effects */}
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        {[...Array(20)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="particle"
+                            style={{
+                              position: 'absolute',
+                              width: `${Math.random() * 8 + 4}px`,
+                              height: `${Math.random() * 8 + 4}px`,
+                              background: `hsl(${Math.random() * 60 + 30}, 100%, 60%)`,
+                              borderRadius: '50%',
+                              left: `${Math.random() * 100}%`,
+                              top: `${Math.random() * 100}%`,
+                              animation: `float ${Math.random() * 3 + 2}s ease-in-out infinite`,
+                              animationDelay: `${Math.random() * 2}s`,
+                              opacity: 0.7,
+                              boxShadow: `0 0 ${Math.random() * 10 + 5}px currentColor`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Glow effect */}
+                      <div 
+                        className="absolute inset-0 pointer-events-none animate-pulse"
+                        style={{
+                          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.3) 0%, transparent 70%)',
+                          animation: 'glow 2s ease-in-out infinite',
+                        }}
+                      />
+                    </>
+                  )}
+                  
+                  {/* Standard sparkle effect */}
+                  {!isTopTierPrize(prizes[currentCardIndex]) && (
+                    <div className="absolute inset-0 pointer-events-none animate-pulse">
+                      <div 
+                        className="absolute inset-0 opacity-20"
+                        style={{
+                          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, transparent 70%)',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Stage - Show Back Pack */}
+      {stage === 'complete' && (
+        <div className="animate-scale-in">
+          <div className="relative" style={{ width: '350px', height: '500px' }}>
+            {/* Glow effect */}
+            <div 
+              className="absolute inset-0 rounded-3xl blur-2xl opacity-50"
+              style={{ background: packColor }}
+            />
+            
+            {/* Back Pack */}
+            <div 
+              className="relative w-full h-full rounded-3xl shadow-2xl overflow-hidden"
+              style={hasCustomImage ? {} : { background: packColor }}
+            >
+              {/* Custom Image Background */}
+              {hasCustomImage && (
+                <img 
+                  src={customPackImage} 
+                  alt="Card pack design" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              
+              <div className="relative h-full flex flex-col items-center justify-center p-8 text-white z-10">
+                <div className="text-6xl mb-6">✨</div>
+                <h2 className="text-4xl font-bold text-center mb-4 drop-shadow-lg">All Cards Revealed!</h2>
+                <p className="text-xl text-center opacity-90 drop-shadow-md">
+                  You've opened all {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+        }
+        
         @keyframes float {
           0%, 100% {
-            transform: translateY(0px);
+            transform: translateY(0) translateX(0) scale(1);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.7;
           }
           50% {
-            transform: translateY(-10px);
+            transform: translateY(-100px) translateX(20px) scale(1.2);
+            opacity: 0.5;
           }
-        }
-
-        @keyframes shine {
-          0% {
-            transform: translateX(-100%) translateY(-100%) rotate(45deg);
-          }
-          100% {
-            transform: translateX(100%) translateY(100%) rotate(45deg);
+          90% {
+            opacity: 0.3;
           }
         }
         
-        @keyframes shimmer {
+        @keyframes glow {
           0%, 100% {
-            transform: translateX(-100%) skewX(-15deg);
+            opacity: 0.4;
+            filter: blur(20px);
           }
           50% {
-            transform: translateX(200%) skewX(-15deg);
+            opacity: 0.7;
+            filter: blur(30px);
           }
         }
-
-        @keyframes scale-in {
-          0% {
-            transform: scale(0.8);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
+        
+        .rotate-y-180 {
+          transform: rotateY(180deg);
         }
-
-        @keyframes peel-out {
-          0% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
+        
+        .animate-scale-in {
+          animation: scaleIn 0.5s ease-out;
         }
-
-        @keyframes fade-in {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slide-up {
-          0% {
-            transform: translateY(20px);
-            opacity: 0;
-          }
-          100% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        .animate-shine {
-          animation: shine 3s ease-in-out infinite;
-        }
-
-         .animate-scale-in {
-          animation: scale-in 0.5s ease-out forwards;
-        }
-
+        
         .animate-fade-in {
-          animation: fade-in 0.5s ease-out forwards;
+          animation: fadeIn 0.3s ease-out;
         }
-
-        .animate-slide-up {
-          animation: slide-up 0.5s ease-out forwards;
-          opacity: 0;
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>

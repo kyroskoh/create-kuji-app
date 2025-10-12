@@ -49,7 +49,8 @@ export default function Settings() {
     useCardPackAnimation: false, // Card pack animation (Pro/Beta feature)
     cardPackEffectTierCount: 3, // Number of top tiers to apply special effects (default 3)
     cardPackShowLogo: false, // Show logo on card backs and pack
-    cardPackCustomImage: null // Custom pack design image URL
+    cardPackCustomImage: null, // Custom pack design image URL
+    cardPackColor: '#9333ea' // Custom pack background color (default purple)
   });
   const [statusMessage, setStatusMessage] = useState(null);
   const [countryQuery, setCountryQuery] = useState("Malaysia");
@@ -965,6 +966,62 @@ export default function Settings() {
                     <p className="text-xs text-slate-500">
                       Configure how many top tiers (based on your tier sorting) get special visual effects during card reveal.
                     </p>
+                  </div>
+                  
+                  {/* Custom Pack Color Picker */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide block">
+                      Pack Background Color
+                    </label>
+                    <p className="text-xs text-slate-400 mb-2">
+                      Choose a custom color for the card pack wrapper and card backs (when no custom image is used)
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={settings.cardPackColor || '#9333ea'}
+                        onChange={(e) => updateSettings({ cardPackColor: e.target.value })}
+                        className="h-10 w-20 rounded border border-slate-700 bg-slate-900 cursor-pointer"
+                        title="Choose pack color"
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={settings.cardPackColor || '#9333ea'}
+                          onChange={(e) => {
+                            const color = e.target.value;
+                            // Validate hex color format
+                            const hexColorRegex = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
+                            if (hexColorRegex.test(color)) {
+                              updateSettings({ cardPackColor: color });
+                            }
+                          }}
+                          placeholder="#9333ea"
+                          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-purple-500/70 focus:outline-none focus:ring-2 focus:ring-purple-500/30 font-mono"
+                        />
+                      </div>
+                      {settings.cardPackColor && settings.cardPackColor !== '#9333ea' && (
+                        <button
+                          type="button"
+                          onClick={() => updateSettings({ cardPackColor: '#9333ea' })}
+                          className="rounded-md px-3 py-2 text-sm text-slate-400 hover:text-slate-300 transition-colors"
+                          title="Reset to default purple"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div 
+                        className="w-16 h-16 rounded-lg border-2 border-slate-700 shadow-md"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${settings.cardPackColor || '#9333ea'} 0%, ${settings.cardPackColor || '#4f46e5'} 100%)` 
+                        }}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Preview of pack gradient. This color is used when no custom image is uploaded.
+                      </p>
+                    </div>
                   </div>
                   
                   {/* Logo on Cards Toggle */}
