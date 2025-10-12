@@ -127,7 +127,7 @@ export default function ScratchCard({
         setScratchedPercentage(percentage);
 
         // Auto-complete if threshold reached
-        if (percentage > 70 && !isCompleted) {
+        if (percentage > 60 && !isCompleted) {
           completeScratching();
         }
       }, 0);
@@ -239,7 +239,7 @@ export default function ScratchCard({
               <span className="text-xs font-medium text-gray-700">
                 {Math.round(scratchedPercentage)}% revealed
               </span>
-              {scratchedPercentage > 70 && (
+              {scratchedPercentage > 60 && (
                 <button
                   onClick={completeScratching}
                   className="text-xs bg-purple-700 text-white px-3 py-1 rounded-full hover:bg-purple-600 transition"

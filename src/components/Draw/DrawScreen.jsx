@@ -692,7 +692,7 @@ export default function DrawScreen() {
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
                     >
-                      ⚡ Instant
+                      ⚡ Instant Mode
                     </button>
                     <button
                       type="button"
@@ -703,7 +703,7 @@ export default function DrawScreen() {
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
                     >
-                      🪙 Scratch
+                      🪙 Scratch Card
                     </button>
                     <button
                       type="button"

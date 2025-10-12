@@ -306,36 +306,49 @@ export default function CardPackAnimation({
                 style={{
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
-                  background: getTierColor(prizes[currentCardIndex]?.tier),
+                  background: flippedCards.has(currentCardIndex) 
+                    ? getTierColor(prizes[currentCardIndex]?.tier)
+                    : '#1e293b', // Default slate color for unflipped cards
                 }}
               >
                 <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
-                  {/* Tier Badge */}
-                  <div 
-                    className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm font-bold text-xl border-2 border-white/30"
-                    style={textStyle}
-                  >
-                    Tier {String(prizes[currentCardIndex]?.tier || '?').toUpperCase()}
-                  </div>
-                  
-                  {/* Prize Name */}
-                  <div className="text-center relative z-10">
-                    <h3 
-                      className="text-4xl font-bold mb-4 drop-shadow-lg" 
-                      style={{ 
-                        textShadow: '0 0 20px rgba(0,0,0,0.5)',
-                        ...textStyle
-                      }}
-                    >
-                      {prizes[currentCardIndex]?.prize_name || 'Prize'}
-                    </h3>
-                    
-                    {prizes[currentCardIndex]?.sku && (
-                      <p className="text-xl text-white/80 font-semibold" style={textStyle}>
-                        {prizes[currentCardIndex].sku}
-                      </p>
-                    )}
-                  </div>
+                  {/* Only show prize details if card is flipped */}
+                  {flippedCards.has(currentCardIndex) ? (
+                    <>
+                      {/* Tier Badge */}
+                      <div 
+                        className="absolute top-4 right-4 px-4 py-2 rounded-lg bg-black/30 backdrop-blur-sm font-bold text-xl border-2 border-white/30"
+                        style={textStyle}
+                      >
+                        Tier {String(prizes[currentCardIndex]?.tier || '?').toUpperCase()}
+                      </div>
+                      
+                      {/* Prize Name */}
+                      <div className="text-center relative z-10">
+                        <h3 
+                          className="text-4xl font-bold mb-4 drop-shadow-lg" 
+                          style={{ 
+                            textShadow: '0 0 20px rgba(0,0,0,0.5)',
+                            ...textStyle
+                          }}
+                        >
+                          {prizes[currentCardIndex]?.prize_name || 'Prize'}
+                        </h3>
+                        
+                        {prizes[currentCardIndex]?.sku && (
+                          <p className="text-xl text-white/80 font-semibold" style={textStyle}>
+                            {prizes[currentCardIndex].sku}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    // Show placeholder for unflipped card
+                    <div className="text-center relative z-10">
+                      <div className="text-8xl mb-4">?</div>
+                      <p className="text-2xl font-semibold opacity-60">Hidden</p>
+                    </div>
+                  )}
                   
                   {/* Special effects for top-tier prizes */}
                   {isTopTierPrize(prizes[currentCardIndex]) && flippedCards.has(currentCardIndex) && (

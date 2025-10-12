@@ -111,6 +111,7 @@ export default function FlipCard({
           style={{
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
+            backgroundColor: tierHex,
             borderColor: isCustomHex ? tierHex : undefined,
             boxShadow: isTopTier
               ? `0 0 30px ${tierHex}80, 0 0 60px ${tierHex}40`
